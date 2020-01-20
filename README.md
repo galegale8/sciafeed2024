@@ -1,3 +1,10 @@
 # SCIA FEED
 
-SCIA FEED è uno strumento python per la validazione, il calcolo e l'inserimento di indicatori climatici nel database postgreSQL SCIA a partire da file già presenti nel filesystem o scaricati automaticamente da servizi disponibili online.
+SCIA FEED is a python tool for:
+ * downloading
+ * validating
+ * computing
+ * inserting
+climate indicators into the SCIA PostgreSQL database. The input files can be
+present in the filesystem or can be downloaded through online services.
+

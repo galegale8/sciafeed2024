@@ -7,3 +7,4 @@ ve
 .eggs
 docs/html
 htmlcov
+dist

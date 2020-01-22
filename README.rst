@@ -54,7 +54,7 @@ Testing with coverage:
 
 .. code:: bash
 
-    ve/bin/pytest tests --cov=drsstorage --cov-report=html
+    ve/bin/pytest tests --cov=sciafeed --cov-report=html
 
 Generate technical code documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

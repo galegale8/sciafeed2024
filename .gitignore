@@ -5,3 +5,4 @@ ve
 .pytest_cache
 .coverage
 .eggs
+docs/html

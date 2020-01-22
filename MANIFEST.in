@@ -1,0 +1,6 @@
+include *.in
+include *.rst
+recursive-include tests/TESTDATA *
+recursive-include docs *.gitkeep
+recursive-include docs *.py
+recursive-include docs *.rst

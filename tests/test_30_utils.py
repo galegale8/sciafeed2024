@@ -1,8 +1,8 @@
 
-from sciafeed import a_module
+from sciafeed import utils
 
 
 def test_hello_world():
     expected = 'Hello world!'
-    effective = a_module.hello_world()
+    effective = utils.hello_world()
     assert effective == expected

@@ -6,12 +6,6 @@ import click
 from sciafeed import utils
 
 
-@click.group()
-def sciacmd():
-    """Command group of SCIA FEED"""
-    pass
-
-
 @click.command()
 def hello_world():
     """

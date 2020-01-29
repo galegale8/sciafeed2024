@@ -1,0 +1,20 @@
+position;description;par_code
+1;Valor medio della velocita del vento, riferito al periodo di 10 minuti precedente |’ora d’osservazione ed espresso in decimi di m/s.;1
+2;Direzione media di provenienza del vento, riferita al periodo di 10 minuti precedente l’ora d’osservazione ed espressa in gradi sessagesimali, calcolati a partire dal Nord geografico in senso orario;2
+3;Temperatura media dell’aria, in decimi di °C;3
+4;Temperatura minima dell’aria, in decimi di °C;4
+5;Temperatura massima dell’aria, in decimi di °C;5
+6;Temperatura media del terreno a 10 cm di profondita, riferita all’ora precedente, in decimi di °C;6
+7;Temperatura minima del terreno a 10 cm di profondita, in decimi di °C;7
+8;Temperatura massima del terreno a 10 cm di profondita, in decimi di °C;8
+9;Umidita relativa media dell’aria (capannina), in %;9
+10;Umidita relativa minima dell’ aria (capannina), in %;10
+11;Umidita relativa massima dell’aria (capannina), in %;11
+12;Pressione media livello della stazione, in decimi di mbar;12
+13;Pressione media livello del mare, in decimi di mbar;13
+14;Pressione minima a livello del mare, in decimi di mbar;14
+15;Pressione massimaa livello del mare, in decimi di mbar;15
+16;Radiazione globale integrale misurata nell’ ora precedente, in cal/cm2;16
+17;Insolazione misurata nell’ora precedente, in minuti;17
+18;Precipitazione misuratanell’intervallo di un’ora, in decimi di mm;18
+19;agnaturafogliare misurata nell’ora precedente, in minuti;19

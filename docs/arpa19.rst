@@ -1,6 +1,6 @@
 
-a_module
---------
+arpa19
+------
 
-.. automodule:: sciafeed.a_module
+.. automodule:: sciafeed.arpa19
    :members:

@@ -15,6 +15,7 @@ development_require = [
         'ipython',
         'sphinx==2.3.1',
         'sphinx_rtd_theme==0.4.3',
+        'sphinx-click',
 ]
 install_requires = [
     'click==7.0',

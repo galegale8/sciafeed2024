@@ -52,11 +52,12 @@ Standard testing:
 
     ve/bin/pytest tests
 
-Testing with coverage:
+Testing with coverage and open with a browser (for example firefox):
 
 .. code:: bash
 
     ve/bin/pytest tests --cov=sciafeed --cov-report=html
+    firefox htmlcov/index.html
 
 2.3 Create source distribution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,7 +75,11 @@ To generate html documentation from the code, launch the build script:
 
     ve/bin/sphinx-build docs docs/html
 
-The documentation is readable from docs/html/index.html by a browser.
+The documentation is readable from docs/html/index.html by a browser (for example, firefox):
+
+.. code:: bash
+
+    firefox docs/html/index.html
 
 3. Installation
 ---------------

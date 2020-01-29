@@ -1,4 +1,6 @@
-
+"""
+This modules provides generic utility functions of the SCIA FEED package
+"""
 from datetime import datetime
 import logging
 import os.path

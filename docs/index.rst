@@ -13,8 +13,9 @@ SCIA PostgreSQL database.
    :maxdepth: 2
    :caption: Python modules:
 
-   a_module
+   arpa19
    entry_points
+   utils
 
 Indices and tables
 ==================

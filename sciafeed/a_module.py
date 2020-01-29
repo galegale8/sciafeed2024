@@ -1,3 +1,6 @@
+"""
+This is an example module of SCIA FEED
+"""
 
 
 def hello_world():

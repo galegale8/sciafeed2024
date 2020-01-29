@@ -1,4 +1,6 @@
-
+"""
+This modules provides the functions of the SCIA FEED package's entry points
+"""
 import click
 
 from sciafeed import a_module

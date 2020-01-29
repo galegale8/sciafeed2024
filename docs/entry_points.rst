@@ -2,5 +2,5 @@
 entry_points
 ------------
 
-.. automodule:: sciafeed.entry_points
-   :members:
+.. click:: sciafeed.entry_points:hello_world
+   :prog: hello_world

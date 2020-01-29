@@ -88,7 +88,7 @@ def test_parse_row():
     parameters_map = arpa19.load_parameter_file()
 
     # full parsing
-    expected = {datetime(2013, 1, 1, 0, 0): {
+    expected = (datetime(2013, 1, 1, 0, 0), 43.876999, {
         '1': (9.0, True),
         '2': (355.0, True),
         '3': (68.0, True),
@@ -108,20 +108,18 @@ def test_parse_row():
         '17': (None, False),
         '18': (None, False),
         '19': (None, False),
-        'lat': 43.876999}
-    }
+    })
     effective = arpa19.parse_row(row, parameters_map)
     assert effective == expected
 
     # only valid values
-    expected = {datetime(2013, 1, 1, 0, 0): {
+    expected = (datetime(2013, 1, 1, 0, 0), 43.876999, {
         '1': (9.0, True),
         '2': (355.0, True),
         '3': (68.0, True),
         '9': (83.0, True),
         '12': (10205.0, True),
-        'lat': 43.876999}
-    }
+    })
     effective = arpa19.parse_row(row, parameters_map, only_valid=True)
     assert effective == expected
 
@@ -178,3 +176,16 @@ def test_validate_row():
     assert arpa19.validate_row(row, strict=True) == \
         'The latitude length in the row %r is wrong' % row
 
+
+# def test_validate_arpa19():
+#     # TODO
+#     # arpa19.validate_arpa19(filepath)
+#     pass
+#
+#
+# def test_parse_arpa19():
+#     # TODO
+#     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+#     expected = None
+#     effective = arpa19.parse_arpa19(filepath)
+#     assert effective == expected

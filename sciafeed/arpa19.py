@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse an ARPA file with 19 v
 """
 import csv
 from datetime import datetime
-from os.path import splitext, join
+from os.path import basename, join, splitext
 
 from sciafeed import this_path
 
@@ -40,7 +40,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
 
 def parse_filename(filename: str):
     """
-    Return the tuple (<code of the station>, <start datetime object>, <end datetime object>)
+    Return (<code of the station>, <start datetime object>, <end datetime object>)
     corresponding to the arpa19 input file named `filename`.
     The function assumes the filename is validated (see `validate_filename`).
 
@@ -100,11 +100,11 @@ def validate_filename(filename: str):
     return err_msg
 
 
-def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER,
-              code_for_lat='lat'):
+def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER):
     """
-    Parse a row of a arpa19 file, and return the parsed data as a dictionary:
-      {datetime object:
+    Parse a row of a arpa19 file, and return the parsed data as a tuple of kind:
+      (datetime object, latitude, prop_dict)
+      where prop_dict is:
         { ....
           param_i_code: (param_i_value, flag),
           ...
@@ -116,15 +116,15 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         position
     :param only_valid: parse only values flagged as valid (default: False)
     :param missing_value_marker: the string used as a marker for missing value
-    :param code_for_lat: code to be used for the latitude value
     :return: dictionary with key=time obj, and value=dict of the parameters values
     """
     tokens = row.split()
     assert len(tokens) == 40
     date_str = tokens[0]
     date_obj = datetime.strptime(date_str, '%Y%m%d%H%M')
-    ret_value = {date_obj: dict()}
-    ret_value[date_obj][code_for_lat] = float(tokens[1])
+    ret_value1 = date_obj
+    ret_value2 = float(tokens[1])
+    ret_value3 = dict()
     par_values = tokens[2:21]
     par_flags = tokens[21:]
     for i, (param_i_value_str, flag_num) in enumerate(zip(par_values, par_flags)):
@@ -136,7 +136,8 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         flag = float(flag_num) <= 1
         if not flag and only_valid:
             continue
-        ret_value[date_obj][param_i_code] = (param_i_value, flag)
+        ret_value3[param_i_code] = (param_i_value, flag)
+    ret_value = (ret_value1, ret_value2, ret_value3)
     return ret_value
 
 
@@ -147,6 +148,7 @@ def validate_row(row, strict=False):
 
     :param row: the arpa19 file row to validate
     :param strict: if True, check also the length of the spaces in the row (default False)
+    :return: the string describing the error
     """
     err_msg = ''
     tokens = row.split()
@@ -179,3 +181,71 @@ def validate_row(row, strict=False):
         if par_row[i:i+7].strip() != tokens[token_index]:
             err_msg = "The spacing in the row %r is wrong" % row
     return err_msg
+
+
+def validate_arpa19(filepath, strict=False):
+    """
+    Open an arpa19 file and check it. Return an error string if an error is found.
+
+    :param filepath: path to the arpa19 file
+    :param strict: if True, check also the length of the spaces in the row (default False)
+    :return: the string describing the error
+    """
+    filename = basename(filepath)
+    err_msg = validate_filename(filename)
+
+    if err_msg:
+        return err_msg
+    code, start, end = parse_filename(filename)
+    parameters_map = load_parameter_file()
+    with open(filepath) as fp:
+        last_lat = None
+        last_row_date = None
+        for i, row in enumerate(fp, 1):
+            err_msg = validate_row(row, strict=strict)
+            if err_msg:
+                return "Row %i: " % i + err_msg
+            current_row_date, current_lat, props = parse_row(row, parameters_map)
+            if not start <= current_row_date <= end:
+                err_msg = "Row %i: the times are not coherent with the filename" % i
+                return err_msg
+            if last_lat and last_lat != current_lat:
+                err_msg = "Row %i: the latitude in %r is not coherent with the filename" % i
+                return err_msg
+            if last_row_date and last_row_date > current_row_date:
+                err_msg = "Row %i: it is not strictly after the previous" % i
+                return err_msg
+            last_lat = current_lat
+            last_row_date = current_row_date
+    return err_msg
+
+
+def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
+                 missing_value_marker=MISSING_VALUE_MARKER):
+    """
+    Read an arpa19 file located at `filepath` and returns the data stored inside. Value
+    returned is a tuple (station_code, station_latitude, data) where data is a dictionary of type:
+    :: 
+    
+        {   timeA: { par1_name: (par1_value,flag), ....},
+            timeB: { par1_name: (par1_value,flag), ....},
+            ...
+        }
+        
+    :param filepath: path to the arpa19 file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param only_valid: parse only values flagged as valid (default: False)
+    :param missing_value_marker: the string used as a marker for missing value
+    :return: 
+    """""
+    parameters_map = load_parameter_file(parameters_filepath)
+    code, _, _ = parse_filename(basename(filepath))
+    data = dict()
+    with open(filepath) as fp:
+        for row in fp:
+            row_date, lat, props = parse_row(
+                row, parameters_map, only_valid=only_valid,
+                missing_value_marker=missing_value_marker)
+            data[row_date] = props
+    ret_value = (code, lat, data)
+    return ret_value

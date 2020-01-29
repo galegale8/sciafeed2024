@@ -124,3 +124,57 @@ def test_parse_row():
     }
     effective = arpa19.parse_row(row, parameters_map, only_valid=True)
     assert effective == expected
+
+
+def test_validate_row():
+    # right row
+    row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2"
+    assert not arpa19.validate_row(row)
+
+    # too values
+    row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2    123"
+    assert arpa19.validate_row(row) == "The number of components in the row %r is wrong" % row
+
+    # wrong date
+    row = "2001010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2"
+    assert arpa19.validate_row(row) == "The date format in the row %r is wrong" % row
+
+    # wrong values
+    row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767     A1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2"
+    assert arpa19.validate_row(row) == 'The row %r contains not numeric values' % row
+
+    # soft/hard check on spaces
+    row = "201301010000 43.876999   9 355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767 10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1   1      2      2      2      2      2      1" \
+          "      2      2      1  2      2      2      2      2      2      2"
+    assert not arpa19.validate_row(row)
+    assert arpa19.validate_row(row, strict=True) == 'The spacing in the row %r is wrong' % row
+
+    row = " 201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2"
+    assert not arpa19.validate_row(row)
+    assert arpa19.validate_row(row, strict=True) == 'The date length in the row %r is wrong' % row
+
+    row = "201301010000  43.876999      9    355     68  32767  32767  32767  32767  32767" \
+          "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
+          "  32767      1      1      1      2      2      2      2      2      1" \
+          "      2      2      1      2      2      2      2      2      2      2"
+    assert not arpa19.validate_row(row)
+    assert arpa19.validate_row(row, strict=True) == \
+        'The latitude length in the row %r is wrong' % row
+

@@ -138,3 +138,44 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
             continue
         ret_value[date_obj][param_i_code] = (param_i_value, flag)
     return ret_value
+
+
+def validate_row(row, strict=False):
+    """
+    It checks a row of an arpa19 file for validation and returns the description
+    string of the error (if found).
+
+    :param row: the arpa19 file row to validate
+    :param strict: if True, check also the length of the spaces in the row (default False)
+    """
+    err_msg = ''
+    tokens = row.split()
+    if len(tokens) != 40:
+        err_msg = "The number of components in the row %r is wrong" % row
+        return err_msg
+    try:
+        datetime.strptime(tokens[0], '%Y%m%d%H%M')
+    except ValueError:
+        err_msg = "The date format in the row %r is wrong" % row
+        return err_msg
+    for value in tokens[1:]:
+        try:
+            float(value)
+        except:
+            err_msg = "The row %r contains not numeric values" % row
+            return err_msg
+    if not strict:
+        return err_msg
+
+    # strict check on spacing of characters
+    if row[:12] != tokens[0]:
+        err_msg = "The date length in the row %r is wrong" % row
+        return err_msg
+    if row[13:22] != tokens[1]:
+        err_msg = "The latitude length in the row %r is wrong" % row
+        return err_msg
+    par_row = row[22:]
+    for token_index, i in enumerate(range(0, len(par_row), 7)):
+        if par_row[i:i+7].strip() != tokens[token_index]:
+            err_msg = "The spacing in the row %r is wrong" % row
+    return err_msg

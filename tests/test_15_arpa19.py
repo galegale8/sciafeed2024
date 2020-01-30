@@ -85,7 +85,8 @@ def test_parse_row():
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    parameters_map = arpa19.load_parameter_file()
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_map = arpa19.load_parameter_file(parameters_filepath=parameters_filepath)
 
     # full parsing
     expected = (datetime(2013, 1, 1, 0, 0), 43.876999, {
@@ -215,6 +216,7 @@ def test_validate_arpa19(tmpdir):
 
 def test_parse_arpa19():
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
     station = '70001'
     latitude = 43.876999
     expected_data = {
@@ -639,10 +641,11 @@ def test_parse_arpa19():
             '9': (100.0, True)
         }
     }
-    effective = arpa19.parse_arpa19(filepath)
+    effective = arpa19.parse_arpa19(filepath,parameters_filepath=parameters_filepath)
     assert effective == (station, latitude, expected_data)
 
-    effective = arpa19.parse_arpa19(filepath, only_valid=True)
+    effective = arpa19.parse_arpa19(filepath, parameters_filepath=parameters_filepath,
+                                    only_valid=True)
     expected_data_valid = {
         datetime(2013, 1, 1, 0, 0): {
             '1': (9.0, True),

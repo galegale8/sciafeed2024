@@ -118,8 +118,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     The function assumes the row as validated. Flag is True (valid data) or False (not valid).
 
     :param row: a row of the arpa19 file
-    :param parameters_map: dictionary containing information about stored parameters at each
-        position
+    :param parameters_map: dictionary of information about stored parameters at each position
     :param only_valid: parse only values flagged as valid (default: False)
     :param missing_value_marker: the string used as a marker for missing value
     :return: (datetime object, latitude, prop_dict)
@@ -147,13 +146,15 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     return ret_value
 
 
-def validate_row(row, strict=False):
+def validate_row(row, strict=False, parameters_map=None):
     """
     It checks a row of an arpa19 file for validation and returns the description
     string of the error (if found).
+    This validation is needed to be able to parse the row with the function `parse_row`.
 
     :param row: the arpa19 file row to validate
     :param strict: if True, check also the length of the spaces in the row (default False)
+    :param parameters_map: dictionary of information about stored parameters at each position
     :return: the string describing the error
     """
     err_msg = ''
@@ -174,20 +175,19 @@ def validate_row(row, strict=False):
         except (ValueError, TypeError):
             err_msg = "The row %r contains not numeric values" % row
             return err_msg
-    if not strict:
-        return err_msg
 
-    # strict check on spacing of characters
-    if row[:12] != tokens[0]:
-        err_msg = "The date length in the row %r is wrong" % row
-        return err_msg
-    if row[13:22] != tokens[1]:
-        err_msg = "The latitude length in the row %r is wrong" % row
-        return err_msg
-    par_row = row[22:].rstrip('\n')
-    for token_index, i in enumerate(range(0, len(par_row), 7)):
-        if par_row[i:i+7].lstrip() != tokens[token_index+2]:
-            err_msg = "The spacing in the row %r is wrong" % row
+    if strict:
+        if row[:12] != tokens[0]:
+            err_msg = "The date length in the row %r is wrong" % row
+            return err_msg
+        if row[13:22] != tokens[1]:
+            err_msg = "The latitude length in the row %r is wrong" % row
+            return err_msg
+        par_row = row[22:].rstrip('\n')
+        for token_index, i in enumerate(range(0, len(par_row), 7)):
+            if par_row[i:i+7].lstrip() != tokens[token_index+2]:
+                err_msg = "The spacing in the row %r is wrong" % row
+                return err_msg
     return err_msg
 
 
@@ -227,6 +227,7 @@ def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=F
 def validate_arpa19(filepath, strict=False, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpa19 file and check it. Return an error string if an error is found.
+    This validation is needed to be able to parse the file with the function `parse_arpa19`.
 
     :param filepath: path to the arpa19 file
     :param strict: if True, check also the length of the spaces in the row (default False)

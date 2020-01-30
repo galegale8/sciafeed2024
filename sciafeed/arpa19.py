@@ -146,7 +146,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     return ret_value
 
 
-def validate_row(row, strict=False, parameters_map=None):
+def validate_row(row, strict=False):
     """
     It checks a row of an arpa19 file for validation and returns the description
     string of the error (if found).
@@ -154,7 +154,6 @@ def validate_row(row, strict=False, parameters_map=None):
 
     :param row: the arpa19 file row to validate
     :param strict: if True, check also the length of the spaces in the row (default False)
-    :param parameters_map: dictionary of information about stored parameters at each position
     :return: the string describing the error
     """
     err_msg = ''
@@ -269,3 +268,75 @@ def validate_arpa19(filepath, strict=False, parameters_filepath=PARAMETERS_FILEP
             last_row_date = current_row_date
             last_row = row
     return err_msg
+
+
+def do_weak_climatologic_check(row, parameters_map, parameters_thresholds=None):
+    """
+    Get the weak climatologic check for a row of a arpa19 file.
+    It assumes that the row is parsable. Return the list of error
+    messages, and the data parsed (eventually partially flagged as invalid).
+    `parameters_thresholds` is a dict {code: (min, max), ...}.
+
+    :param row: the row of a arpa19 file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param parameters_thresholds: dictionary of thresholds for each parameter code
+    :return: (err_msgs, data_parsed)
+    """
+    row_date, lat, props = parse_row(row, parameters_map)
+    err_msgs = []
+    ret_props = props.copy()
+    for par_code, (par_value, par_flag) in props.items():
+        if par_code not in parameters_thresholds or not par_flag:
+            # no check if limiting parameters are flagged invalid
+            continue
+        min_threshold, max_threshold = parameters_thresholds[par_code]
+        try:
+            min_threshold, max_threshold = map(float, [min_threshold, max_threshold])
+        except:
+            # no check if the thresholds are not set
+            continue
+        if not (min_threshold <= par_value <= max_threshold):
+            ret_props[par_code] = (par_value, False)
+            err_msg = "The value of %r in row %r is out of range [%s, %s]" \
+                      % (par_code, row, min_threshold, max_threshold)
+            err_msgs.append(err_msg)
+    return err_msgs, (row_date, lat, ret_props)
+
+
+def do_internal_coherence_check(row, parameters_map, limiting_params=None):
+    """
+    Get the internal coherence check for a row of a arpa19 file.
+    It assumes that the row is parsable. Return the list of error
+    messages, and the data parsed (eventually partially flagged as invalid).
+    `limiting_params` is a dict {code: (code_min, code_max), ...}.
+
+    :param row: the row of a arpa19 file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (err_msgs, data_parsed)
+    """
+    row_date, lat, props = parse_row(row, parameters_map)
+    err_msgs = []
+    ret_props = props.copy()
+    for par_code, (par_value, par_flag) in props.items():
+        if par_code not in limiting_params or not par_flag:
+            # no check if the parameter is floagged invalid or no in the limiting_params
+            continue
+        par_code_min, par_code_max = limiting_params[par_code]
+        par_code_min_value, par_code_min_flag = props[par_code_min]
+        par_code_max_value, par_code_max_flag = props[par_code_max]
+        if not par_code_min_flag or not par_code_max_flag:
+            # no check if limiting parameters are flagged invalid
+            continue
+        try:
+            par_code_min_value, par_code_max_value = map(
+                float, [par_code_min_value, par_code_max_value])
+        except:
+            continue
+
+        if not (par_code_min_value <= par_value <= par_code_max_value):
+            ret_props[par_code] = (par_value, False)
+            err_msg = "The value of %r in row %r is out of incoherent with range [%s, %s]" \
+                      % (par_code, row, par_code_min_value, par_code_max_value)
+            err_msgs.append(err_msg)
+    return err_msgs, (row_date, lat, ret_props)

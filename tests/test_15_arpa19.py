@@ -185,41 +185,43 @@ def test_validate_row():
 def test_validate_arpa19(tmpdir):
     # right file
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
-    assert not arpa19.validate_arpa19(filepath)
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
 
     # wrong file name
     filepath = str(tmpdir.mkdir("sub").join('loc01_70001_201301010000_201401010100.xls'))
-    err_msg = arpa19.validate_arpa19(filepath)
+    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
     assert err_msg and err_msg == 'Extension expected must be .dat, found .xls'
 
     # strict validation on wrong spacing
     filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
-    assert not arpa19.validate_arpa19(filepath)
-    err_msg = arpa19.validate_arpa19(filepath, strict=True)
+    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
+    err_msg = arpa19.validate_arpa19(filepath, strict=True,
+                                     parameters_filepath=parameters_filepath)
     assert err_msg and err_msg.startswith("Row 2: The spacing in the row ")
 
     # file name time
     filepath = join(TEST_DATA_PATH, 'wrong_80001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath)
+    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
     assert err_msg and err_msg == 'Row 20: the times are not coherent with the filename'
 
     # latitude changes
     filepath = join(TEST_DATA_PATH, 'wrong_90001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath)
+    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
     assert err_msg and err_msg == 'Row 3: the latitude changes'
 
     # time sorting
     filepath = join(TEST_DATA_PATH, 'wrong_10001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath)
+    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
     assert err_msg and err_msg == 'Row 4: it is not strictly after the previous'
 
     # duplication of same row does not raise
     filepath = join(TEST_DATA_PATH, 'loc01_80001_201301010000_201401010100.dat')
-    assert not arpa19.validate_arpa19(filepath)
+    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
 
     # duplication of different rows raise
     filepath = join(TEST_DATA_PATH, 'wrong_11001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath)
+    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
     assert err_msg and err_msg == 'Row 4: duplication of rows with different data'
 
 

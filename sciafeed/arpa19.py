@@ -224,12 +224,13 @@ def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=F
     return ret_value
 
 
-def validate_arpa19(filepath, strict=False):
+def validate_arpa19(filepath, strict=False, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpa19 file and check it. Return an error string if an error is found.
 
     :param filepath: path to the arpa19 file
     :param strict: if True, check also the length of the spaces in the row (default False)
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: the string describing the error
     """
     filename = basename(filepath)
@@ -238,7 +239,7 @@ def validate_arpa19(filepath, strict=False):
     if err_msg:
         return err_msg
     code, start, end = parse_filename(filename)
-    parameters_map = load_parameter_file()
+    parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_lat = None
         last_row_date = None

@@ -135,7 +135,7 @@ def test_validate_row():
     # empty row no raises errors
     row = '\n'
     assert not arpa19.validate_row(row)
-    
+
     # too values
     row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \

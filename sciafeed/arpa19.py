@@ -103,12 +103,18 @@ def validate_filename(filename: str):
 def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER):
     """
     Parse a row of a arpa19 file, and return the parsed data as a tuple of kind:
+    ::
+
       (datetime object, latitude, prop_dict)
-      where prop_dict is:
+
+    where prop_dict is:
+    ::
+
         { ....
           param_i_code: (param_i_value, flag),
           ...
         }
+
     The function assumes the row as validated. Flag is True (valid data) or False (not valid).
 
     :param row: a row of the arpa19 file
@@ -116,7 +122,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         position
     :param only_valid: parse only values flagged as valid (default: False)
     :param missing_value_marker: the string used as a marker for missing value
-    :return: dictionary with key=time obj, and value=dict of the parameters values
+    :return: (datetime object, latitude, prop_dict)
     """
     tokens = row.split()
     assert len(tokens) == 40

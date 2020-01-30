@@ -242,6 +242,7 @@ def validate_arpa19(filepath, strict=False):
     with open(filepath) as fp:
         last_lat = None
         last_row_date = None
+        last_row = None
         for i, row in enumerate(fp, 1):
             if not row.strip():
                 continue
@@ -258,6 +259,11 @@ def validate_arpa19(filepath, strict=False):
             if last_row_date and last_row_date > current_row_date:
                 err_msg = "Row %i: it is not strictly after the previous" % i
                 return err_msg
+            if last_row and last_row_date and last_row_date == current_row_date and \
+                    row != last_row:
+                err_msg = "Row %i: duplication of rows with different data" % i
+                return err_msg
             last_lat = current_lat
             last_row_date = current_row_date
+            last_row = row
     return err_msg

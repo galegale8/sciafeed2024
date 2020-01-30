@@ -213,6 +213,15 @@ def test_validate_arpa19(tmpdir):
     err_msg = arpa19.validate_arpa19(filepath)
     assert err_msg and err_msg == 'Row 4: it is not strictly after the previous'
 
+    # duplication of same row does not raise
+    filepath = join(TEST_DATA_PATH, 'loc01_80001_201301010000_201401010100.dat')
+    assert not arpa19.validate_arpa19(filepath)
+
+    # duplication of different rows raise
+    filepath = join(TEST_DATA_PATH, 'wrong_11001_201301010000_201401010100.dat')
+    err_msg = arpa19.validate_arpa19(filepath)
+    assert err_msg and err_msg == 'Row 4: duplication of rows with different data'
+
 
 def test_parse_arpa19():
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')

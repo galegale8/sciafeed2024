@@ -912,3 +912,57 @@ def test_row_internal_consistence_check():
         row, parameters_map, limiting_params)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
+
+
+def test_do_weak_climatologic_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+
+    # right file
+    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert not err_msgs
+    assert parsed_after_check == parsed
+
+    # with errors
+    filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
+    parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert err_msgs == [
+        "Row 1: The value of '1' is out of range [0.0, 1020.0]",
+        "Row 2: The value of '2' is out of range [0.0, 360.0]",
+        "Row 3: The value of '3' is out of range [-350.0, 450.0]"
+    ]
+    assert parsed_after_check[:2] == parsed[:2]
+    assert parsed_after_check[2][datetime(2013, 1, 1, 0, 0)]['1'] == (2000.0, False)
+    assert parsed_after_check[2][datetime(2013, 1, 1, 1, 0)]['2'] == (361.0, False)
+    assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)
+
+
+def test_do_internal_consistence_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    # TODO
+    # limiting_params = {'1': ('2', '3')}
+    #
+    # # right file
+    # filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    # parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    # err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+    #     filepath, parameters_filepath, limiting_params)
+    # assert not err_msgs
+    # assert parsed_after_check == parsed
+    #
+    # # with errors
+    # filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
+    # parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    # err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+    #     filepath, parameters_filepath, limiting_params)
+    # assert err_msgs == [
+    #     "Row 1: The value of '1' is out of range [0.0, 1020.0]",
+    #     "Row 2: The value of '2' is out of range [0.0, 360.0]",
+    #     "Row 3: The value of '3' is out of range [-350.0, 450.0]"
+    # ]
+    # assert parsed_after_check[:2] == parsed[:2]
+    # assert parsed_after_check[2][datetime(2013, 1, 1, 0, 0)]['1'] == (2000.0, False)
+    # assert parsed_after_check[2][datetime(2013, 1, 1, 1, 0)]['2'] == (361.0, False)
+    # assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)

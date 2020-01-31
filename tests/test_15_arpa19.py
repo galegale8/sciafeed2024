@@ -125,107 +125,88 @@ def test_parse_row():
     assert effective == expected
 
 
-def test_validate_row():
+def test_validate_row_format():
     # right row
     row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    assert not arpa19.validate_row(row)
+    assert not arpa19.validate_row_format(row)
 
     # empty row no raises errors
     row = '\n'
-    assert not arpa19.validate_row(row)
+    assert not arpa19.validate_row_format(row)
 
     # too values
     row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2    123"
-    assert arpa19.validate_row(row) == "The number of components in the row %r is wrong" % row
+    assert arpa19.validate_row_format(row) == "The number of components in the row %r is wrong" \
+        % row
 
     # wrong date
     row = "2001010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    assert arpa19.validate_row(row) == "The date format in the row %r is wrong" % row
+    assert arpa19.validate_row_format(row) == "The date format in the row %r is wrong" % row
 
     # wrong values
     row = "201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767     A1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    assert arpa19.validate_row(row) == 'The row %r contains not numeric values' % row
+    assert arpa19.validate_row_format(row) == 'The row %r contains not numeric values' % row
 
-    # soft/hard check on spaces
+    # check on spacing
     row = "201301010000 43.876999   9 355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767 10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1   1      2      2      2      2      2      1" \
           "      2      2      1  2      2      2      2      2      2      2"
-    assert not arpa19.validate_row(row)
-    assert arpa19.validate_row(row, strict=True) == 'The spacing in the row %r is wrong' % row
+    assert arpa19.validate_row_format(row) == 'The spacing in the row %r is wrong' % row
 
     row = " 201301010000 43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    assert not arpa19.validate_row(row)
-    assert arpa19.validate_row(row, strict=True) == 'The date length in the row %r is wrong' % row
+    assert arpa19.validate_row_format(row) == 'The date length in the row %r is wrong' % row
 
     row = "201301010000  43.876999      9    355     68  32767  32767  32767  32767  32767" \
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    assert not arpa19.validate_row(row)
-    assert arpa19.validate_row(row, strict=True) == \
-        'The latitude length in the row %r is wrong' % row
+    assert arpa19.validate_row_format(row) == 'The latitude length in the row %r is wrong' % row
 
 
-def test_validate_arpa19(tmpdir):
+def test_validate_format(tmpdir):
     # right file
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
-    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
+    assert not arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
 
     # wrong file name
-    filepath = str(tmpdir.mkdir("sub").join('loc01_70001_201301010000_201401010100.xls'))
-    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg == 'Extension expected must be .dat, found .xls'
+    filepath = str(tmpdir.join('loc01_70001_201301010000_201401010100.xls'))
+    err_msgs = arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
+    assert err_msgs and err_msgs == ['Extension expected must be .dat, found .xls']
 
-    # strict validation on wrong spacing
+    # compilation of errors on rows
     filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
-    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    err_msg = arpa19.validate_arpa19(filepath, strict=True,
-                                     parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg.startswith("Row 2: The spacing in the row ")
-
-    # file name time
-    filepath = join(TEST_DATA_PATH, 'wrong_80001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg == 'Row 20: the times are not coherent with the filename'
-
-    # latitude changes
-    filepath = join(TEST_DATA_PATH, 'wrong_90001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg == 'Row 3: the latitude changes'
-
-    # time sorting
-    filepath = join(TEST_DATA_PATH, 'wrong_10001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg == 'Row 4: it is not strictly after the previous'
-
-    # duplication of same row does not raise
-    filepath = join(TEST_DATA_PATH, 'loc01_80001_201301010000_201401010100.dat')
-    assert not arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-
-    # duplication of different rows raise
-    filepath = join(TEST_DATA_PATH, 'wrong_11001_201301010000_201401010100.dat')
-    err_msg = arpa19.validate_arpa19(filepath, parameters_filepath=parameters_filepath)
-    assert err_msg and err_msg == 'Row 4: duplication of rows with different data'
+    err_msgs = arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
+    assert err_msgs == [
+        "Row 2: The spacing in the row '201301010100 43.876999    6    310     65  "
+        '32767  32767  32767  32767  32767     86  32767  32767  10198  32767  32767  '
+        '32767  32767  32767  32767  32767      1      1      1      2      2      '
+        '2      2      2      1      2      2      1      2      2      2      2      '
+        "2      2      2\\n' is wrong",
+        'Row 3: the latitude changes',
+        'Row 5: it is not strictly after the previous',
+        'Row 21: duplication of rows with different data',
+        'Row 22: the time is not coherent with the filename',
+    ]
 
 
-def test_parse_arpa19():
+def test_parse():
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
     station = '70001'
@@ -652,11 +633,10 @@ def test_parse_arpa19():
             '9': (100.0, True)
         }
     }
-    effective = arpa19.parse_arpa19(filepath,parameters_filepath=parameters_filepath)
+    effective = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     assert effective == (station, latitude, expected_data)
 
-    effective = arpa19.parse_arpa19(filepath, parameters_filepath=parameters_filepath,
-                                    only_valid=True)
+    effective = arpa19.parse(filepath, parameters_filepath=parameters_filepath, only_valid=True)
     expected_data_valid = {
         datetime(2013, 1, 1, 0, 0): {
             '1': (9.0, True),

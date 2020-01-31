@@ -115,7 +115,8 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
           ...
         }
 
-    The function assumes the row as validated. Flag is True (valid data) or False (not valid).
+    The function assumes the row as validated (see function `validate_row_format`).
+    Flag is True (valid data) or False (not valid).
 
     :param row: a row of the arpa19 file
     :param parameters_map: dictionary of information about stored parameters at each position
@@ -124,7 +125,6 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     :return: (datetime object, latitude, prop_dict)
     """
     tokens = row.split()
-    assert len(tokens) == 40
     date_str = tokens[0]
     date_obj = datetime.strptime(date_str, '%Y%m%d%H%M')
     ret_value1 = date_obj
@@ -146,14 +146,13 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     return ret_value
 
 
-def validate_row(row, strict=False):
+def validate_row_format(row):
     """
-    It checks a row of an arpa19 file for validation and returns the description
-    string of the error (if found).
-    This validation is needed to be able to parse the row with the function `parse_row`.
+    It checks a row of an arpa19 file for validation against the format,
+    and returns the description of the error (if found).
+    This validation is needed to be able to parse the row by the function `parse_row`.
 
     :param row: the arpa19 file row to validate
-    :param strict: if True, check also the length of the spaces in the row (default False)
     :return: the string describing the error
     """
     err_msg = ''
@@ -175,23 +174,23 @@ def validate_row(row, strict=False):
             err_msg = "The row %r contains not numeric values" % row
             return err_msg
 
-    if strict:
-        if row[:12] != tokens[0]:
-            err_msg = "The date length in the row %r is wrong" % row
+    # characters spacing
+    if row[:12] != tokens[0]:
+        err_msg = "The date length in the row %r is wrong" % row
+        return err_msg
+    if row[13:22] != tokens[1]:
+        err_msg = "The latitude length in the row %r is wrong" % row
+        return err_msg
+    par_row = row[22:].rstrip('\n')
+    for token_index, i in enumerate(range(0, len(par_row), 7)):
+        if par_row[i:i+7].lstrip() != tokens[token_index+2]:
+            err_msg = "The spacing in the row %r is wrong" % row
             return err_msg
-        if row[13:22] != tokens[1]:
-            err_msg = "The latitude length in the row %r is wrong" % row
-            return err_msg
-        par_row = row[22:].rstrip('\n')
-        for token_index, i in enumerate(range(0, len(par_row), 7)):
-            if par_row[i:i+7].lstrip() != tokens[token_index+2]:
-                err_msg = "The spacing in the row %r is wrong" % row
-                return err_msg
     return err_msg
 
 
-def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
-                 missing_value_marker=MISSING_VALUE_MARKER):
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
+          missing_value_marker=MISSING_VALUE_MARKER):
     """
     Read an arpa19 file located at `filepath` and returns the data stored inside. Value
     returned is a tuple (station_code, station_latitude, data) where data is a dictionary of type:
@@ -201,7 +200,8 @@ def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=F
             timeB: { par1_name: (par1_value,flag), ....},
             ...
         }
-        
+    
+    The function assumes the file as validated (see function `validate_format`).
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param only_valid: parse only values flagged as valid (default: False)
@@ -223,21 +223,22 @@ def parse_arpa19(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=F
     return ret_value
 
 
-def validate_arpa19(filepath, strict=False, parameters_filepath=PARAMETERS_FILEPATH):
+def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Open an arpa19 file and check it. Return an error string if an error is found.
-    This validation is needed to be able to parse the file with the function `parse_arpa19`.
+    Open an arpa19 file and validate each row against the format.
+    Return the list of error strings.
+    This validation is needed to be able to parse the file with the function `parse`.
 
     :param filepath: path to the arpa19 file
-    :param strict: if True, check also the length of the spaces in the row (default False)
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: the string describing the error
+    :return: the list of strings describing the errors found
     """
     filename = basename(filepath)
     err_msg = validate_filename(filename)
-
     if err_msg:
-        return err_msg
+        return [err_msg]
+
+    found_errors = []
     code, start, end = parse_filename(filename)
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
@@ -247,34 +248,40 @@ def validate_arpa19(filepath, strict=False, parameters_filepath=PARAMETERS_FILEP
         for i, row in enumerate(fp, 1):
             if not row.strip():
                 continue
-            err_msg = validate_row(row, strict=strict)
+            err_msg = validate_row_format(row)
             if err_msg:
-                return "Row %i: " % i + err_msg
+                found_errors.append("Row %i: " % i + err_msg)
+                continue
             current_row_date, current_lat, props = parse_row(row, parameters_map)
             if not start <= current_row_date <= end:
-                err_msg = "Row %i: the times are not coherent with the filename" % i
-                return err_msg
+                err_msg = "Row %i: the time is not coherent with the filename" % i
+                found_errors.append(err_msg)
+                continue
             if last_lat and last_lat != current_lat:
                 err_msg = "Row %i: the latitude changes" % i
-                return err_msg
+                found_errors.append(err_msg)
+                continue
             if last_row_date and last_row_date > current_row_date:
                 err_msg = "Row %i: it is not strictly after the previous" % i
-                return err_msg
+                found_errors.append(err_msg)
+                continue
             if last_row and last_row_date and last_row_date == current_row_date and \
                     row != last_row:
                 err_msg = "Row %i: duplication of rows with different data" % i
-                return err_msg
+                found_errors.append(err_msg)
+                continue
             last_lat = current_lat
             last_row_date = current_row_date
             last_row = row
-    return err_msg
+    return found_errors
 
 
-def do_weak_climatologic_check(row, parameters_map, parameters_thresholds=None):
+def row_weak_climatologic_check(row, parameters_map, parameters_thresholds=None):
     """
     Get the weak climatologic check for a row of a arpa19 file.
-    It assumes that the row is parsable. Return the list of error
-    messages, and the data parsed (eventually partially flagged as invalid).
+    It assumes that the row is validated against the format (see `validate_row_format`).
+    Return the list of error messages, and the data parsed (eventually partially flagged
+    as invalid).
     `parameters_thresholds` is a dict {code: (min, max), ...}.
 
     :param row: the row of a arpa19 file
@@ -303,7 +310,7 @@ def do_weak_climatologic_check(row, parameters_map, parameters_thresholds=None):
     return err_msgs, (row_date, lat, ret_props)
 
 
-def do_internal_coherence_check(row, parameters_map, limiting_params=None):
+def row_internal_coherence_check(row, parameters_map, limiting_params=None):
     """
     Get the internal coherence check for a row of a arpa19 file.
     It assumes that the row is parsable. Return the list of error

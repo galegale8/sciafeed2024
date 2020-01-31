@@ -8,6 +8,36 @@ from sciafeed import arpa19
 from . import TEST_DATA_PATH
 
 
+def test_load_parameter_file():
+    test_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameter_map = arpa19.load_parameter_file(test_filepath)
+    for i in range(1, 20):
+        assert i in parameter_map
+        assert 'par_code' in parameter_map[i]
+        assert 'description' in parameter_map[i]
+
+
+def test_load_parameter_thresholds():
+    test_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    expected_thresholds = {
+        '1': [0.0, 1020.0],
+        '10': [20.0, 100.0],
+        '11': [20.0, 100.0],
+        '13': [9600.0, 10600.0],
+        '16': [0.0, 100.0],
+        '17': [0.0, 60.0],
+        '18': [0.0, 9890.0],
+        '19': [0.0, 60.0],
+        '2': [0.0, 360.0],
+        '3': [-350.0, 450.0],
+        '4': [-400.0, 400.0],
+        '5': [-300.0, 500.0],
+        '9': [20.0, 100.0]
+    }
+    parameter_thresholds = arpa19.load_parameter_thresholds(test_filepath)
+    assert parameter_thresholds == expected_thresholds
+
+
 def test_parse_filename():
     # simple case
     filename = 'loc01_00003_200101010100_200401010100.dat'
@@ -69,15 +99,6 @@ def test_validate_filename():
         err_msg = arpa19.validate_filename(wrong_filename)
         assert err_msg
         assert exp_error == err_msg
-
-
-def test_load_parameter_file():
-    test_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
-    parameter_map = arpa19.load_parameter_file(test_filepath)
-    for i in range(1, 20):
-        assert i in parameter_map
-        assert 'par_code' in parameter_map[i]
-        assert 'description' in parameter_map[i]
 
 
 def test_parse_row():
@@ -780,3 +801,114 @@ def test_parse():
         }
     }
     assert effective == (station, latitude, expected_data_valid)
+
+
+def test_row_weak_climatologic_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_map = arpa19.load_parameter_file(parameters_filepath)
+    parameters_thresholds = arpa19.load_parameter_thresholds(parameters_filepath)
+
+    # right row
+    row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      1      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
+        row, parameters_map, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # two errors
+    assert parameters_thresholds['1'] == [0, 1020]
+    assert parameters_thresholds['9'] == [20, 100]
+    row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
+          "    101  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      1      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
+        row, parameters_map, parameters_thresholds)
+    assert err_msgs == ["The value of '1' is out of range [0.0, 1020.0]",
+                        "The value of '9' is out of range [20.0, 100.0]"]
+    assert parsed_row_updated[:2] == row_parsed[:2]
+    assert parsed_row_updated[2]['1'] == (1021.0, False)
+    parsed_row_updated[2]['1'] = (1021.0, True)
+    parsed_row_updated[2]['9'] = (101.0, True)
+    assert parsed_row_updated == row_parsed
+
+    # no check if the value is already invalid
+    row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      2      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
+        row, parameters_map, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # no check if thresholds are not defined
+    assert '12' not in parameters_thresholds
+    row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  99999  32767  32767  32767  32767  32767  32767  32767" \
+          "      2      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
+        row, parameters_map, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+
+def test_row_internal_consistence_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_map = arpa19.load_parameter_file(parameters_filepath)
+    limiting_params = {'1': ('2', '3')}
+
+    # right row
+    row = "201301010600 43.876999     31      6     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10181  32767  32767  32767  32767  32767  32767  32767" \
+          "      1      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
+        row, parameters_map, limiting_params)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # wrong value
+    row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      1      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
+        row, parameters_map, limiting_params)
+    assert err_msgs == ["The values of '1', '2' and '3' are not consistent"]
+    assert parsed_row_updated[:2] == row_parsed[:2]
+    assert parsed_row_updated[2]['1'] == (20.0, False)
+    parsed_row_updated[2]['1'] = (20.0, True)
+    assert parsed_row_updated == row_parsed
+
+    # no check if the value is invalid
+    row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      2      1      1      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
+        row, parameters_map, limiting_params)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # no check if one of the thresholds is invalid
+    row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
+          "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
+          "      1      1      2      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2"
+    row_parsed = arpa19.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
+        row, parameters_map, limiting_params)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed

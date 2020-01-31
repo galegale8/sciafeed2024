@@ -27,14 +27,39 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     :return: dictionary of positions with parameters information
     """
     csv_file = open(parameters_filepath, 'r')
-    csv_reader = csv.DictReader(
-        csv_file, delimiter=delimiter)
+    csv_reader = csv.DictReader(csv_file, delimiter=delimiter)
     ret_value = dict()
     for row in csv_reader:
         position = int(row['position'])
         ret_value[position] = dict()
         for prop in row.keys():
             ret_value[position][prop] = row[prop].strip()
+    return ret_value
+
+
+def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
+    """
+    Load a CSV file containing thresholds of the arpa19 stored parameters.
+    Return a dictionary of type:
+    ::
+
+        {   param_code: [min_value, max_value]
+        }
+
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param delimiter: CSV delimiter
+    :return: dictionary of parameters with their ranges
+    """
+    csv_file = open(parameters_filepath, 'r')
+    csv_reader = csv.DictReader(csv_file, delimiter=delimiter)
+    ret_value = dict()
+    for row in csv_reader:
+        par_code = row['par_code']
+        try:
+            min_threshold, max_threshold = map(float, [row['min'], row['max']])
+            ret_value[par_code] = [min_threshold, max_threshold]
+        except (KeyError, TypeError, ValueError):
+            continue
     return ret_value
 
 
@@ -278,10 +303,10 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 
 def row_weak_climatologic_check(row, parameters_map, parameters_thresholds=None):
     """
-    Get the weak climatologic check for a row of a arpa19 file.
+    Get the weak climatologic check for a row of an arpa19 file, i.e. it flags
+    as invalid a value is out of a defined range.
     It assumes that the row is validated against the format (see `validate_row_format`).
-    Return the list of error messages, and the data parsed (eventually partially flagged
-    as invalid).
+    Return the list of error messages, and the resulting data with flags updated.
     `parameters_thresholds` is a dict {code: (min, max), ...}.
 
     :param row: the row of a arpa19 file
@@ -296,23 +321,19 @@ def row_weak_climatologic_check(row, parameters_map, parameters_thresholds=None)
         if par_code not in parameters_thresholds or not par_flag:
             # no check if limiting parameters are flagged invalid
             continue
-        min_threshold, max_threshold = parameters_thresholds[par_code]
-        try:
-            min_threshold, max_threshold = map(float, [min_threshold, max_threshold])
-        except:
-            # no check if the thresholds are not set
-            continue
+        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
         if not (min_threshold <= par_value <= max_threshold):
             ret_props[par_code] = (par_value, False)
-            err_msg = "The value of %r in row %r is out of range [%s, %s]" \
-                      % (par_code, row, min_threshold, max_threshold)
+            err_msg = "The value of %r is out of range [%s, %s]" \
+                      % (par_code, min_threshold, max_threshold)
             err_msgs.append(err_msg)
-    return err_msgs, (row_date, lat, ret_props)
+    parsed_row_updated = (row_date, lat, ret_props)
+    return err_msgs, parsed_row_updated
 
 
-def row_internal_coherence_check(row, parameters_map, limiting_params=None):
+def row_internal_consistence_check(row, parameters_map, limiting_params=None):
     """
-    Get the internal coherence check for a row of a arpa19 file.
+    Get the internal consistent check for a row of a arpa19 file.
     It assumes that the row is parsable. Return the list of error
     messages, and the data parsed (eventually partially flagged as invalid).
     `limiting_params` is a dict {code: (code_min, code_max), ...}.
@@ -335,15 +356,11 @@ def row_internal_coherence_check(row, parameters_map, limiting_params=None):
         if not par_code_min_flag or not par_code_max_flag:
             # no check if limiting parameters are flagged invalid
             continue
-        try:
-            par_code_min_value, par_code_max_value = map(
+        par_code_min_value, par_code_max_value = map(
                 float, [par_code_min_value, par_code_max_value])
-        except:
-            continue
-
         if not (par_code_min_value <= par_value <= par_code_max_value):
             ret_props[par_code] = (par_value, False)
-            err_msg = "The value of %r in row %r is out of incoherent with range [%s, %s]" \
-                      % (par_code, row, par_code_min_value, par_code_max_value)
+            err_msg = "The values of %r, %r and %r are not consistent" \
+                      % (par_code, par_code_min, par_code_max)
             err_msgs.append(err_msg)
     return err_msgs, (row_date, lat, ret_props)

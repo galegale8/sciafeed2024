@@ -190,31 +190,31 @@ def validate_row_format(row):
         return err_msg
     tokens = row.split()
     if len(tokens) != 40:
-        err_msg = "The number of components in the row %r is wrong" % row
+        err_msg = "The number of components in the row is wrong"
         return err_msg
     try:
         datetime.strptime(tokens[0], '%Y%m%d%H%M')
     except ValueError:
-        err_msg = "The date format in the row %r is wrong" % row
+        err_msg = "The date format in the row is wrong"
         return err_msg
     for value in tokens[1:]:
         try:
             float(value)
         except (ValueError, TypeError):
-            err_msg = "The row %r contains not numeric values" % row
+            err_msg = "The row contains not numeric values"
             return err_msg
 
     # characters spacing
     if row[:12] != tokens[0]:
-        err_msg = "The date length in the row %r is wrong" % row
+        err_msg = "The date length in the row is wrong"
         return err_msg
     if row[13:22] != tokens[1]:
-        err_msg = "The latitude length in the row %r is wrong" % row
+        err_msg = "The latitude length in the row is wrong"
         return err_msg
     par_row = row[22:].rstrip('\n')
     for token_index, i in enumerate(range(0, len(par_row), 7)):
         if par_row[i:i+7].lstrip() != tokens[token_index+2]:
-            err_msg = "The spacing in the row %r is wrong" % row
+            err_msg = "The spacing in the row is wrong"
             return err_msg
     return err_msg
 
@@ -471,3 +471,100 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
     ret_value = err_msgs, (code, lat, data)
     return ret_value
 
+
+def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
+                    limiting_params=LIMITING_PARAMETERS):
+    """
+    Read an ARPA19 file located at `filepath`, and parse data inside it, doing
+     - weak climatologic check
+     - internal consistence check
+    Return the err_msgs and the parsed data.
+
+    :param filepath: path to the arpa19 file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (err_msgs, data_parsed)
+    """
+    code, _, _ = parse_filename(basename(filepath))
+    par_map = load_parameter_file(parameters_filepath)
+    par_thresholds = load_parameter_thresholds(parameters_filepath)
+    err_msgs = []
+    data = dict()
+    with open(filepath) as fp:
+        for i, row in enumerate(fp, 1):
+            if not row.strip():
+                continue
+            parsed_row = parse_row(row, par_map)
+            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
+            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+            row_date, lat, props = parsed_row
+            data[row_date] = props
+            err_msgs.extend(['Row %s: %s' % (i, err_msg1_row) for err_msg1_row in err_msgs1_row])
+            err_msgs.extend(['Row %s: %s' % (i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+    ret_value = err_msgs, (code, lat, data)
+    return ret_value
+
+
+def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
+                parameters_filepath=PARAMETERS_FILEPATH, limiting_params=LIMITING_PARAMETERS):
+    """
+    Read an ARPA19 file located at `in_filepath` and generate a report on the parsing.
+    If `out_filepath` is defined, the report string is written on a file.
+    If the path `outdata_filepath` is defined, a file with the data parsed is created at the path.
+    Return the list of report strings and the data parsed.
+
+    :param in_filepath: ARPA19 input file
+    :param out_filepath: path of the output report
+    :param outdata_filepath: path of the output file containing data
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (report_strings, data_parsed)
+    """
+    msgs = []
+    msg = "START OF ANALYSIS OF ARPA19 FILE %r" % in_filepath
+    msgs.append(msg)
+    msgs.append('='*len(msg))
+
+    msgs.append('\n')
+    msg = "- checking against ARPA19 format schema -"
+    msgs.append(msg)
+    formatting_error_msgs = validate_format(in_filepath, parameters_filepath=parameters_filepath)
+    if not formatting_error_msgs:
+        msg = "No formatting errors found"
+        msgs.append(msg)
+    else:
+        for formatting_error_msg in formatting_error_msgs:
+            msgs.append(formatting_error_msg)
+
+    msgs.append('\n')
+    msg = "- weak climatologic and internal consistence checks -"
+    msgs.append(msg)
+    err_msgs, data_parsed = parse_and_check(
+        in_filepath, parameters_filepath=parameters_filepath, limiting_params=limiting_params)
+    if not err_msgs:
+        msg = "No errors found on weak climatologic and internal consistence checks"
+        msgs.append(msg)
+    else:
+        for err_msg in err_msgs:
+            msgs.append(err_msg)
+
+    if outdata_filepath:
+        msgs.append('\n')
+        write_data(data_parsed, outdata_filepath)
+        msg = "Data written on file %r" % outdata_filepath
+        msgs.append(msg)
+
+    msgs.append('\n')
+    msg = "END OF ANALYSIS OF ARPA19 FILE %r" % in_filepath
+    msgs.append(msg)
+    msgs.append('='*len(msg))
+
+    if out_filepath:
+        with open(out_filepath, 'w') as fp:
+            for msg in msgs:
+                if msg == '\n':
+                    fp.write(msg)
+                else:
+                    fp.write(msg + '\n')
+
+    return msgs, data_parsed

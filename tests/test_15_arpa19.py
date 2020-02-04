@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from os.path import join
+from os.path import join, exists
 
 import pytest
 
@@ -803,6 +803,101 @@ def test_parse():
     assert effective == (station, latitude, expected_data_valid)
 
 
+def test_write_data(tmpdir):
+    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    data = arpa19.parse(filepath)
+    out_filepath = str(tmpdir.join('datafile.csv'))
+    expected_rows = [
+        'station;latitude;date;parameter;value;valid\n',
+        '70001;43.876999;2013-01-01T00:00:00;FF;9.0;1\n',
+        '70001;43.876999;2013-01-01T00:00:00;DD;355.0;1\n',
+        '70001;43.876999;2013-01-01T00:00:00;Tmedia;68.0;1\n',
+        '70001;43.876999;2013-01-01T00:00:00;UR media;83.0;1\n',
+        '70001;43.876999;2013-01-01T01:00:00;FF;6.0;1\n',
+        '70001;43.876999;2013-01-01T01:00:00;DD;310.0;1\n',
+        '70001;43.876999;2013-01-01T01:00:00;Tmedia;65.0;1\n',
+        '70001;43.876999;2013-01-01T01:00:00;UR media;86.0;1\n',
+        '70001;43.876999;2013-01-01T02:00:00;FF;3.0;1\n',
+        '70001;43.876999;2013-01-01T02:00:00;DD;288.0;1\n',
+        '70001;43.876999;2013-01-01T02:00:00;Tmedia;63.0;1\n',
+        '70001;43.876999;2013-01-01T02:00:00;UR media;86.0;1\n',
+        '70001;43.876999;2013-01-01T03:00:00;FF;11.0;1\n',
+        '70001;43.876999;2013-01-01T03:00:00;DD;357.0;1\n',
+        '70001;43.876999;2013-01-01T03:00:00;Tmedia;63.0;1\n',
+        '70001;43.876999;2013-01-01T03:00:00;UR media;87.0;1\n',
+        '70001;43.876999;2013-01-01T04:00:00;FF;9.0;1\n',
+        '70001;43.876999;2013-01-01T04:00:00;DD;1.0;1\n',
+        '70001;43.876999;2013-01-01T04:00:00;Tmedia;64.0;1\n',
+        '70001;43.876999;2013-01-01T04:00:00;UR media;88.0;1\n',
+        '70001;43.876999;2013-01-01T05:00:00;FF;30.0;1\n',
+        '70001;43.876999;2013-01-01T05:00:00;DD;6.0;1\n',
+        '70001;43.876999;2013-01-01T05:00:00;Tmedia;67.0;1\n',
+        '70001;43.876999;2013-01-01T05:00:00;UR media;89.0;1\n',
+        '70001;43.876999;2013-01-01T06:00:00;FF;31.0;1\n',
+        '70001;43.876999;2013-01-01T06:00:00;DD;6.0;1\n',
+        '70001;43.876999;2013-01-01T06:00:00;Tmedia;65.0;1\n',
+        '70001;43.876999;2013-01-01T06:00:00;UR media;93.0;1\n',
+        '70001;43.876999;2013-01-01T07:00:00;FF;20.0;1\n',
+        '70001;43.876999;2013-01-01T07:00:00;DD;358.0;1\n',
+        '70001;43.876999;2013-01-01T07:00:00;Tmedia;65.0;1\n',
+        '70001;43.876999;2013-01-01T07:00:00;UR media;93.0;1\n',
+        '70001;43.876999;2013-01-01T08:00:00;FF;5.0;1\n',
+        '70001;43.876999;2013-01-01T08:00:00;DD;342.0;1\n',
+        '70001;43.876999;2013-01-01T08:00:00;Tmedia;66.0;1\n',
+        '70001;43.876999;2013-01-01T08:00:00;UR media;95.0;1\n',
+        '70001;43.876999;2013-01-01T09:00:00;FF;35.0;1\n',
+        '70001;43.876999;2013-01-01T09:00:00;DD;12.0;1\n',
+        '70001;43.876999;2013-01-01T09:00:00;Tmedia;106.0;1\n',
+        '70001;43.876999;2013-01-01T09:00:00;UR media;88.0;1\n',
+        '70001;43.876999;2013-01-01T10:00:00;FF;13.0;1\n',
+        '70001;43.876999;2013-01-01T10:00:00;DD;154.0;1\n',
+        '70001;43.876999;2013-01-01T10:00:00;Tmedia;121.0;1\n',
+        '70001;43.876999;2013-01-01T10:00:00;UR media;72.0;1\n',
+        '70001;43.876999;2013-01-01T11:00:00;FF;54.0;1\n',
+        '70001;43.876999;2013-01-01T11:00:00;DD;218.0;1\n',
+        '70001;43.876999;2013-01-01T11:00:00;Tmedia;123.0;1\n',
+        '70001;43.876999;2013-01-01T11:00:00;UR media;69.0;1\n',
+        '70001;43.876999;2013-01-01T12:00:00;FF;61.0;1\n',
+        '70001;43.876999;2013-01-01T12:00:00;DD;225.0;1\n',
+        '70001;43.876999;2013-01-01T12:00:00;Tmedia;125.0;1\n',
+        '70001;43.876999;2013-01-01T12:00:00;UR media;73.0;1\n',
+        '70001;43.876999;2013-01-01T13:00:00;FF;65.0;1\n',
+        '70001;43.876999;2013-01-01T13:00:00;DD;226.0;1\n',
+        '70001;43.876999;2013-01-01T13:00:00;Tmedia;122.0;1\n',
+        '70001;43.876999;2013-01-01T13:00:00;UR media;74.0;1\n',
+        '70001;43.876999;2013-01-01T14:00:00;FF;46.0;1\n',
+        '70001;43.876999;2013-01-01T14:00:00;DD;221.0;1\n',
+        '70001;43.876999;2013-01-01T14:00:00;Tmedia;117.0;1\n',
+        '70001;43.876999;2013-01-01T14:00:00;UR media;78.0;1\n',
+        '70001;43.876999;2013-01-01T15:00:00;FF;19.0;1\n',
+        '70001;43.876999;2013-01-01T15:00:00;DD;233.0;1\n',
+        '70001;43.876999;2013-01-01T15:00:00;Tmedia;110.0;1\n',
+        '70001;43.876999;2013-01-01T15:00:00;UR media;82.0;1\n',
+        '70001;43.876999;2013-01-01T16:00:00;FF;28.0;1\n',
+        '70001;43.876999;2013-01-01T16:00:00;DD;355.0;1\n',
+        '70001;43.876999;2013-01-01T16:00:00;Tmedia;100.0;1\n',
+        '70001;43.876999;2013-01-01T16:00:00;UR media;96.0;1\n',
+        '70001;43.876999;2013-01-01T17:00:00;FF;24.0;1\n',
+        '70001;43.876999;2013-01-01T17:00:00;DD;345.0;1\n',
+        '70001;43.876999;2013-01-01T17:00:00;Tmedia;99.0;1\n',
+        '70001;43.876999;2013-01-01T17:00:00;UR media;96.0;1\n',
+        '70001;43.876999;2013-01-01T18:00:00;FF;26.0;1\n',
+        '70001;43.876999;2013-01-01T18:00:00;DD;357.0;1\n',
+        '70001;43.876999;2013-01-01T18:00:00;Tmedia;101.0;1\n',
+        '70001;43.876999;2013-01-01T18:00:00;UR media;97.0;1\n',
+        '70001;43.876999;2013-01-01T19:00:00;FF;26.0;1\n',
+        '70001;43.876999;2013-01-01T19:00:00;DD;2.0;1\n',
+        '70001;43.876999;2013-01-01T19:00:00;Tmedia;99.0;1\n',
+        '70001;43.876999;2013-01-01T19:00:00;UR media;100.0;1\n'
+    ]
+    assert not exists(out_filepath)
+    arpa19.write_data(data, out_filepath, omit_parameters=('6', '7', '8', '12'))
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert rows == expected_rows
+
+
 def test_row_weak_climatologic_check():
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
     parameters_map = arpa19.load_parameter_file(parameters_filepath)
@@ -815,7 +910,7 @@ def test_row_weak_climatologic_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
-        row, parameters_map, parameters_thresholds)
+        row_parsed, parameters_thresholds)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -828,7 +923,7 @@ def test_row_weak_climatologic_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
-        row, parameters_map, parameters_thresholds)
+        row_parsed, parameters_thresholds)
     assert err_msgs == ["The value of '1' is out of range [0.0, 1020.0]",
                         "The value of '9' is out of range [20.0, 100.0]"]
     assert parsed_row_updated[:2] == row_parsed[:2]
@@ -838,7 +933,7 @@ def test_row_weak_climatologic_check():
     assert parsed_row_updated == row_parsed
 
     # no check if no parameters_thresholds
-    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(row_parsed)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -849,7 +944,7 @@ def test_row_weak_climatologic_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
-        row, parameters_map, parameters_thresholds)
+        row_parsed, parameters_thresholds)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -861,7 +956,7 @@ def test_row_weak_climatologic_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(
-        row, parameters_map, parameters_thresholds)
+        row_parsed, parameters_thresholds)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -878,7 +973,7 @@ def test_row_internal_consistence_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
-        row, parameters_map, limiting_params)
+        row_parsed, limiting_params)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -889,7 +984,7 @@ def test_row_internal_consistence_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
-        row, parameters_map, limiting_params)
+        row_parsed, limiting_params)
     assert err_msgs == ["The values of '1', '2' and '3' are not consistent"]
     assert parsed_row_updated[:2] == row_parsed[:2]
     assert parsed_row_updated[2]['1'] == (20.0, False)
@@ -897,8 +992,7 @@ def test_row_internal_consistence_check():
     assert parsed_row_updated == row_parsed
 
     # no check if no limiting parameters
-    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
-        row, parameters_map)
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(row_parsed)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -909,7 +1003,7 @@ def test_row_internal_consistence_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
-        row, parameters_map, limiting_params)
+        row_parsed, limiting_params)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
@@ -920,7 +1014,7 @@ def test_row_internal_consistence_check():
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
-        row, parameters_map, limiting_params)
+        row_parsed, limiting_params)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 

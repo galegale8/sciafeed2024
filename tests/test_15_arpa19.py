@@ -837,6 +837,11 @@ def test_row_weak_climatologic_check():
     parsed_row_updated[2]['9'] = (101.0, True)
     assert parsed_row_updated == row_parsed
 
+    # no check if no parameters_thresholds
+    err_msgs, parsed_row_updated = arpa19.row_weak_climatologic_check(row, parameters_map)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
     # no check if the value is already invalid
     row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
           "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
@@ -891,6 +896,12 @@ def test_row_internal_consistence_check():
     parsed_row_updated[2]['1'] = (20.0, True)
     assert parsed_row_updated == row_parsed
 
+    # no check if no limiting parameters
+    err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
+        row, parameters_map)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
     # no check if the value is invalid
     row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
           "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
@@ -941,28 +952,35 @@ def test_do_weak_climatologic_check():
 
 def test_do_internal_consistence_check():
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
-    # TODO
-    # limiting_params = {'1': ('2', '3')}
-    #
-    # # right file
-    # filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
-    # parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
-    # err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
-    #     filepath, parameters_filepath, limiting_params)
-    # assert not err_msgs
-    # assert parsed_after_check == parsed
-    #
-    # # with errors
-    # filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
-    # parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
-    # err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
-    #     filepath, parameters_filepath, limiting_params)
-    # assert err_msgs == [
-    #     "Row 1: The value of '1' is out of range [0.0, 1020.0]",
-    #     "Row 2: The value of '2' is out of range [0.0, 360.0]",
-    #     "Row 3: The value of '3' is out of range [-350.0, 450.0]"
-    # ]
-    # assert parsed_after_check[:2] == parsed[:2]
-    # assert parsed_after_check[2][datetime(2013, 1, 1, 0, 0)]['1'] == (2000.0, False)
-    # assert parsed_after_check[2][datetime(2013, 1, 1, 1, 0)]['2'] == (361.0, False)
-    # assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)
+    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    limiting_params = None
+
+    # right file
+    limiting_params = {'3': ('4', '5')}
+    err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+        filepath, parameters_filepath, limiting_params)
+    assert not err_msgs
+    assert parsed_after_check == parsed
+
+    # with errors
+    limiting_params = {'3': ('1', '2')}
+    err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+        filepath, parameters_filepath, limiting_params)
+    assert err_msgs == [
+        "Row 5: The values of '3', '1' and '2' are not consistent",
+        "Row 6: The values of '3', '1' and '2' are not consistent",
+        "Row 7: The values of '3', '1' and '2' are not consistent",
+        "Row 10: The values of '3', '1' and '2' are not consistent",
+        "Row 20: The values of '3', '1' and '2' are not consistent"
+    ]
+    assert parsed_after_check[:2] == parsed[:2]
+    assert parsed_after_check[2][datetime(2013, 1, 1, 4, 0)]['3'] == (64.0, False)
+    assert parsed_after_check[2][datetime(2013, 1, 1, 5, 0)]['3'] == (67.0, False)
+    assert parsed_after_check[2][datetime(2013, 1, 1, 6, 0)]['3'] == (65.0, False)
+
+    # no limiting parameters: no check
+    err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+        filepath, parameters_filepath)
+    assert not err_msgs
+    assert parsed_after_check == parsed

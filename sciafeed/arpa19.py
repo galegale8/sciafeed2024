@@ -345,6 +345,8 @@ def row_internal_consistence_check(row, parameters_map, limiting_params=None):
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (err_msgs, data_parsed)
     """
+    if limiting_params is None:
+        limiting_params = dict()
     row_date, lat, props = parse_row(row, parameters_map)
     err_msgs = []
     ret_props = props.copy()
@@ -411,12 +413,14 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (err_msgs, data_parsed)
     """
+    if limiting_params is None:
+        limiting_params = dict()
     code, _, _ = parse_filename(basename(filepath))
     parameters_map = load_parameter_file(parameters_filepath)
     err_msgs = []
     data = dict()
     with open(filepath) as fp:
-        for i, row in enumerate(fp):
+        for i, row in enumerate(fp, 1):
             if not row.strip():
                 continue
             err_msgs_row, parsed_row = row_internal_consistence_check(

@@ -291,18 +291,17 @@ def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpa19 file and validate each row against the format.
-    Return the list of error strings.
-    This validation is needed to be able to parse the file with the function `parse`.
+    Return the list of tuples (row index, error message) of the errors found.
+    row_index=0 is used only for global formatting errors.
 
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: the list of strings describing the errors found
+    :return: [..., (row index, error message), ...]
     """
     filename = basename(filepath)
     err_msg = validate_filename(filename)
     if err_msg:
-        return [err_msg]
-
+        return [(0, err_msg)]
     found_errors = []
     code, start, end = parse_filename(filename)
     parameters_map = load_parameter_file(parameters_filepath)
@@ -315,25 +314,25 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
                 continue
             err_msg = validate_row_format(row)
             if err_msg:
-                found_errors.append("Row %i: " % i + err_msg)
+                found_errors.append((i, err_msg))
                 continue
             current_row_date, current_lat, props = parse_row(row, parameters_map)
             if not start <= current_row_date <= end:
-                err_msg = "Row %i: the time is not coherent with the filename" % i
-                found_errors.append(err_msg)
+                err_msg = "the time is not coherent with the filename"
+                found_errors.append((i, err_msg))
                 continue
             if last_lat and last_lat != current_lat:
-                err_msg = "Row %i: the latitude changes" % i
-                found_errors.append(err_msg)
+                err_msg = "the latitude changes"
+                found_errors.append((i, err_msg))
                 continue
             if last_row_date and last_row_date > current_row_date:
-                err_msg = "Row %i: it is not strictly after the previous" % i
-                found_errors.append(err_msg)
+                err_msg = "it is not strictly after the previous"
+                found_errors.append((i, err_msg))
                 continue
             if last_row and last_row_date and last_row_date == current_row_date and \
                     row != last_row:
-                err_msg = "Row %i: duplication of rows with different data" % i
-                found_errors.append(err_msg)
+                err_msg = "duplication of rows with different data"
+                found_errors.append((i, err_msg))
                 continue
             last_lat = current_lat
             last_row_date = current_row_date
@@ -412,14 +411,20 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     """
     Get the weak climatologic check for an arpa19 file, i.e. it flags
     as invalid a value is out of a defined range.
-    It assumes that the file is validated against the format (see `validate_format`).
-    Return the list of error messages, and the resulting data with flags updated.
+    Only rightly formatted rows are considered (see function `validate_format`).
+    Return the list of tuples (row index, error message), and the resulting data with flags
+    updated.
     `parameters_thresholds` is a dict {code: (min, max), ...}.
 
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: (err_msgs, data_parsed)
+    :return: ([..., (row index, err_msg), ...], data_parsed)
     """
+    fmt_errors = validate_format(filepath, parameters_filepath)
+    fmt_errors_dict = dict(fmt_errors)
+    if 0 in fmt_errors_dict:
+        # global formatting error: no parsing
+        return fmt_errors, None
     code, _, _ = parse_filename(basename(filepath))
     parameters_map = load_parameter_file(parameters_filepath)
     parameters_thresholds = load_parameter_thresholds(parameters_filepath)
@@ -427,13 +432,13 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     data = dict()
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
-            if not row.strip():
+            if not row.strip() or i in fmt_errors_dict:
                 continue
             parsed_row = parse_row(row, parameters_map=parameters_map)
             err_msgs_row, parsed_row = row_weak_climatologic_check(
                 parsed_row, parameters_thresholds)
             for err_msg_row in err_msgs_row:
-                err_msgs.append("Row %s: %s" % (i, err_msg_row))
+                err_msgs.append((i, err_msg_row))
             row_date, lat, props = parsed_row
             data[row_date] = props
     ret_value = err_msgs, (code, lat, data)
@@ -444,14 +449,20 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
                                   limiting_params=None):
     """
     Get the internal consistent check for an arpa19 file.
-    It assumes that the file is validated against the format (see `validate_format`).
-    Return the list of error messages, and the resulting data with flags updated.
+    Only rightly formatted rows are considered (see function `validate_format`).
+    Return the list of tuples (row index, error message), and the resulting data with flags
+    updated.
 
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
+    :return: ([..., (row index, err_msg), ...], data_parsed)
     """
+    fmt_errors = validate_format(filepath, parameters_filepath)
+    fmt_errors_dict = dict(fmt_errors)
+    if 0 in fmt_errors_dict:
+        # global formatting error: no parsing
+        return fmt_errors, None
     if limiting_params is None:
         limiting_params = dict()
     code, _, _ = parse_filename(basename(filepath))
@@ -460,12 +471,12 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
     data = dict()
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
-            if not row.strip():
+            if not row.strip() or i in fmt_errors_dict:
                 continue
             parsed_row = parse_row(row, parameters_map)
             err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
             for err_msg_row in err_msgs_row:
-                err_msgs.append("Row %s: %s" % (i, err_msg_row))
+                err_msgs.append((i, err_msg_row))
             row_date, lat, props = parsed_row
             data[row_date] = props
     ret_value = err_msgs, (code, lat, data)
@@ -476,31 +487,41 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                     limiting_params=LIMITING_PARAMETERS):
     """
     Read an ARPA19 file located at `filepath`, and parse data inside it, doing
-     - weak climatologic check
-     - internal consistence check
-    Return the err_msgs and the parsed data.
+    - format validation
+    - weak climatologic check
+    - internal consistence check
+    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
+    (row index, error message) of the errors found.
 
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (err_msgs, data_parsed)
     """
-    code, _, _ = parse_filename(basename(filepath))
+    filename = basename(filepath)
     par_map = load_parameter_file(parameters_filepath)
     par_thresholds = load_parameter_thresholds(parameters_filepath)
     err_msgs = []
     data = dict()
+    fmt_err_msgs = validate_format(filepath, parameters_filepath)
+    err_msgs.extend(fmt_err_msgs)
+    fmt_err_indexes_dict = dict(fmt_err_msgs)
+    if 0 in fmt_err_indexes_dict:
+        # global error, no parsing
+        return err_msgs, (None, None, data)
+
+    code, _, _ = parse_filename(filename)
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
-            if not row.strip():
+            if not row.strip() or i in fmt_err_indexes_dict:
                 continue
             parsed_row = parse_row(row, par_map)
             err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
             err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
             row_date, lat, props = parsed_row
             data[row_date] = props
-            err_msgs.extend(['Row %s: %s' % (i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-            err_msgs.extend(['Row %s: %s' % (i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+            err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
+            err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
     ret_value = err_msgs, (code, lat, data)
     return ret_value
 
@@ -524,47 +545,31 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msg = "START OF ANALYSIS OF ARPA19 FILE %r" % in_filepath
     msgs.append(msg)
     msgs.append('='*len(msg))
+    msgs.append('')
 
-    msgs.append('\n')
-    msg = "- checking against ARPA19 format schema -"
-    msgs.append(msg)
-    formatting_error_msgs = validate_format(in_filepath, parameters_filepath=parameters_filepath)
-    if not formatting_error_msgs:
-        msg = "No formatting errors found"
-        msgs.append(msg)
-    else:
-        for formatting_error_msg in formatting_error_msgs:
-            msgs.append(formatting_error_msg)
-
-    msgs.append('\n')
-    msg = "- weak climatologic and internal consistence checks -"
-    msgs.append(msg)
     err_msgs, data_parsed = parse_and_check(
         in_filepath, parameters_filepath=parameters_filepath, limiting_params=limiting_params)
     if not err_msgs:
-        msg = "No errors found on weak climatologic and internal consistence checks"
+        msg = "No errors found"
         msgs.append(msg)
     else:
-        for err_msg in err_msgs:
-            msgs.append(err_msg)
+        for row_index, err_msg in err_msgs:
+            msgs.append("Row %s: %s" % (row_index, err_msg))
 
     if outdata_filepath:
-        msgs.append('\n')
+        msgs.append('')
         write_data(data_parsed, outdata_filepath)
-        msg = "Data written on file %r" % outdata_filepath
+        msg = "Data saved on file %r" % outdata_filepath
         msgs.append(msg)
 
-    msgs.append('\n')
-    msg = "END OF ANALYSIS OF ARPA19 FILE %r" % in_filepath
+    msgs.append('')
+    msg = "END OF ANALYSIS OF ARPA19 FILE"
     msgs.append(msg)
     msgs.append('='*len(msg))
 
     if out_filepath:
         with open(out_filepath, 'w') as fp:
             for msg in msgs:
-                if msg == '\n':
-                    fp.write(msg)
-                else:
-                    fp.write(msg + '\n')
+                fp.write(msg + '\n')
 
     return msgs, data_parsed

@@ -208,17 +208,17 @@ def test_validate_format(tmpdir):
     # wrong file name
     filepath = str(tmpdir.join('loc01_70001_201301010000_201401010100.xls'))
     err_msgs = arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
-    assert err_msgs and err_msgs == ['Extension expected must be .dat, found .xls']
+    assert err_msgs and err_msgs == [(0, 'Extension expected must be .dat, found .xls')]
 
     # compilation of errors on rows
     filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
     err_msgs = arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
     assert err_msgs == [
-        "Row 2: The spacing in the row is wrong",
-        'Row 3: the latitude changes',
-        'Row 5: it is not strictly after the previous',
-        'Row 21: duplication of rows with different data',
-        'Row 22: the time is not coherent with the filename',
+        (2, "The spacing in the row is wrong"),
+        (3, "the latitude changes"),
+        (5, "it is not strictly after the previous"),
+        (21, "duplication of rows with different data"),
+        (22, "the time is not coherent with the filename"),
     ]
 
 
@@ -1014,7 +1014,7 @@ def test_row_internal_consistence_check():
     assert parsed_row_updated == row_parsed
 
 
-def test_do_weak_climatologic_check():
+def test_do_weak_climatologic_check(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
 
     # right file
@@ -1024,22 +1024,34 @@ def test_do_weak_climatologic_check():
     assert not err_msgs
     assert parsed_after_check == parsed
 
-    # with errors
+    # with specific errors
     filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
     assert err_msgs == [
-        "Row 1: The value of '1' is out of range [0.0, 1020.0]",
-        "Row 2: The value of '2' is out of range [0.0, 360.0]",
-        "Row 3: The value of '3' is out of range [-350.0, 450.0]"
+        (1, "The value of '1' is out of range [0.0, 1020.0]"),
+        (2, "The value of '2' is out of range [0.0, 360.0]"),
+        (3, "The value of '3' is out of range [-350.0, 450.0]"),
     ]
     assert parsed_after_check[:2] == parsed[:2]
     assert parsed_after_check[2][datetime(2013, 1, 1, 0, 0)]['1'] == (2000.0, False)
     assert parsed_after_check[2][datetime(2013, 1, 1, 1, 0)]['2'] == (361.0, False)
     assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)
 
+    # with only formatting errors
+    filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    err_msgs, _ = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert not err_msgs
 
-def test_do_internal_consistence_check():
+    # global error
+    filepath = str(tmpdir.join('report.txt'))
+    err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(
+        filepath, parameters_filepath)
+    assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+    assert not parsed_after_check
+
+
+def test_do_internal_consistence_check(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
     filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
@@ -1056,11 +1068,11 @@ def test_do_internal_consistence_check():
     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        "Row 5: The values of '3', '1' and '2' are not consistent",
-        "Row 6: The values of '3', '1' and '2' are not consistent",
-        "Row 7: The values of '3', '1' and '2' are not consistent",
-        "Row 10: The values of '3', '1' and '2' are not consistent",
-        "Row 20: The values of '3', '1' and '2' are not consistent"
+        (5, "The values of '3', '1' and '2' are not consistent"),
+        (6, "The values of '3', '1' and '2' are not consistent"),
+        (7, "The values of '3', '1' and '2' are not consistent"),
+        (10, "The values of '3', '1' and '2' are not consistent"),
+        (20, "The values of '3', '1' and '2' are not consistent"),
     ]
     assert parsed_after_check[:2] == parsed[:2]
     assert parsed_after_check[2][datetime(2013, 1, 1, 4, 0)]['3'] == (64.0, False)
@@ -1073,22 +1085,34 @@ def test_do_internal_consistence_check():
     assert not err_msgs
     assert parsed_after_check == parsed
 
+    # with only formatting errors
+    filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    err_msgs, _ = arpa19.do_internal_consistence_check(filepath, parameters_filepath)
+    assert not err_msgs
 
-def test_parse_and_check():
+    # global error
+    filepath = str(tmpdir.join('report.txt'))
+    err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+        filepath, parameters_filepath)
+    assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+    assert not parsed_after_check
+
+
+def test_parse_and_check(tmpdir):
     filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
     limiting_params = {'3': ('1', '2')}
     err_msgs, data_parsed = arpa19.parse_and_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        "Row 1: The value of '1' is out of range [0.0, 1020.0]",
-        "Row 2: The value of '2' is out of range [0.0, 360.0]",
-        "Row 3: The value of '3' is out of range [-350.0, 450.0]",
-        "Row 5: The values of '3', '1' and '2' are not consistent",
-        "Row 6: The values of '3', '1' and '2' are not consistent",
-        "Row 7: The values of '3', '1' and '2' are not consistent",
-        "Row 10: The values of '3', '1' and '2' are not consistent",
-        "Row 20: The values of '3', '1' and '2' are not consistent"
+        (1, "The value of '1' is out of range [0.0, 1020.0]"),
+        (2, "The value of '2' is out of range [0.0, 360.0]"),
+        (3, "The value of '3' is out of range [-350.0, 450.0]"),
+        (5, "The values of '3', '1' and '2' are not consistent"),
+        (6, "The values of '3', '1' and '2' are not consistent"),
+        (7, "The values of '3', '1' and '2' are not consistent"),
+        (10, "The values of '3', '1' and '2' are not consistent"),
+        (20, "The values of '3', '1' and '2' are not consistent"),
     ]
     assert data_parsed == ('70002', 43.876999, {
         datetime(2013, 1, 1, 0, 0): {
@@ -1494,6 +1518,12 @@ def test_parse_and_check():
         }
     )
 
+    # global error
+    filepath = str(tmpdir.join('report.txt'))
+    err_msgs, _ = arpa19.parse_and_check(
+        filepath, parameters_filepath, limiting_params)
+    assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+
 
 def test_make_report(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
@@ -1510,7 +1540,7 @@ def test_make_report(tmpdir):
         limiting_params=limiting_params)
     assert exists(out_filepath)
     assert exists(outdata_filepath)
-    assert "No errors found on weak climatologic and internal consistence checks" in msgs
+    assert "No errors found" in msgs
 
     # some formatting errors
     in_filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')

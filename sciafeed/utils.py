@@ -5,15 +5,17 @@ from datetime import datetime
 import logging
 import os.path
 
-from sciafeed import config
+from sciafeed import this_path
 
 
-def hello_world():
-    """
-    Example function just for testing
-    """
-    ret_value = 'Hello world!'
-    return ret_value
+LOG_LEVEL = logging.DEBUG
+LOG_FOLDER = os.path.join(this_path, 'logs')
+LOG_NAMES = (
+    'VALIDATOR',
+    'DOWNLOADER',
+    'PROCESSOR',
+    'TESTING'
+)
 
 
 def setup_log(func):  # pragma: no cover
@@ -38,12 +40,12 @@ def setup_log(func):  # pragma: no cover
     logfilename = datetime.now().strftime("%y%b%d-%H%M%S") + '.log'
 
     def inner(*args, **kwargs):
-        log_filepath = os.path.join(config.LOG_FOLDER, logfilename)
-        for log_name in config.LOG_NAMES:
+        log_filepath = os.path.join(LOG_FOLDER, logfilename)
+        for log_name in LOG_NAMES:
             logger = logging.getLogger(log_name)
             if not logger.handlers:
                 fh = logging.FileHandler(log_filepath)
-                fh.setLevel(config.LOG_LEVEL)
+                fh.setLevel(LOG_LEVEL)
                 formatter = logging.Formatter(logformat, datefmt=datefmt)
                 fh.setFormatter(formatter)
                 logger.addHandler(fh)

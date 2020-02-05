@@ -3,13 +3,26 @@ This modules provides the functions of the SCIA FEED package's entry points
 """
 import click
 
-from sciafeed import utils
+from sciafeed import arpa19
 
 
 @click.command()
-def hello_world():
+@click.argument('in_filepath', type=click.Path(exists=True, dir_okay=False))
+@click.option('--out_filepath', '-o', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--outdata_filepath', '-d', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output data file")
+@click.option('--parameters_filepath', '-p', type=click.Path(exists=True, dir_okay=False),
+              help="customized file path containing information about parameters",
+              default=arpa19.PARAMETERS_FILEPATH)
+def make_arpa19_report(**kwargs):
     """
-    Just for testing entry points
+    Parse an ARPA19 file located at `in_filepath` and generate a report.
+    Optionally, it can also export parsed data.
     """
-    ret_value = utils.hello_world()
-    print(ret_value)
+    msgs, _ = arpa19.make_report(**kwargs)
+    if not kwargs['out_filepath']:
+        for msg in msgs:
+            print(msg)
+    if kwargs['outdata_filepath']:
+        print('data saved on %s' % kwargs['outdata_filepath'])

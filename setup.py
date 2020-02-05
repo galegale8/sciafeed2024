@@ -40,7 +40,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'hello_world = sciafeed.entry_points:hello_world',
+            'make_arpa19_report = sciafeed.entry_points:make_arpa19_report',
         ],
     },
 )

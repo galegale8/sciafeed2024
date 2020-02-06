@@ -14,6 +14,7 @@ SCIA PostgreSQL database.
    :caption: Python modules:
 
    arpa19
+   arpa21
    entry_points
    utils
 

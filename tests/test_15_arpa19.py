@@ -9,7 +9,7 @@ from . import TEST_DATA_PATH
 
 
 def test_load_parameter_file():
-    test_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    test_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     parameter_map = arpa19.load_parameter_file(test_filepath)
     for i in range(1, 20):
         assert i in parameter_map
@@ -18,7 +18,7 @@ def test_load_parameter_file():
 
 
 def test_load_parameter_thresholds():
-    test_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    test_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     expected_thresholds = {
         '1': [0.0, 1020.0],
         '10': [20.0, 100.0],
@@ -106,7 +106,7 @@ def test_parse_row():
           "     83  32767  32767  10205  32767  32767  32767  32767  32767  32767" \
           "  32767      1      1      1      2      2      2      2      2      1" \
           "      2      2      1      2      2      2      2      2      2      2"
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     parameters_map = arpa19.load_parameter_file(parameters_filepath=parameters_filepath)
 
     # full parsing
@@ -201,8 +201,8 @@ def test_validate_row_format():
 
 def test_validate_format(tmpdir):
     # right file
-    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     assert not arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
 
     # wrong file name
@@ -211,7 +211,7 @@ def test_validate_format(tmpdir):
     assert err_msgs and err_msgs == [(0, 'Extension expected must be .dat, found .xls')]
 
     # compilation of errors on rows
-    filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
     err_msgs = arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
     assert err_msgs == [
         (2, "The spacing in the row is wrong"),
@@ -223,8 +223,8 @@ def test_validate_format(tmpdir):
 
 
 def test_parse():
-    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     station = '70001'
     latitude = 43.876999
     expected_data = {
@@ -799,7 +799,7 @@ def test_parse():
 
 
 def test_write_data(tmpdir):
-    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     data = arpa19.parse(filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
     expected_rows = [
@@ -894,7 +894,7 @@ def test_write_data(tmpdir):
 
 
 def test_row_weak_climatologic_check():
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     parameters_map = arpa19.load_parameter_file(parameters_filepath)
     parameters_thresholds = arpa19.load_parameter_thresholds(parameters_filepath)
 
@@ -957,7 +957,7 @@ def test_row_weak_climatologic_check():
 
 
 def test_row_internal_consistence_check():
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     parameters_map = arpa19.load_parameter_file(parameters_filepath)
     limiting_params = {'1': ('2', '3')}
 
@@ -1015,17 +1015,17 @@ def test_row_internal_consistence_check():
 
 
 def test_do_weak_climatologic_check(tmpdir):
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
 
     # right file
-    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
     assert not err_msgs
     assert parsed_after_check == parsed
 
     # with specific errors
-    filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70002_201301010000_201401010100.dat')
     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
     assert err_msgs == [
@@ -1039,7 +1039,7 @@ def test_do_weak_climatologic_check(tmpdir):
     assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)
 
     # with only formatting errors
-    filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
     err_msgs, _ = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
     assert not err_msgs
 
@@ -1052,8 +1052,8 @@ def test_do_weak_climatologic_check(tmpdir):
 
 
 def test_do_internal_consistence_check(tmpdir):
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
-    filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
 
     # right file
@@ -1086,7 +1086,7 @@ def test_do_internal_consistence_check(tmpdir):
     assert parsed_after_check == parsed
 
     # with only formatting errors
-    filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
     err_msgs, _ = arpa19.do_internal_consistence_check(filepath, parameters_filepath)
     assert not err_msgs
 
@@ -1099,8 +1099,8 @@ def test_do_internal_consistence_check(tmpdir):
 
 
 def test_parse_and_check(tmpdir):
-    filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70002_201301010000_201401010100.dat')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
     limiting_params = {'3': ('1', '2')}
     err_msgs, data_parsed = arpa19.parse_and_check(
         filepath, parameters_filepath, limiting_params)
@@ -1526,10 +1526,10 @@ def test_parse_and_check(tmpdir):
 
 
 def test_make_report(tmpdir):
-    parameters_filepath = join(TEST_DATA_PATH, 'arpa19_params.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
 
     # no errors
-    in_filepath = join(TEST_DATA_PATH, 'loc01_70001_201301010000_201401010100.dat')
+    in_filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     limiting_params = {'3': ('4', '5')}
     out_filepath = str(tmpdir.join('report.txt'))
     outdata_filepath = str(tmpdir.join('data.csv'))
@@ -1543,7 +1543,7 @@ def test_make_report(tmpdir):
     assert "No errors found" in msgs
 
     # some formatting errors
-    in_filepath = join(TEST_DATA_PATH, 'wrong_70001_201301010000_201401010100.dat')
+    in_filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
     limiting_params = {'3': ('4', '5')}
     out_filepath = str(tmpdir.join('report2.txt'))
     outdata_filepath = str(tmpdir.join('data2.csv'))
@@ -1565,7 +1565,7 @@ def test_make_report(tmpdir):
         assert err_msg in msgs
 
     # some errors
-    in_filepath = join(TEST_DATA_PATH, 'wrong_70002_201301010000_201401010100.dat')
+    in_filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70002_201301010000_201401010100.dat')
     limiting_params = {'3': ('1', '2')}
     out_filepath = str(tmpdir.join('report3.txt'))
     outdata_filepath = str(tmpdir.join('data3.csv'))

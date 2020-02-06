@@ -219,6 +219,7 @@ def validate_row_format(row):
     return err_msg
 
 
+# entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
           missing_value_marker=MISSING_VALUE_MARKER):
     """
@@ -231,7 +232,8 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
             ...
         }
     
-    The function assumes the file as validated (see function `validate_format`).
+    The function assumes the file as validated against the format (see function 
+    `validate_format`). No checks on data are performed.
     
     :param filepath: path to the arpa19 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
@@ -290,7 +292,7 @@ def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
 
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Open an arpa19 file and validate each row against the format.
+    Open an arpa19 file and validate it against the format.
     Return the list of tuples (row index, error message) of the errors found.
     row_index=0 is used only for global formatting errors.
 
@@ -407,6 +409,7 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
     return err_msgs, (row_date, lat, ret_props)
 
 
+# entry point candidate
 def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Get the weak climatologic check for an arpa19 file, i.e. it flags
@@ -445,6 +448,7 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     return ret_value
 
 
+# entry point candidate
 def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                                   limiting_params=None):
     """

@@ -15,6 +15,7 @@ SCIA PostgreSQL database.
 
    arpa19
    arpa21
+   arpafvg
    entry_points
    utils
 

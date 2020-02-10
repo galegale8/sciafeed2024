@@ -157,8 +157,9 @@ def test_validate_format(tmpdir):
     assert err_msgs == [
         (1, 'The number of components in the row is wrong'),
         (3, 'duplication of rows with different data'),
-        (5, 'the latitude changes'),
-        (6, 'the time is not coherent with the filename')
+        (4, 'the latitude changes'),
+        (6, 'it is not strictly after the previous'),
+        (7, 'the time is not coherent with the filename')
     ]
 
 
@@ -222,6 +223,7 @@ def test_parse():
     assert effective == (station, latitude, expected_data)
 
 
+
 def test_write_data(tmpdir):
     filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
     data = arpafvg.parse(filepath)
@@ -275,6 +277,15 @@ def test_write_data(tmpdir):
     with open(out_filepath) as fp:
         rows = fp.readlines()
         assert rows == expected_rows
+
+    # in case of some values marked as None, we can decide to not write them
+    data[2][datetime(2018, 1, 1, 1, 0, 0)]['PREC'] = (None, True)
+    arpafvg.write_data(data, out_filepath, omit_parameters=('Pstaz',), omit_missing=True)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert len(rows) == 40
+        assert '00001;46.077222;2018-01-01T01:00:00;PREC;0.0;1\n' not in rows
+
 
 
 def test_row_weak_climatologic_check():
@@ -471,9 +482,11 @@ def test_parse_and_check(tmpdir):
     assert err_msgs == [
         (1, 'The number of components in the row is wrong'),
         (3, 'duplication of rows with different data'),
-        (5, 'the latitude changes'),
-        (6, 'the time is not coherent with the filename'),
-        (2, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent")
+        (4, 'the latitude changes'),
+        (6, 'it is not strictly after the previous'),
+        (7, 'the time is not coherent with the filename'),
+        (2, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"),
+        (5, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent")
     ]
     assert data_parsed == ('00001', 46.077222, {
         datetime(2018, 1, 1, 2, 0): {
@@ -487,12 +500,12 @@ def test_parse_and_check(tmpdir):
             'Tmedia': (3.1, True),
             'UR media': (85.0, True)},
         datetime(2018, 1, 1, 4, 0): {
-            'Bagnatura_f': (0.0, True),
-            'DD': (313.0, True),
-            'FF': (1.8, True),
+            'Bagnatura_f': (39.0, True),
+            'DD': (345.0, True),
+            'FF': (1.2, True),
             'INSOL': (0.0, True),
-            'PREC': (0.0, True),
-            'Pstaz': (999.0, True),
+            'PREC': (0.0, False),
+            'Pstaz': (1000.0, True),
             'RADSOL': (0.0, True),
             'Tmedia': (3.4, True),
             'UR media': (82.0, True)}}
@@ -537,8 +550,10 @@ def test_make_report(tmpdir):
     err_msgs = [
         'Row 1: The number of components in the row is wrong',
         'Row 3: duplication of rows with different data',
-        'Row 5: the latitude changes',
-        'Row 6: the time is not coherent with the filename'
+        'Row 4: the latitude changes',
+        'Row 7: the time is not coherent with the filename',
+        "Row 2: The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent",
+        "Row 5: The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"
     ]
     for err_msg in err_msgs:
         assert err_msg in msgs

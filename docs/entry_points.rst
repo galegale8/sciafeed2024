@@ -7,3 +7,6 @@ entry_points
 
 .. click:: sciafeed.entry_points:make_arpa21_report
    :prog: make_arpa21_report
+
+.. click:: sciafeed.entry_points:make_arpafvg_report
+   :prog: make_arpafvg_report

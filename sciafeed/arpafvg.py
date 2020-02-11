@@ -8,11 +8,7 @@ from os.path import basename, join, splitext
 from sciafeed import this_path
 
 PARAMETERS_FILEPATH = join(this_path, 'arpafvg_params.csv')
-LIMITING_PARAMETERS = {
-    'Tmedia': ('Tmin', 'Tmax'),
-    'UR media': ('UR min', 'UR max'),
-    'P': ('Pmin', 'Pmax'),
-}
+LIMITING_PARAMETERS = dict()
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):

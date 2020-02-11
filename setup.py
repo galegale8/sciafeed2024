@@ -42,6 +42,7 @@ setup(
         'console_scripts': [
             'make_arpa19_report = sciafeed.entry_points:make_arpa19_report',
             'make_arpa21_report = sciafeed.entry_points:make_arpa21_report',
+            'make_arpafvg_report = sciafeed.entry_points:make_arpafvg_report',
         ],
     },
 )

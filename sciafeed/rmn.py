@@ -373,15 +373,17 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
     err_msgs = []
     ret_props = props.copy()
     for par_code, (par_value, par_flag) in props.items():
-        if par_code not in limiting_params or not par_flag:
+        if par_code not in limiting_params or not par_flag or par_value is None:
             # no check if the parameter is floagged invalid or no in the limiting_params
             continue
         par_code_min, par_code_max = limiting_params[par_code]
         par_code_min_value, par_code_min_flag = props[par_code_min]
         par_code_max_value, par_code_max_flag = props[par_code_max]
-        if not par_code_min_flag or not par_code_max_flag:
+        if not par_code_min_flag or not par_code_max_flag or par_code_min_value is None \
+                or par_code_max_value is None:
             # no check if limiting parameters are flagged invalid
-            continue
+            # NOTE: putting 'no cover' because coverage wrongly doesn't report it as covered
+            continue   # pragma: no cover
         par_code_min_value, par_code_max_value = map(
                 float, [par_code_min_value, par_code_max_value])
         if not (par_code_min_value <= par_value <= par_code_max_value):

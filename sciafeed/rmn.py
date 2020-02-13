@@ -126,10 +126,13 @@ def parse_row(row, parameters_map):
     prop_dict = dict()
     for par_indx in parameters_map:
         param_code = parameters_map[par_indx]['par_code']
-        try:
-            prop_dict[param_code] = (float(row[param_code].replace(',', '.')), True)
-        except (IndexError, ValueError):
+        if param_code not in row:
             continue
+        param_value = row[param_code].strip()
+        if param_value in ('-', ''):
+            prop_dict[param_code] = (None, True)
+        else:
+            prop_dict[param_code] = (float(param_value.replace(',', '.')), True)
     return the_time, prop_dict
 
 
@@ -162,7 +165,6 @@ def validate_row_format(row):
     return err_msg
 
 
-# entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Read an rmn file located at `filepath` and returns the data stored inside. Value

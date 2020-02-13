@@ -1,0 +1,6 @@
+position;description;par_code;min;max;unit
+1;DIREZIONE VENTO;DD;0;360;gradi
+2;VELOCITA VENTO;FF;0;102;m/s
+3;TEMPERATURA ARIA;Tmedia;-35;45;gradi
+4;PRESSIONE ATMOSFERICA;P ;960;1060;hPa
+5;UMIDITA RELATIVA;UR media;20;100;%

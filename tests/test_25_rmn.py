@@ -681,69 +681,55 @@ def test_write_data(tmpdir):
         assert rows == expected_rows
 
 
-# def test_row_weak_climatologic_check():
-#     parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
-#     parameters_map = rmn.load_parameter_file(parameters_filepath)
-#     parameters_thresholds = rmn.load_parameter_thresholds(parameters_filepath)
-#
-#     # right row
-#     row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
-#           "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
-#           "      1      1      1      2      2      2      2      2      1      2      2" \
-#           "      1      2      2      2      2      2      2      2"
-#     row_parsed = rmn.parse_row(row, parameters_map)
-#     err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
-#         row_parsed, parameters_thresholds)
-#     assert not err_msgs
-#     assert parsed_row_updated == row_parsed
-#
-#     # two errors
-#     assert parameters_thresholds['1'] == [0, 1020]
-#     assert parameters_thresholds['9'] == [20, 100]
-#     row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
-#           "    101  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
-#           "      1      1      1      2      2      2      2      2      1      2      2" \
-#           "      1      2      2      2      2      2      2      2"
-#     row_parsed = rmn.parse_row(row, parameters_map)
-#     err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
-#         row_parsed, parameters_thresholds)
-#     assert err_msgs == ["The value of '1' is out of range [0.0, 1020.0]",
-#                         "The value of '9' is out of range [20.0, 100.0]"]
-#     assert parsed_row_updated[:2] == row_parsed[:2]
-#     assert parsed_row_updated[2]['1'] == (1021.0, False)
-#     parsed_row_updated[2]['1'] = (1021.0, True)
-#     parsed_row_updated[2]['9'] = (101.0, True)
-#     assert parsed_row_updated == row_parsed
-#
-#     # no check if no parameters_thresholds
-#     err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(row_parsed)
-#     assert not err_msgs
-#     assert parsed_row_updated == row_parsed
-#
-#     # no check if the value is already invalid
-#     row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
-#           "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
-#           "      2      1      1      2      2      2      2      2      1      2      2" \
-#           "      1      2      2      2      2      2      2      2"
-#     row_parsed = rmn.parse_row(row, parameters_map)
-#     err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
-#         row_parsed, parameters_thresholds)
-#     assert not err_msgs
-#     assert parsed_row_updated == row_parsed
-#
-#     # no check if thresholds are not defined
-#     assert '12' not in parameters_thresholds
-#     row = "201301010700 43.876999   1021    358     65  32767  32767  32767  32767  32767" \
-#           "     93  32767  32767  99999  32767  32767  32767  32767  32767  32767  32767" \
-#           "      2      1      1      2      2      2      2      2      1      2      2" \
-#           "      1      2      2      2      2      2      2      2"
-#     row_parsed = rmn.parse_row(row, parameters_map)
-#     err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
-#         row_parsed, parameters_thresholds)
-#     assert not err_msgs
-#     assert parsed_row_updated == row_parsed
-#
-#
+def test_row_weak_climatologic_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
+    parameters_map = rmn.load_parameter_file(parameters_filepath)
+    parameters_thresholds = rmn.load_parameter_thresholds(parameters_filepath)
+
+    # right row
+    row = {
+        'DATA': '20180101',
+        'DD': '180',
+        'FF': '1,9',
+        'ORA': '00:00',
+        'P': '1018,1',
+        'Tmedia': '7,2',
+        'UR media': '63'
+    }
+    row_parsed = rmn.parse_row(row, parameters_map)
+    err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
+        row_parsed, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # two errors
+    parameters_thresholds['DD'] = [0, 179]
+    parameters_thresholds['FF'] = [-20, 0]
+    err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
+        row_parsed, parameters_thresholds)
+    assert err_msgs == ["The value of 'DD' is out of range [0.0, 179.0]",
+                        "The value of 'FF' is out of range [-20.0, 0.0]"]
+    assert parsed_row_updated[:1] == row_parsed[:1]
+    assert parsed_row_updated[1]['DD'] == (180.0, False)
+    assert parsed_row_updated[1]['FF'] == (1.9, False)
+    parsed_row_updated[1]['DD'] = (180.0, True)
+    parsed_row_updated[1]['FF'] = (1.9, True)
+    assert parsed_row_updated == row_parsed
+
+    # no check if the value is already invalid
+    row_parsed[1]['DD'] = (180.0, False)
+    row_parsed[1]['FF'] = (1.9, False)
+    err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(
+        row_parsed, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+    # no check if no parameters_thresholds
+    err_msgs, parsed_row_updated = rmn.row_weak_climatologic_check(row_parsed)
+    assert not err_msgs
+    assert parsed_row_updated == row_parsed
+
+
 # def test_row_internal_consistence_check():
 #     parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
 #     parameters_map = rmn.load_parameter_file(parameters_filepath)
@@ -802,43 +788,43 @@ def test_write_data(tmpdir):
 #     assert parsed_row_updated == row_parsed
 #
 #
-# def test_do_weak_climatologic_check(tmpdir):
-#     parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
-#
-#     # right file
-#     filepath = join(TEST_DATA_PATH, 'rmn', 'loc01_70001_201301010000_201401010100.dat')
-#     parsed = rmn.parse(filepath, parameters_filepath=parameters_filepath)
-#     err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
-#     assert not err_msgs
-#     assert parsed_after_check == parsed
-#
-#     # with specific errors
-#     filepath = join(TEST_DATA_PATH, 'rmn', 'wrong_70002_201301010000_201401010100.dat')
-#     parsed = rmn.parse(filepath, parameters_filepath=parameters_filepath)
-#     err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
-#     assert err_msgs == [
-#         (1, "The value of '1' is out of range [0.0, 1020.0]"),
-#         (2, "The value of '2' is out of range [0.0, 360.0]"),
-#         (3, "The value of '3' is out of range [-350.0, 450.0]"),
-#     ]
-#     assert parsed_after_check[:2] == parsed[:2]
-#     assert parsed_after_check[2][datetime(2013, 1, 1, 0, 0)]['1'] == (2000.0, False)
-#     assert parsed_after_check[2][datetime(2013, 1, 1, 1, 0)]['2'] == (361.0, False)
-#     assert parsed_after_check[2][datetime(2013, 1, 1, 2, 0)]['3'] == (-351.0, False)
-#
-#     # with only formatting errors
-#     filepath = join(TEST_DATA_PATH, 'rmn', 'wrong_70001_201301010000_201401010100.dat')
-#     err_msgs, _ = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
-#     assert not err_msgs
-#
-#     # global error
-#     filepath = str(tmpdir.join('report.txt'))
-#     err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(
-#         filepath, parameters_filepath)
-#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
-#     assert not parsed_after_check
-#
-#
+def test_do_weak_climatologic_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
+
+    # right file
+    filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
+    parsed = rmn.parse(filepath, parameters_filepath=parameters_filepath)
+    err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert not err_msgs
+    assert parsed_after_check == parsed
+
+    # global error
+    filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_wrong1.csv')
+    err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(
+        filepath, parameters_filepath)
+    assert err_msgs == [(0, 'RMN header not found')]
+    assert not parsed_after_check
+
+    # with only formatting errors
+    filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_wrong3.csv')
+    err_msgs, _ = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert not err_msgs
+
+    # with specific errors
+    filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_wrong5.csv')
+    parsed = rmn.parse(filepath, parameters_filepath=parameters_filepath)
+    err_msgs, parsed_after_check = rmn.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert err_msgs == [
+        (4, "The value of 'DD' is out of range [0.0, 360.0]"),
+        (5, "The value of 'FF' is out of range [0.0, 102.0]"),
+        (6, "The value of 'Tmedia' is out of range [-35.0, 45.0]"),
+    ]
+    assert parsed_after_check[:1] == parsed[:1]
+    assert parsed_after_check[1][datetime(2018, 1, 1, 0, 0)]['DD'] == (361.0, False)
+    assert parsed_after_check[1][datetime(2018, 1, 1, 0, 10)]['FF'] == (-1.6, False)
+    assert parsed_after_check[1][datetime(2018, 1, 1, 0, 20)]['Tmedia'] == (47.0, False)
+
+
 # def test_do_internal_consistence_check(tmpdir):
 #     parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
 #     filepath = join(TEST_DATA_PATH, 'rmn', 'loc01_70001_201301010000_201401010100.dat')

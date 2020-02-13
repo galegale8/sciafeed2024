@@ -83,7 +83,7 @@ def guess_fieldnames(filepath, parameters_map):
             raise ValueError('RMN header not found')
     tokens = line.split(';')
     for token in tokens:
-        token = token.replace('À', 'A').replace('Ã\x80', 'A')
+        token = token.replace('À', 'A').replace('Ã\x80', 'A').replace('ï¿½', 'A')
         if token == 'DATA' or token == 'ORA':
             fieldnames.append(token)
             continue
@@ -299,8 +299,8 @@ def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
     err_msgs = []
     ret_props = props.copy()
     for par_code, (par_value, par_flag) in props.items():
-        if par_code not in parameters_thresholds or not par_flag:
-            # no check if limiting parameters are flagged invalid
+        if par_code not in parameters_thresholds or not par_flag or par_value is None:
+            # no check if limiting parameters are flagged invalid or the value is None
             continue
         min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
         if not (min_threshold <= par_value <= max_threshold):
@@ -337,7 +337,12 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     data = dict()
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
-    for i, row in enumerate(csv_reader, 1):
+    j = 0
+    for j, row in enumerate(csv_reader, 1):
+        if (row['DATA'], row['ORA']) != ('DATA', 'ORA'):
+            continue
+        break
+    for i, row in enumerate(csv_reader, j+1):
         if i in fmt_errors_dict:
             continue
         parsed_row = parse_row(row, parameters_map=parameters_map)
@@ -411,7 +416,12 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
     data = dict()
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
-    for i, row in enumerate(csv_reader, 1):
+    j = 0
+    for j, row in enumerate(csv_reader, 1):
+        if (row['DATA'], row['ORA']) != ('DATA', 'ORA'):
+            continue
+        break
+    for i, row in enumerate(csv_reader, j+1):
         if i in fmt_errors_dict:
             continue
         parsed_row = parse_row(row, parameters_map=parameters_map)

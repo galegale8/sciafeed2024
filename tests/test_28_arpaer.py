@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from os.path import join, exists
 
 from sciafeed import arpaer
 
@@ -73,7 +74,7 @@ def test_build_sql():
     assert effective == expected
 
 
-class DummyResponseObject():
+class DummyResponseObject:
     dummy_json = {
         'result': {
             'fields': [{'id': '_id', 'type': 'int4'},
@@ -179,27 +180,27 @@ class DummyResponseObject():
                   'timerange': [2, 0, 86400],
                   'vars': {'B12101': {'v': 286.85},
                            'B13003': {'v': 70}}},
-                  {'level': [103, 2000, None, None],
-                   'timerange': [3, 0, 3600],
-                   'vars': {'B12101': {'v': 272.65},
-                            'B13003': {'v': 44}}},
-                  {'level': [103, 2000, None, None],
-                   'timerange': [3, 0, 86400],
-                   'vars': {'B12101': {'v': 272.55},
-                            'B13003': {'v': 14}}},
-                  {'level': [103, 2000, None, None],
-                   'timerange': [254, 0, 0],
-                   'vars': {'B12101': {'v': 273.65},
-                            'B13003': {'v': 55}}},
-                  {'level': [106, 250, None, None],
-                   'timerange': [254, 0, 0],
-                   'vars': {'B13227': {'v': 43.7}}},
-                  {'level': [106, 450, None, None],
-                   'timerange': [254, 0, 0],
-                   'vars': {'B13227': {'v': 44.1}}},
-                  {'level': [106, 700, None, None],
-                   'timerange': [254, 0, 0],
-                   'vars': {'B13227': {'v': 43.0}}}],
+                 {'level': [103, 2000, None, None],
+                  'timerange': [3, 0, 3600],
+                  'vars': {'B12101': {'v': 272.65},
+                           'B13003': {'v': 44}}},
+                 {'level': [103, 2000, None, None],
+                  'timerange': [3, 0, 86400],
+                  'vars': {'B12101': {'v': 272.55},
+                           'B13003': {'v': 14}}},
+                 {'level': [103, 2000, None, None],
+                  'timerange': [254, 0, 0],
+                  'vars': {'B12101': {'v': 273.65},
+                           'B13003': {'v': 55}}},
+                 {'level': [106, 250, None, None],
+                  'timerange': [254, 0, 0],
+                  'vars': {'B13227': {'v': 43.7}}},
+                 {'level': [106, 450, None, None],
+                  'timerange': [254, 0, 0],
+                  'vars': {'B13227': {'v': 44.1}}},
+                 {'level': [106, 700, None, None],
+                  'timerange': [254, 0, 0],
+                  'vars': {'B13227': {'v': 43.0}}}],
              'date': '2020-02-06T00:00:00',
              'ident': None,
              'lat': 4504139,
@@ -207,8 +208,8 @@ class DummyResponseObject():
              'network': 'agrmet',
              'version': '0.1'
              },
-             {'_id': 18718208,
-              'data': [
+            {'_id': 18718208,
+             'data': [
                   {'vars': {
                         'B01019': {'v': "San Nicolo'"},
                         'B01194': {'v': 'agrmet'},
@@ -253,12 +254,12 @@ class DummyResponseObject():
                   {'level': [106, 700, None, None],
                    'timerange': [254, 0, 0],
                    'vars': {'B13227': {'v': 43.0}}}],
-              'date': '2020-02-06T01:00:00',
-              'ident': None,
-              'lat': 4504139,
-              'lon': 958959,
-              'network': 'agrmet',
-              'version': '0.1'}],
+             'date': '2020-02-06T01:00:00',
+             'ident': None,
+             'lat': 4504139,
+             'lon': 958959,
+             'network': 'agrmet',
+             'version': '0.1'}],
             },
         'success': True}
 
@@ -305,12 +306,12 @@ def test_sql2results(mocker):
     assert effective_results == []
 
 
-def test_get_json_data(mocker):
+def test_get_json_results(mocker):
     start = datetime(2020, 2, 6)
     end = datetime(2020, 2, 7)
     mocker.patch('requests.get', new=dummy_request_get)
     expected_results = DummyResponseObject.dummy_json['result']['records']
-    effective_results = arpaer.get_json_data(start=start, end=end, limit=1)
+    effective_results = arpaer.get_json_results(start=start, end=end, limit=1)
     assert effective_results == expected_results
 
 
@@ -329,13 +330,12 @@ def test_parse_json_result():
     assert effective == expected
 
 
-def test_download_data(mocker):
-    # FIXME
+def test_get_data(mocker):
     start = datetime(2020, 2, 6)
     end = datetime(2020, 2, 7)
     limit = 2
     mocker.patch('requests.get', new=dummy_request_get3)
-    downloaded_data  = arpaer.download_data(start=start, end=end, limit=limit)
+    downloaded_data = arpaer.get_data(start=start, end=end, limit=limit)
     assert len(downloaded_data) == 1
     assert len(downloaded_data[0]) == 2
     stat_props, dates_measures = downloaded_data[0]
@@ -386,4 +386,75 @@ def test_download_data(mocker):
         ('Soil volumetric water content', 106, 254, 44.1, True),
         ('Soil volumetric water content', 106, 254, 43.0, True)
     ]
-    import pdb; pdb.set_trace()
+
+
+def test_write_data(tmpdir, mocker):
+    start = datetime(2020, 2, 6)
+    end = datetime(2020, 2, 7)
+    limit = 2
+    mocker.patch('requests.get', new=dummy_request_get3)
+    data = arpaer.get_data(start=start, end=end, limit=limit)
+    out_filepath = str(tmpdir.join('datafile.csv'))
+    expected_rows = [
+        'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
+        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
+        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
+        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;0;274.45;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;0;56;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;0;280.38;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;0;38;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;2;275.65;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;2;65;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;2;286.85;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;2;70;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;3;272.65;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;3;44;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;3;272.55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;3;14;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;254;273.65;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
+        'HUMIDITY;103;254;55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TOTAL PRECIPITATION / "
+        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TOTAL PRECIPITATION / "
+        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;0;271.75;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
+        'HUMIDITY;103;0;70;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;2;273.55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
+        'HUMIDITY;103;2;77;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;3;270.95;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
+        'HUMIDITY;103;3;54;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
+        'TEMPERATURE;103;254;271.15;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
+        'HUMIDITY;103;254;75;1\n'
+    ]
+    assert not exists(out_filepath)
+    arpaer.write_data(data, out_filepath, omit_parameters=('Soil volumetric water content', ))
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert rows == expected_rows

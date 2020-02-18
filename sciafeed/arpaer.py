@@ -1,11 +1,12 @@
 """
 This module contains the functions and utilities to parse an ARPA-Emilia Romagna file
 """
+import csv
 from datetime import datetime
+import json
 from os.path import join
 from pprint import pprint
 import requests
-import urllib.parse
 
 from sciafeed import this_path
 
@@ -133,8 +134,8 @@ def sql2results(sql, timeout=None):
     return []
 
 
-def get_json_data(start=None, end=None, limit=None, only_bcodes=ONLY_BCODES,
-                  timeout=None, **kwargs):
+def get_json_results(start=None, end=None, limit=None,
+                     only_bcodes=ONLY_BCODES, timeout=None, **kwargs):
     """
     Query the ARPAER database and return the JSON results.
 
@@ -156,7 +157,8 @@ def get_json_data(start=None, end=None, limit=None, only_bcodes=ONLY_BCODES,
 
 def parse_json_result(json_result, btable):
     """
-    Return a dictionary of the data parsed from an input json.
+    Return a tuple of the data parsed from an input json.
+    It assume that the json result is validated with `validate_json_result`.
     For the input json format, see:
     http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json
 
@@ -167,7 +169,7 @@ def parse_json_result(json_result, btable):
 
     :param json_result: a JSON result object
     :param btable: the loaded BTABLE
-    :return: the (stat_props, date, measures)
+    :return: the tuple (stat_props, date, measures)
     """
     station_data = json_result['data'][0]['vars']
     measurement_groups = json_result['data'][1:]
@@ -194,8 +196,9 @@ def parse_json_result(json_result, btable):
     return stat_props, date, measures
 
 
-def download_data(start=None, end=None, timeout=None, limit=None, only_bcodes=ONLY_BCODES,
-                  btable_path=BTABLE_PATH, **kwargs):
+# entry point candidate
+def get_data(download_path=None, omit_parameters=(), start=None, end=None, timeout=None,
+             limit=None, only_bcodes=ONLY_BCODES, btable_path=BTABLE_PATH, **kwargs):
     """
     Query the ARPA-ER datastore and returns the data stored inside. Value
     returned is a list of kind [(stat_props, dates_measures), ...], where:
@@ -203,10 +206,14 @@ def download_data(start=None, end=None, timeout=None, limit=None, only_bcodes=ON
     - dates_measures is dictionary of kind:
     ::
         { ...
-        dateA: [(paramer, level, trange, value, is_valid), ...],
-        dateB: [(paramer, level, trange, value, is_valid), ...],
+        dateA: [(parameter, level, trange, value, is_valid), ...],
+        dateB: [(parameter, level, trange, value, is_valid), ...],
         ...}
 
+    if the path `download_path` is not None, data is save there with the function `write_data`.
+
+    :param download_path: path where to write the data
+    :param omit_parameters: list of the parameters to omit in the download_path
     :param start: the datetime of the start time to select
     :param end: the datetime of the end time to select
     :param limit: number to limit the number of results
@@ -216,49 +223,124 @@ def download_data(start=None, end=None, timeout=None, limit=None, only_bcodes=ON
     :param kwargs: additional filters on the table's columns
     :return: (stat_props, dates_measures)
     """
-    json_results = get_json_data(start, end, limit, only_bcodes, timeout,  **kwargs)
-    ret_value = []
+    json_results = get_json_results(start, end, limit, only_bcodes, timeout,  **kwargs)
+    data = []
     added_stations = []
     btable = load_btable(btable_path)
     for json_result in json_results:
         stat_props, date, measures = parse_json_result(json_result, btable)
         if stat_props not in added_stations:
             added_stations.append(stat_props)
-            ret_value.append((stat_props, dict()))
-        dates_measures = ret_value[added_stations.index(stat_props)][1]
+            data.append((stat_props, dict()))
+        dates_measures = data[added_stations.index(stat_props)][1]
         date_measures = dates_measures.get(date, [])
-        date_measures.append(measures)
+        date_measures.extend(measures)
         dates_measures[date] = date_measures
-    return ret_value
+    if download_path:
+        write_data(data, download_path, omit_parameters)
+    return data
 
 
-def write_data(data, output_path, omit_parameters=()):
+def write_data(data, out_filepath, omit_parameters=()):
     """
-    Write a CSV file with a representation of the parsed data
+    Write a CSV file with a representation of the downloaded data.
+    Input `data` has the format as returned by the function `get_data`.
 
-    :param data:
-    :param omit_parameters:
-    :param output_path: the output file path
+    :param data: input data
+    :param omit_parameters: list of the parameters to omit
+    :param out_filepath: the output file path
     """
-    pass
+    fieldnames = ['station', 'latitude', 'longitude', 'network', 'date',
+                  'parameter', 'level', 'trange', 'value', 'valid']
+    with open(out_filepath, 'w') as csv_out_file:
+        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
+        writer.writeheader()
+        for stat_props, dates_measures in data:
+            base_row = {
+                'station': stat_props['station'],
+                'latitude': stat_props['lat'],
+                'longitude': stat_props['lon'],
+                'network': stat_props['network'],
+            }
+            for current_date in sorted(dates_measures):
+                row = base_row.copy()
+                row['date'] = current_date.isoformat()
+                for parameter, level, trange, value, valid in dates_measures[current_date]:
+                    if parameter in omit_parameters:
+                        continue
+                    row['parameter'] = parameter
+                    row['level'] = level
+                    row['trange'] = trange
+                    row['value'] = value
+                    row['valid'] = valid and '1' or '0'
+                    writer.writerow(row)
 
 
 def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                                   limiting_params=None):
+    """
+    Get the internal consistent check for arpaer CSV data written using the function `write_data`.
+    Return the list of tuples (row index, error message), and the resulting data with flags
+    updated.
+
+    :param filepath:
+    :param parameters_filepath:
+    :param limiting_params:
+    :return:
+    """
     pass
 
 
 def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Get the weak climatologic check for arpaer CSV data written using the function `write_data`,
+    i.e. it flags as invalid a value is out of a defined range.
+    Return the list of tuples (row index, error message), and the resulting data with flags
+    updated.
+    `parameters_thresholds` is a dict {code: (min, max), ...}.
+
+    :param filepath: path to the arpaer CSV file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: ([..., (row index, err_msg), ...], data_parsed)
+    """
     pass
 
 
 def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                     limiting_params=LIMITING_PARAMETERS):
+    """
+    Read an for arpaer CSV data written using the function `write_data`,  located at `filepath`,
+    and parse data inside it, doing
+    - format validation
+    - weak climatologic check
+    - internal consistence check
+    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
+    (row index, error message) of the errors found.
+
+    :param filepath: path to the arpaer CSV file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (err_msgs, data_parsed)
+    """
     pass
 
 
 def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
                 parameters_filepath=PARAMETERS_FILEPATH, limiting_params=LIMITING_PARAMETERS):
+    """
+    Read an for arpaer CSV data written using the function `write_data`,  located at `in_filepath`
+    and generate a report on the parsing.
+    If `out_filepath` is defined, the report string is written on a file.
+    If the path `outdata_filepath` is defined, a file with the data parsed is created at the path.
+    Return the list of report strings and the data parsed.
+
+    :param in_filepath: arpaer CSV input file
+    :param out_filepath: path of the output report
+    :param outdata_filepath: path of the output file containing data
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (report_strings, data_parsed)
+    """
     pass
 
 

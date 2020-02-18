@@ -3,6 +3,7 @@ from datetime import datetime
 from os.path import join, exists
 
 from sciafeed import arpaer
+from . import TEST_DATA_PATH
 
 from pprint import pprint
 def test_load_btable():
@@ -13,15 +14,45 @@ def test_load_btable():
     # spot check
     assert 'B49218' in effective
     assert effective['B49220'] == {
+        'par_code': 'B49220',
         'description': 'Density of particles with diameter > 34 <= 37 um',
         'format': '-1',
         'length': '5',
         'unit': 'NUMERIC/M**3'}
     assert effective['B48205'] == {
+        'par_code': 'B48205',
         'description': 'Conta Vitacee',
         'format': '0',
         'length': '7',
         'unit': 'NUMERIC'}
+
+
+def test_load_parameter_file():
+    test_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
+    parameter_map = arpaer.load_parameter_file(test_filepath)
+    for bcode, props in parameter_map.items():
+        assert bcode.startswith('B')
+        assert 'min' in props
+        assert 'max' in props
+        assert 'par_code' in props
+        assert 'description' in props
+
+
+def test_load_parameter_thresholds():
+    test_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
+    expected_thresholds = {
+        'Bagnatura_f': [0.0, 3600.0],
+        'DD': [0.0, 360.0],
+        'FF': [0.0, 102.0],
+        'INSOL': [0.0, 60.0],
+        'P': [96000.0, 106000.0],
+        'PREC': [0.0, 989.0],
+        'RADSOL': [0.0, 4184000.0],
+        'Tmedia': [-35.0, 45.0],
+        'UR media': [20.0, 100.0]
+    }
+    parameter_thresholds = arpaer.load_parameter_thresholds(test_filepath)
+    assert parameter_thresholds == expected_thresholds
 
 
 def test_build_sql():
@@ -317,7 +348,8 @@ def test_get_json_results(mocker):
 
 def test_parse_json_result():
     json_result = DummyResponseObject.dummy_json['result']['records'][0]
-    btable = arpaer.load_btable()
+    parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
+    parameters_map = arpaer.load_parameter_file(parameters_filepath)
     expected = (
         {'is_fixed': True,
          'lat': 4490250,
@@ -326,11 +358,11 @@ def test_parse_json_result():
          'station': 'Carignano Po'},
         datetime(2020, 2, 6, 0, 0),
         [('River level', 1, 254, 1.22, True)])
-    effective = arpaer.parse_json_result(json_result, btable)
+    effective = arpaer.parse_json_result(json_result, parameters_map)
     assert effective == expected
 
 
-def test_get_data(mocker):
+def test_get_data(tmpdir, mocker):
     start = datetime(2020, 2, 6)
     end = datetime(2020, 2, 7)
     limit = 2
@@ -350,42 +382,51 @@ def test_get_data(mocker):
         datetime(2020, 2, 6, 0, 0),
         datetime(2020, 2, 6, 1, 0)]
     assert dates_measures[datetime(2020, 2, 6, 0, 0)] == [
-        ('TOTAL PRECIPITATION / TOTAL WATER EQUIVALENT', 1, 1, 0.0, True),
-        ('TOTAL PRECIPITATION / TOTAL WATER EQUIVALENT', 1, 1, 0.0, True),
-        ('TOTAL PRECIPITATION / TOTAL WATER EQUIVALENT', 1, 1, 0.0, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 0, 274.45, True),
-        ('RELATIVE HUMIDITY', 103, 0, 56, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 0, 280.38, True),
-        ('RELATIVE HUMIDITY', 103, 0, 38, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 2, 275.65, True),
-        ('RELATIVE HUMIDITY', 103, 2, 65, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 2, 286.85, True),
-        ('RELATIVE HUMIDITY', 103, 2, 70, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 3, 272.65, True),
-        ('RELATIVE HUMIDITY', 103, 3, 44, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 3, 272.55, True),
-        ('RELATIVE HUMIDITY', 103, 3, 14, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 254, 273.65, True),
-        ('RELATIVE HUMIDITY', 103, 254, 55, True),
-        ('Soil volumetric water content', 106, 254, 43.7, True),
-        ('Soil volumetric water content', 106, 254, 44.1, True),
-        ('Soil volumetric water content', 106, 254, 43.0, True)
+        ('PREC', 1, 1, 0.0, True),
+        ('PREC', 1, 1, 0.0, True),
+        ('PREC', 1, 1, 0.0, True),
+        ('UR media', 103, 0, 56, True),
+        ('UR media', 103, 0, 38, True),
+        ('UR media', 103, 2, 65, True),
+        ('UR media', 103, 2, 70, True),
+        ('UR media', 103, 3, 44, True),
+        ('UR media', 103, 3, 14, True),
+        ('UR media', 103, 254, 55, True)
     ]
     assert dates_measures[datetime(2020, 2, 6, 1, 0)] == [
-        ('TOTAL PRECIPITATION / TOTAL WATER EQUIVALENT', 1, 1, 0.0, True),
-        ('TOTAL PRECIPITATION / TOTAL WATER EQUIVALENT', 1, 1, 0.0, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 0, 271.75, True),
-        ('RELATIVE HUMIDITY', 103, 0, 70, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 2, 273.55, True),
-        ('RELATIVE HUMIDITY', 103, 2, 77, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 3, 270.95, True),
-        ('RELATIVE HUMIDITY', 103, 3, 54, True),
-        ('TEMPERATURE/DRY-BULB TEMPERATURE', 103, 254, 271.15, True),
-        ('RELATIVE HUMIDITY', 103, 254, 75, True),
-        ('Soil volumetric water content', 106, 254, 43.7, True),
-        ('Soil volumetric water content', 106, 254, 44.1, True),
-        ('Soil volumetric water content', 106, 254, 43.0, True)
+        ('PREC', 1, 1, 0.0, True),
+        ('PREC', 1, 1, 0.0, True),
+        ('UR media', 103, 0, 70, True),
+        ('UR media', 103, 2, 77, True),
+        ('UR media', 103, 3, 54, True),
+        ('UR media', 103, 254, 75, True)
     ]
+    filepath = str(tmpdir.join('out.csv'))
+    expected_rows = [
+        'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;56;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;38;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;65;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;44;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;14;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;254;55;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;0;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;2;77;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;3;54;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;254;75;1\n"
+    ]
+    assert not exists(filepath)
+    arpaer.get_data(start=start, end=end, limit=limit, download_path=filepath)
+    assert exists(filepath)
+    with open(filepath) as fp:
+        effective_rows = fp.readlines()
+    assert effective_rows == expected_rows
 
 
 def test_write_data(tmpdir, mocker):
@@ -397,63 +438,49 @@ def test_write_data(tmpdir, mocker):
     out_filepath = str(tmpdir.join('datafile.csv'))
     expected_rows = [
         'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
-        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
-        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TOTAL PRECIPITATION / "
-        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;0;274.45;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;0;56;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;0;280.38;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;0;38;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;2;275.65;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;2;65;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;2;286.85;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;2;70;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;3;272.65;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;3;44;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;3;272.55;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;3;14;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;254;273.65;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;RELATIVE "
-        'HUMIDITY;103;254;55;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TOTAL PRECIPITATION / "
-        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TOTAL PRECIPITATION / "
-        'TOTAL WATER EQUIVALENT;1;1;0.0;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;0;271.75;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
-        'HUMIDITY;103;0;70;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;2;273.55;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
-        'HUMIDITY;103;2;77;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;3;270.95;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
-        'HUMIDITY;103;3;54;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;TEMPERATURE/DRY-BULB "
-        'TEMPERATURE;103;254;271.15;1\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;RELATIVE "
-        'HUMIDITY;103;254;75;1\n'
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;56;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;38;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;65;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;44;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;14;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR "
+        'media;103;254;55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;0;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;2;77;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;3;54;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR "
+        'media;103;254;75;1\n'
     ]
     assert not exists(out_filepath)
-    arpaer.write_data(data, out_filepath, omit_parameters=('Soil volumetric water content', ))
+    arpaer.write_data(data, out_filepath)
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert rows == expected_rows
+
+    expected_rows = [
+        'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;56;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;0;38;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;65;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;2;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;44;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;3;14;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T00:00:00;UR media;103;254;55;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;0;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;2;77;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;3;54;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06T01:00:00;UR media;103;254;75;1\n"
+    ]
+    out_filepath = str(tmpdir.join('datafile2.csv'))
+    assert not exists(out_filepath)
+    arpaer.write_data(data, out_filepath, omit_parameters=('PREC',))
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()

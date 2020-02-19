@@ -417,7 +417,6 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     Only rightly formatted rows are considered (see function `validate_format`).
     Return the list of tuples (row index, error message), and the resulting data with flags
     updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
 
     :param filepath: path to the arpa21 file
     :param parameters_filepath: path to the CSV file containing info about stored parameters

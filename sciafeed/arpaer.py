@@ -6,10 +6,8 @@ from datetime import datetime
 import operator
 from os.path import join
 import json
-import sys
 
 import requests
-from pprint import pprint
 
 from sciafeed import this_path
 
@@ -470,7 +468,7 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
 
     :param filepath: path to the arpa-er file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: ([..., (row index info, err_msg), ...], data_parsed)
+    :return: ([..., (row index info, err_msg), ...], data_updated)
     """
     fmt_errors = validate_format(filepath)
     fmt_errors_dict = dict(fmt_errors)
@@ -478,7 +476,7 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
         # global formatting error: no parsing
         return fmt_errors, None
     err_msgs = []
-    data_parsed = []
+    data_updated = []
     parameters_map = load_parameter_file(parameters_filepath)
     parameters_thresholds = load_parameter_thresholds(parameters_filepath)
     # assuming in a row (i.e. date) we have all the station's measurements for that date
@@ -491,12 +489,55 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
                 parsed_row, parameters_thresholds)
             for err_msg_row in err_msgs_row:
                 err_msgs.append((i, err_msg_row))
-            data_parsed.append(parsed_row)
-    return err_msgs, data_parsed
+            data_updated.append(parsed_row)
+    return err_msgs, data_updated
+
+
+def row_internal_consistence_check(parsed_row, limiting_params=None):
+    """
+    Get the internal consistent check for a parsed row of a ARPA-ER file.
+    It assumes that the parsed row is written as result of the function `parse_row`.
+    Return the list of error messages, and the parsed_row modified.
+    `limiting_params` is a dict {code: (code_min, code_max), ...}.
+
+    :param parsed_row: the row of a ARPA-ER file
+    :param limiting_params: dictionary of limiting parameters for each parameter code
+    :return: (err_msgs, data_parsed)
+    """
+    if limiting_params is None:
+        limiting_params = dict()
+    stat_props, date, measures = parsed_row
+    err_msgs = []
+    measures_updated = measures.copy()
+    measures_dict = {measure[0]: measure for measure in measures_updated}
+    for par_code, measure in measures_dict.items():
+        parameter, level, trange, par_value, par_flag = measure
+        if par_code not in limiting_params or not par_flag:
+            # no check if the parameter is flagged invalid or not in the limiting_params
+            continue
+        par_code_min, par_code_max = limiting_params[par_code]
+        if par_code_min not in measures_dict or par_code_max not in measures_dict:
+            # no check if the min/max parameters are not measured
+            continue
+        _, _, _, par_code_min_value, par_code_min_flag = measures_dict[par_code_min]
+        _, _, _, par_code_max_value, par_code_max_flag = measures_dict[par_code_max]
+        if not par_code_min_flag or not par_code_max_flag:
+            # no check if limiting parameters are flagged invalid
+            continue
+        par_code_min_value, par_code_max_value = map(
+                float, [par_code_min_value, par_code_max_value])
+        if not (par_code_min_value <= par_value <= par_code_max_value):
+            measures_dict[par_code] = (parameter, level, trange, par_value, False)
+            err_msg = "The values of %r, %r and %r are not consistent" \
+                      % (par_code, par_code_min, par_code_max)
+            err_msgs.append(err_msg)
+    measures_updated = list(measures_dict.values())
+    return err_msgs, (stat_props, date, measures_updated)
 
 
 # entry point candidate
-def do_internal_consistence_check(filepath, limiting_params=None):
+def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
+                                  limiting_params=None):
     """
     Get the internal consistent check for arpaer CSV data written using the function `write_data`.
     Only rightly formatted rows are considered (see function `validate_format`).
@@ -504,6 +545,7 @@ def do_internal_consistence_check(filepath, limiting_params=None):
     updated.
 
     :param filepath: path to the arpaer CSV file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: ([..., (row index, err_msg), ...], data_updated)
     """
@@ -513,41 +555,27 @@ def do_internal_consistence_check(filepath, limiting_params=None):
         # global formatting error: no parsing
         return fmt_errors, None
 
-    # must load grouping by date and station
-    # FIXME
+    data_updated = []
+    parameters_map = load_parameter_file(parameters_filepath)
     err_msgs = []
-    data_updated = data.copy()
-    for current_date in data_updated:
-        props = data[current_date]
-        for par_code, (par_value, par_flag, row_idx) in props.items():
-            if par_code not in limiting_params or not par_flag:
-                # no check if the parameter is floagged invalid or no in the limiting_params
-                continue
-            par_code_min, par_code_max = limiting_params[par_code]
-            if par_code_min not in props or par_code_max not in props:
-                # no check if no measurements for limiting parameters
-                continue
-            par_code_min_value, par_code_min_flag = props[par_code_min]
-            par_code_max_value, par_code_max_flag = props[par_code_max]
-            if not par_code_min_flag or not par_code_max_flag:
-                # no check if limiting parameters are flagged invalid
-                continue
-            if not (par_code_min_value <= par_value <= par_code_max_value):
-                data_updated[current_date][par_code] = (par_value, False)
-                err_msg = "The values of %r, %r and %r are not consistent" \
-                          % (par_code, par_code_min, par_code_max)
-                err_msgs.append((row_idx, err_msg))
 
-    ret_value = err_msgs, data_updated
-    return ret_value
+    # assuming in a row (i.e. date) we have all the station's measurements for that date
+    with open(filepath) as fp:
+        for i, row in enumerate(fp, 1):
+            if not row.strip() or i in fmt_errors_dict:
+                continue
+            parsed_row = parse_row(row, parameters_map=parameters_map)
+            err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+            for err_msg_row in err_msgs_row:
+                err_msgs.append((i, err_msg_row))
+            data_updated.append(parsed_row)
+    return err_msgs, data_updated
 
 
-# FIXME
 def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                     limiting_params=LIMITING_PARAMETERS):
     """
-    Read an for arpaer CSV data written using the function `write_data`,  located at `filepath`,
-    and parse data inside it, doing
+    Read an for arpaer file located at `filepath`, and parse data inside it, doing
     - format validation
     - weak climatologic check
     - internal consistence check
@@ -562,28 +590,25 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     par_map = load_parameter_file(parameters_filepath)
     par_thresholds = load_parameter_thresholds(parameters_filepath)
     err_msgs = []
-    data = dict()
+    data_parsed = []
     fmt_err_msgs = validate_format(filepath)
     err_msgs.extend(fmt_err_msgs)
     fmt_err_indexes_dict = dict(fmt_err_msgs)
     if 0 in fmt_err_indexes_dict:
         # global error, no parsing
-        return err_msgs, (None, None, data)
-    icc_err_msgs, data_updated = do_internal_consistence_check(filepath, limiting_params)
-    icc_err_msgs_dict = dict(icc_err_msgs)
-    err_msgs.extend(icc_err_msgs)
+        return err_msgs, []
 
-    csv_file = open(filepath, 'r')
-    csv_reader = csv.DictReader(csv_file, delimiter=';')
-    for i, row in enumerate(csv_reader, 2):
-        if i in fmt_err_indexes_dict or i in icc_err_msgs_dict:
-            continue
-        err_msgs1_row, row_updated = row_weak_climatologic_check(row, par_thresholds)
-        row_date = datetime.strptime(row['date'], '%Y-%m-%d-%H:%M:%S')
-        data_updated[row_date][row_updated['parameter']] = \
-            (float(row_updated['value']), row_updated['valid'] == '1', i)
-        err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-    ret_value = err_msgs, data_updated
+    with open(filepath) as fp:
+        for i, row in enumerate(fp, 1):
+            if not row.strip() or i in fmt_err_indexes_dict:
+                continue
+            parsed_row = parse_row(row, par_map)
+            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
+            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+            data_parsed.append(parsed_row)
+            err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
+            err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+    ret_value = err_msgs, data_parsed
     return ret_value
 
 

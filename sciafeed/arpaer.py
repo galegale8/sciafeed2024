@@ -4,6 +4,7 @@ This module contains the functions and utilities to parse an ARPA-Emilia Romagna
 import csv
 from datetime import datetime
 import operator
+import os
 from os.path import join
 import json
 
@@ -135,7 +136,7 @@ def save_json_results(filepath, json_results):
     with open(filepath, 'w') as fp:
         for json_result in json_results:
             dumped = json.dumps(json_result)
-            fp.write(dumped)
+            fp.write(dumped + os.linesep)
 
 
 def load_json_results(filepath):
@@ -169,6 +170,8 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH,
     """
     # TODO: verify if there's a way to check if data is recent or not, so where to download
     parameters_map = load_parameter_file(parameters_filepath)
+    # FIXME: the effective parameters must be defined (computed?) not only by the code but
+    #  also by the trange and tlevel
     only_bcodes = list(parameters_map.keys())
     json_results = get_json_results(start, end, limit, only_bcodes, timeout, **kwargs)
     save_json_results(save_path, json_results)
@@ -435,26 +438,29 @@ def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
 
     :param parsed_row: the parsed row of an arpa-er file
     :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, data_parsed)
+    :return: (err_msgs, parsed_row_updated)
     """
     if not parameters_thresholds:
         parameters_thresholds = dict()
     err_msgs = []
     measures = parsed_row[2]
     measures_updated = measures.copy()
-    for measure in measures:
+    for i, measure in enumerate(measures):
+        # FIXME: the par_code must be identied not only by the code, but also by trange and level,
+        #  so this check includes too many results
         par_code, level, trange, par_value, par_flag = measure
         if par_code not in parameters_thresholds or not par_flag or par_value is None:
             # no check if limiting parameters are flagged invalid or the value is None
-            continue
+            # NOTE: putting 'no cover' because coverage wrongly doesn't report it as covered
+            continue   # pragma: no cover
         min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
         if not (min_threshold <= par_value <= max_threshold):
-            measures_updated[4] = False
+            measures_updated[i] = (measure[0], measure[1], measure[2], measure[3], False)
             err_msg = "The value of %r is out of range [%s, %s]" \
                       % (par_code, min_threshold, max_threshold)
             err_msgs.append(err_msg)
-    data_parsed_updated = (parsed_row[0], parsed_row[1], measures_updated)
-    return err_msgs, data_parsed_updated
+    parsed_row_updated = (parsed_row[0], parsed_row[1], measures_updated)
+    return err_msgs, parsed_row_updated
 
 
 # entry point candidate
@@ -504,35 +510,24 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (err_msgs, data_parsed)
     """
-    if limiting_params is None:
-        limiting_params = dict()
-    stat_props, date, measures = parsed_row
-    err_msgs = []
-    measures_updated = measures.copy()
-    measures_dict = {measure[0]: measure for measure in measures_updated}
-    for par_code, measure in measures_dict.items():
-        parameter, level, trange, par_value, par_flag = measure
-        if par_code not in limiting_params or not par_flag:
-            # no check if the parameter is flagged invalid or not in the limiting_params
-            continue
-        par_code_min, par_code_max = limiting_params[par_code]
-        if par_code_min not in measures_dict or par_code_max not in measures_dict:
-            # no check if the min/max parameters are not measured
-            continue
-        _, _, _, par_code_min_value, par_code_min_flag = measures_dict[par_code_min]
-        _, _, _, par_code_max_value, par_code_max_flag = measures_dict[par_code_max]
-        if not par_code_min_flag or not par_code_max_flag:
-            # no check if limiting parameters are flagged invalid
-            continue
-        par_code_min_value, par_code_max_value = map(
-                float, [par_code_min_value, par_code_max_value])
-        if not (par_code_min_value <= par_value <= par_code_max_value):
-            measures_dict[par_code] = (parameter, level, trange, par_value, False)
-            err_msg = "The values of %r, %r and %r are not consistent" \
-                      % (par_code, par_code_min, par_code_max)
-            err_msgs.append(err_msg)
-    measures_updated = list(measures_dict.values())
-    return err_msgs, (stat_props, date, measures_updated)
+    # Not implementable at the current status. The measure of the parameter must be identified
+    # not only by its code, but also by the right level and trange.
+
+    # Currently we have more measures:
+    # stat_props, date, measures = parsed_row
+    # measures ->
+    # [('PREC', 1, 1, 0.0, True),
+    # ('PREC', 1, 1, 0.0, True),
+    # ('PREC', 1, 1, 0.0, True),
+    # ('UR media', 103, 0, 56, True),
+    # ('UR media', 103, 0, 38, True),
+    # ('UR media', 103, 2, 65, True),
+    # ('UR media', 103, 2, 70, True),
+    # ('UR media', 103, 3, 44, True),
+    # ('UR media', 103, 3, 14, True),
+    # ('UR media', 103, 254, 55, True)])
+    #
+    raise NotImplementedError()
 
 
 # entry point candidate
@@ -577,12 +572,12 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     """
     Read an for arpaer file located at `filepath`, and parse data inside it, doing
     - format validation
-    - weak climatologic check
-    - internal consistence check
+    #- weak climatologic check (currently implemented but to be verified)
+    #- internal consistence check (currently not implemented)
     Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
     (row index, error message) of the errors found.
 
-    :param filepath: path to the arpaer CSV file
+    :param filepath: path to the arpaer file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (err_msgs, data_parsed)
@@ -604,10 +599,11 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                 continue
             parsed_row = parse_row(row, par_map)
             err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+            # err_msgs2_row, parsed_row = row_internal_consistence_check(
+            # parsed_row, limiting_params)
             data_parsed.append(parsed_row)
             err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-            err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+            # err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
     ret_value = err_msgs, data_parsed
     return ret_value
 
@@ -616,13 +612,12 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
 def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
                 parameters_filepath=PARAMETERS_FILEPATH, limiting_params=LIMITING_PARAMETERS):
     """
-    Read an for arpaer CSV data written using the function `write_data`,  located at `in_filepath`
-    and generate a report on the parsing.
+    Read an for arpaer file located at `in_filepath` and generate a report on the parsing.
     If `out_filepath` is defined, the report string is written on a file.
     If the path `outdata_filepath` is defined, a file with the data parsed is created at the path.
     Return the list of report strings and the data parsed.
 
-    :param in_filepath: arpaer CSV input file
+    :param in_filepath: arpaer input file
     :param out_filepath: path of the output report
     :param outdata_filepath: path of the output file containing data
     :param parameters_filepath: path to the CSV file containing info about stored parameters

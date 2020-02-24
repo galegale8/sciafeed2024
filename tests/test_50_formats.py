@@ -93,11 +93,11 @@ def test_make_report(tmpdir):
         "Row 1: The value of '1' is out of range [0.0, 1020.0]",
         "Row 2: The value of '2' is out of range [0.0, 360.0]",
         "Row 3: The value of '3' is out of range [-350.0, 450.0]",
-        "Row 5: The values of '3', '1' and '2' are not consistent",
-        "Row 6: The values of '3', '1' and '2' are not consistent",
-        "Row 7: The values of '3', '1' and '2' are not consistent",
-        "Row 10: The values of '3', '1' and '2' are not consistent",
-        "Row 20: The values of '3', '1' and '2' are not consistent"
+        "Row 5: The values of '3' and '2' are not consistent",
+        "Row 6: The values of '3' and '2' are not consistent",
+        "Row 7: The values of '3' and '2' are not consistent",
+        "Row 10: The values of '3' and '2' are not consistent",
+        "Row 20: The values of '3' and '2' are not consistent"
     ]
     for err_msg in err_msgs:
         assert err_msg in msgs
@@ -558,17 +558,17 @@ def test_make_report(tmpdir):
     assert exists(outdata_filepath)
     err_msgs = [
         "Row 1: The value of '3' is out of range [-350.0, 450.0]",
-        "Row 1: The values of '9', '10' and '4' are not consistent",
+        "Row 1: The values of '9' and '4' are not consistent",
         "Row 2: The value of '4' is out of range [-400.0, 400.0]",
         "Row 3: The value of '5' is out of range [-300.0, 500.0]",
-        "Row 3: The values of '9', '10' and '4' are not consistent",
-        "Row 4: The values of '9', '10' and '4' are not consistent",
-        "Row 5: The values of '9', '10' and '4' are not consistent",
-        "Row 6: The values of '9', '10' and '4' are not consistent",
-        "Row 7: The values of '9', '10' and '4' are not consistent",
-        "Row 8: The values of '9', '10' and '4' are not consistent",
-        "Row 9: The values of '9', '10' and '4' are not consistent",
-        "Row 20: The values of '9', '10' and '4' are not consistent"
+        "Row 3: The values of '9' and '4' are not consistent",
+        "Row 4: The values of '9' and '4' are not consistent",
+        "Row 5: The values of '9' and '4' are not consistent",
+        "Row 6: The values of '9' and '4' are not consistent",
+        "Row 7: The values of '9' and '4' are not consistent",
+        "Row 8: The values of '9' and '4' are not consistent",
+        "Row 9: The values of '9' and '4' are not consistent",
+        "Row 20: The values of '9' and '4' are not consistent",
     ]
     for err_msg in err_msgs:
         assert err_msg in msgs
@@ -1048,9 +1048,10 @@ def test_make_report(tmpdir):
         'Row 1: The number of components in the row is wrong',
         'Row 3: duplication of rows with different data',
         'Row 4: the latitude changes',
+        'Row 6: it is not strictly after the previous',
         'Row 7: the time is not coherent with the filename',
-        "Row 2: The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent",
-        "Row 5: The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"
+        "Row 2: The values of 'PREC' and 'Bagnatura_f' are not consistent",
+        "Row 5: The values of 'PREC' and 'Bagnatura_f' are not consistent",
     ]
     for err_msg in err_msgs:
         assert err_msg in msgs
@@ -1069,7 +1070,9 @@ def test_make_report(tmpdir):
     assert exists(outdata_filepath)
     err_msgs = [
         "Row 1: The value of 'FF' is out of range [0.0, 102.0]",
+        "Row 1: The values of 'PREC' and 'Bagnatura_f' are not consistent",
         "Row 2: The value of 'DD' is out of range [0.0, 360.0]",
+        "Row 2: The values of 'PREC' and 'Bagnatura_f' are not consistent",
         "Row 3: The value of 'PREC' is out of range [0.0, 989.0]",
     ]
     for err_msg in err_msgs:
@@ -1090,7 +1093,7 @@ def test_make_report(tmpdir):
             'DD': (361.0, False),
             'FF': (1.6, True),
             'INSOL': (0.0, True),
-            'PREC': (0.0, True),
+            'PREC': (0.0, False),
             'Pstaz': (1001.0, True),
             'RADSOL': (0.0, True),
             'Tmedia': (3.1, True),
@@ -1175,13 +1178,14 @@ def test_make_report(tmpdir):
     expected_msgs = [
         'Row 10: the row is not strictly after the previous',
         "Row 4: The value of 'DD' is out of range [0.0, 360.0]",
+        "Row 4: The values of 'Tmedia' and 'UR media' are not consistent",
         "Row 5: The value of 'FF' is out of range [0.0, 102.0]",
         "Row 6: The value of 'Tmedia' is out of range [-35.0, 45.0]",
-        "Row 16: The values of 'Tmedia', 'UR media' and 'DD' are not consistent",
-        "Row 22: The values of 'Tmedia', 'UR media' and 'DD' are not consistent",
-        "Row 28: The values of 'Tmedia', 'UR media' and 'DD' are not consistent",
-        "Row 34: The values of 'Tmedia', 'UR media' and 'DD' are not consistent",
-        "Row 40: The values of 'Tmedia', 'UR media' and 'DD' are not consistent"
+        "Row 16: The values of 'Tmedia' and 'UR media' are not consistent",
+        "Row 22: The values of 'Tmedia' and 'UR media' are not consistent",
+        "Row 28: The values of 'Tmedia' and 'UR media' are not consistent",
+        "Row 34: The values of 'Tmedia' and 'UR media' are not consistent",
+        "Row 40: The values of 'Tmedia' and 'UR media' are not consistent",
     ]
     for err_msg in expected_msgs:
         assert err_msg in err_msgs
@@ -1190,7 +1194,7 @@ def test_make_report(tmpdir):
             'DD': (361.0, False),
             'FF': (1.9, True),
             'P': (1018.1, True),
-            'Tmedia': (7.2, True),
+            'Tmedia': (7.2, False),
             'UR media': (63.0, True)},
         datetime(2018, 1, 1, 0, 10): {
             'DD': (180.0, True),

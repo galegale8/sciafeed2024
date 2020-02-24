@@ -1111,7 +1111,7 @@ def test_row_internal_consistence_check():
     assert parsed_row_updated == row_parsed
 
     # wrong value
-    row = "201201010000 37.339130  32767    242     61     55     60  32767  32767  32767" \
+    row = "201201010000 37.339130  32767    242     61     62     60  32767  32767  32767" \
           "     83     80     85  32767  32767  32767  32767  32767  32767  32767" \
           "  32767      0  32767      2      2      1      1      1      2      2" \
           "      2      1      1      1      2      2      2      2      2      2" \
@@ -1119,7 +1119,8 @@ def test_row_internal_consistence_check():
     row_parsed = arpa21.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa21.row_internal_consistence_check(
         row_parsed, limiting_params)
-    assert err_msgs == ["The values of '3', '4' and '5' are not consistent"]
+    assert err_msgs == ["The values of '3' and '4' are not consistent",
+                        "The values of '3' and '5' are not consistent"]
     assert parsed_row_updated[:2] == row_parsed[:2]
     assert parsed_row_updated[2]['3'] == (61.0, False)
     parsed_row_updated[2]['3'] = (61.0, True)
@@ -1209,16 +1210,16 @@ def test_do_internal_consistence_check(tmpdir):
     err_msgs, parsed_after_check = arpa21.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (1, "The values of '9', '10' and '4' are not consistent"),
-        (2, "The values of '9', '10' and '4' are not consistent"),
-        (3, "The values of '9', '10' and '4' are not consistent"),
-        (4, "The values of '9', '10' and '4' are not consistent"),
-        (5, "The values of '9', '10' and '4' are not consistent"),
-        (6, "The values of '9', '10' and '4' are not consistent"),
-        (7, "The values of '9', '10' and '4' are not consistent"),
-        (8, "The values of '9', '10' and '4' are not consistent"),
-        (9, "The values of '9', '10' and '4' are not consistent"),
-        (20, "The values of '9', '10' and '4' are not consistent")
+        (1, "The values of '9' and '4' are not consistent"),
+        (2, "The values of '9' and '4' are not consistent"),
+        (3, "The values of '9' and '4' are not consistent"),
+        (4, "The values of '9' and '4' are not consistent"),
+        (5, "The values of '9' and '4' are not consistent"),
+        (6, "The values of '9' and '4' are not consistent"),
+        (7, "The values of '9' and '4' are not consistent"),
+        (8, "The values of '9' and '4' are not consistent"),
+        (9, "The values of '9' and '4' are not consistent"),
+        (20, "The values of '9' and '4' are not consistent")
     ]
     assert parsed_after_check[:2] == parsed[:2]
     assert parsed_after_check[2][datetime(2012, 1, 1, 0, 0)]['9'] == (83.0, False)
@@ -1252,17 +1253,17 @@ def test_parse_and_check(tmpdir):
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
         (1, "The value of '3' is out of range [-350.0, 450.0]"),
-        (1, "The values of '9', '10' and '4' are not consistent"),
+        (1, "The values of '9' and '4' are not consistent"),
         (2, "The value of '4' is out of range [-400.0, 400.0]"),
         (3, "The value of '5' is out of range [-300.0, 500.0]"),
-        (3, "The values of '9', '10' and '4' are not consistent"),
-        (4, "The values of '9', '10' and '4' are not consistent"),
-        (5, "The values of '9', '10' and '4' are not consistent"),
-        (6, "The values of '9', '10' and '4' are not consistent"),
-        (7, "The values of '9', '10' and '4' are not consistent"),
-        (8, "The values of '9', '10' and '4' are not consistent"),
-        (9, "The values of '9', '10' and '4' are not consistent"),
-        (20, "The values of '9', '10' and '4' are not consistent")
+        (3, "The values of '9' and '4' are not consistent"),
+        (4, "The values of '9' and '4' are not consistent"),
+        (5, "The values of '9' and '4' are not consistent"),
+        (6, "The values of '9' and '4' are not consistent"),
+        (7, "The values of '9' and '4' are not consistent"),
+        (8, "The values of '9' and '4' are not consistent"),
+        (9, "The values of '9' and '4' are not consistent"),
+        (20, "The values of '9' and '4' are not consistent")
     ]
     assert data_parsed == ('00202', 37.33913, {
         datetime(2012, 1, 1, 0, 0): {

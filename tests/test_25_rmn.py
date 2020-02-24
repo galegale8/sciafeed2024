@@ -764,7 +764,7 @@ def test_row_internal_consistence_check():
     limiting_params = {'Tmedia': ('UR media', 'DD')}
     err_msgs, parsed_row_updated = rmn.row_internal_consistence_check(
         row_parsed, limiting_params)
-    assert err_msgs == ["The values of 'Tmedia', 'UR media' and 'DD' are not consistent"]
+    assert err_msgs == ["The values of 'Tmedia' and 'UR media' are not consistent"]
     assert parsed_row_updated[:1] == row_parsed[:1]
     assert parsed_row_updated[1]['Tmedia'] == (7.2, False)
     parsed_row_updated[1]['Tmedia'] = (7.2, True)
@@ -796,11 +796,13 @@ def test_row_internal_consistence_check():
     assert parsed_row_updated == row_parsed
     row_parsed[1]['UR media'] = (63, True)
     row_parsed[1]['DD'] = (180, False)
+    row_parsed[1]['Tmedia'] = (7.2, False)
     err_msgs, parsed_row_updated = rmn.row_internal_consistence_check(
         row_parsed, limiting_params)
     assert not err_msgs
     assert parsed_row_updated == row_parsed
     row_parsed[1]['DD'] = (180, True)
+    row_parsed[1]['Tmedia'] = (7.2, True)
 
     # no check if no limiting parameters
     err_msgs, parsed_row_updated = rmn.row_internal_consistence_check(row_parsed)
@@ -862,15 +864,14 @@ def test_do_internal_consistence_check(tmpdir):
     err_msgs, parsed_after_check = rmn.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (4, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (10, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (16, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (22, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (28, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (34, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (40, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent")
+        (4, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (10, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (16, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (22, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (28, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (34, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (40, "The values of 'Tmedia' and 'UR media' are not consistent")
     ]
-
     assert parsed_after_check[:1] == parsed[:1]
     assert parsed_after_check[1][datetime(2018, 1, 1, 0, 0)]['Tmedia'] == (7.2, False)
     assert parsed_after_check[1][datetime(2018, 1, 1, 1, 0)]['Tmedia'] == (8.0, False)
@@ -1151,20 +1152,21 @@ def test_parse_and_check(tmpdir):
     assert err_msgs == [
         (10, 'the row is not strictly after the previous'),
         (4, "The value of 'DD' is out of range [0.0, 360.0]"),
+        (4, "The values of 'Tmedia' and 'UR media' are not consistent"),
         (5, "The value of 'FF' is out of range [0.0, 102.0]"),
         (6, "The value of 'Tmedia' is out of range [-35.0, 45.0]"),
-        (16, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (22, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (28, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (34, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent"),
-        (40, "The values of 'Tmedia', 'UR media' and 'DD' are not consistent")
+        (16, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (22, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (28, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (34, "The values of 'Tmedia' and 'UR media' are not consistent"),
+        (40, "The values of 'Tmedia' and 'UR media' are not consistent")
     ]
     assert data_parsed == ('ANCONA',  {
         datetime(2018, 1, 1, 0, 0): {
             'DD': (361.0, False),
             'FF': (1.9, True),
             'P': (1018.1, True),
-            'Tmedia': (7.2, True),
+            'Tmedia': (7.2, False),
             'UR media': (63.0, True)},
         datetime(2018, 1, 1, 0, 10): {
             'DD': (180.0, True),

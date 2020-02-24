@@ -980,7 +980,7 @@ def test_row_internal_consistence_check():
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
         row_parsed, limiting_params)
-    assert err_msgs == ["The values of '1', '2' and '3' are not consistent"]
+    assert err_msgs == ["The values of '1' and '2' are not consistent"]
     assert parsed_row_updated[:2] == row_parsed[:2]
     assert parsed_row_updated[2]['1'] == (20.0, False)
     parsed_row_updated[2]['1'] = (20.0, True)
@@ -1002,10 +1002,10 @@ def test_row_internal_consistence_check():
     assert not err_msgs
     assert parsed_row_updated == row_parsed
 
-    # no check if one of the thresholds is invalid
+    # no check if both the thresholds are invalid
     row = "201301010700 43.876999     20    358     65  32767  32767  32767  32767  32767" \
           "     93  32767  32767  10182  32767  32767  32767  32767  32767  32767  32767" \
-          "      1      1      2      2      2      2      2      2      1      2      2" \
+          "      1      2      2      2      2      2      2      2      1      2      2" \
           "      1      2      2      2      2      2      2      2"
     row_parsed = arpa19.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpa19.row_internal_consistence_check(
@@ -1068,11 +1068,11 @@ def test_do_internal_consistence_check(tmpdir):
     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (5, "The values of '3', '1' and '2' are not consistent"),
-        (6, "The values of '3', '1' and '2' are not consistent"),
-        (7, "The values of '3', '1' and '2' are not consistent"),
-        (10, "The values of '3', '1' and '2' are not consistent"),
-        (20, "The values of '3', '1' and '2' are not consistent"),
+        (5, "The values of '3' and '2' are not consistent"),
+        (6, "The values of '3' and '2' are not consistent"),
+        (7, "The values of '3' and '2' are not consistent"),
+        (10, "The values of '3' and '2' are not consistent"),
+        (20, "The values of '3' and '2' are not consistent")
     ]
     assert parsed_after_check[:2] == parsed[:2]
     assert parsed_after_check[2][datetime(2013, 1, 1, 4, 0)]['3'] == (64.0, False)
@@ -1108,11 +1108,11 @@ def test_parse_and_check(tmpdir):
         (1, "The value of '1' is out of range [0.0, 1020.0]"),
         (2, "The value of '2' is out of range [0.0, 360.0]"),
         (3, "The value of '3' is out of range [-350.0, 450.0]"),
-        (5, "The values of '3', '1' and '2' are not consistent"),
-        (6, "The values of '3', '1' and '2' are not consistent"),
-        (7, "The values of '3', '1' and '2' are not consistent"),
-        (10, "The values of '3', '1' and '2' are not consistent"),
-        (20, "The values of '3', '1' and '2' are not consistent"),
+        (5, "The values of '3' and '2' are not consistent"),
+        (6, "The values of '3' and '2' are not consistent"),
+        (7, "The values of '3' and '2' are not consistent"),
+        (10, "The values of '3' and '2' are not consistent"),
+        (20, "The values of '3' and '2' are not consistent"),
     ]
     assert data_parsed == ('70002', 43.876999, {
         datetime(2013, 1, 1, 0, 0): {

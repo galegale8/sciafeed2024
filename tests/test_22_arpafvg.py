@@ -360,7 +360,7 @@ def test_row_internal_consistence_check():
     row_parsed = arpafvg.parse_row(row, parameters_map)
     err_msgs, parsed_row_updated = arpafvg.row_internal_consistence_check(
         row_parsed, limiting_params)
-    assert err_msgs == ["The values of 'PREC', 'FF' and 'DD' are not consistent"]
+    assert err_msgs == ["The values of 'PREC' and 'FF' are not consistent"]
     assert parsed_row_updated[:2] == row_parsed[:2]
     assert parsed_row_updated[2]['PREC'] == (0.0, False)
     parsed_row_updated[2]['PREC'] = (0.0, True)
@@ -444,10 +444,9 @@ def test_do_internal_consistence_check(tmpdir):
     err_msgs, parsed_after_check = arpafvg.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (1, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"),
-        (2, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"),
-        (3, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"),
-
+        (1, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+        (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+        (3, "The values of 'PREC' and 'Bagnatura_f' are not consistent")
     ]
     assert parsed_after_check[:2] == parsed[:2]
     assert parsed_after_check[2][datetime(2018, 1, 1, 1, 0)]['PREC'] == (0.0, False)
@@ -485,8 +484,8 @@ def test_parse_and_check(tmpdir):
         (4, 'the latitude changes'),
         (6, 'it is not strictly after the previous'),
         (7, 'the time is not coherent with the filename'),
-        (2, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent"),
-        (5, "The values of 'PREC', 'Bagnatura_f' and 'DD' are not consistent")
+        (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+        (5, "The values of 'PREC' and 'Bagnatura_f' are not consistent")
     ]
     assert data_parsed == ('00001', 46.077222, {
         datetime(2018, 1, 1, 2, 0): {

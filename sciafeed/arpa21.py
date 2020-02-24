@@ -396,16 +396,20 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
         par_code_min, par_code_max = limiting_params[par_code]
         par_code_min_value, par_code_min_flag = props[par_code_min]
         par_code_max_value, par_code_max_flag = props[par_code_max]
-        if not par_code_min_flag or not par_code_max_flag:
-            # no check if limiting parameters are flagged invalid
-            continue
-        par_code_min_value, par_code_max_value = map(
-                float, [par_code_min_value, par_code_max_value])
-        if not (par_code_min_value <= par_value <= par_code_max_value):
-            ret_props[par_code] = (par_value, False)
-            err_msg = "The values of %r, %r and %r are not consistent" \
-                      % (par_code, par_code_min, par_code_max)
-            err_msgs.append(err_msg)
+        # check minimum
+        if par_code_min_flag and par_code_min_value is not None:
+            par_code_min_value = float(par_code_min_value)
+            if par_value < par_code_min_value:
+                ret_props[par_code] = (par_value, False)
+                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_min)
+                err_msgs.append(err_msg)
+        # check maximum
+        if par_code_max_flag and par_code_max_value is not None:
+            par_code_max_value = float(par_code_max_value)
+            if par_value > par_code_max_value:
+                ret_props[par_code] = (par_value, False)
+                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_max)
+                err_msgs.append(err_msg)
     return err_msgs, (row_date, lat, ret_props)
 
 

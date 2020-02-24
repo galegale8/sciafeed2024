@@ -360,8 +360,8 @@ def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
     err_msgs = []
     ret_props = props.copy()
     for par_code, (par_value, par_flag) in props.items():
-        if par_code not in parameters_thresholds or not par_flag:
-            # no check if limiting parameters are flagged invalid
+        if par_code not in parameters_thresholds or not par_flag or par_value is None:
+            # no check if limiting parameters are flagged invalid or value is None
             continue
         min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
         if not (min_threshold <= par_value <= max_threshold):

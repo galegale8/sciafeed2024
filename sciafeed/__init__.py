@@ -1,4 +1,5 @@
 
-import os.path
+from os.path import abspath, dirname, join
 
-this_path = os.path.abspath(os.path.dirname(__file__))
+this_path = abspath(dirname(__file__))
+TEMPLATES_PATH = join(this_path, 'templates')

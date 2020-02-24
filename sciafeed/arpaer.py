@@ -10,7 +10,7 @@ import json
 
 import requests
 
-from sciafeed import this_path
+from sciafeed import TEMPLATES_PATH
 
 # the name of the 'resource' table, where to find data: it can be taken from the link of
 # of `dati recenti' from the URL
@@ -18,16 +18,16 @@ from sciafeed import this_path
 TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
 
 # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/master/tables/dballe.txt
-BTABLE_PATH = join(this_path, 'dballe.txt')
+BTABLE_PATH = join(TEMPLATES_PATH, 'dballe.txt')
 
 # taken from https://github.com/ARPA-SIMC/dballe/blob/v8.2-1/doc/fapi_ltypes.md
-LTYPES_PATH = join(this_path, 'fapi_ltypes.md')
+LTYPES_PATH = join(TEMPLATES_PATH, 'fapi_ltypes.md')
 
 # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/v8.2-1/doc/fapi_tranges.md
-TRANGES_PATH = join(this_path, 'fapi_tranges.md')
+TRANGES_PATH = join(TEMPLATES_PATH, 'fapi_tranges.md')
 
 DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
-PARAMETERS_FILEPATH = join(this_path, 'arpaer_params.csv')
+PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpaer_params.csv')
 LIMITING_PARAMETERS = {}
 
 
@@ -627,7 +627,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msgs = []
     msg = "START OF ANALYSIS OF ARPA-ER FILE %r" % in_filepath
     msgs.append(msg)
-    msgs.append('='*len(msg))
+    msgs.append('=' * len(msg))
     msgs.append('')
 
     err_msgs, data_parsed = parse_and_check(
@@ -648,7 +648,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msgs.append('')
     msg = "END OF ANALYSIS OF ARPA-ER FILE"
     msgs.append(msg)
-    msgs.append('='*len(msg))
+    msgs.append('=' * len(msg))
 
     if out_filepath:
         with open(out_filepath, 'w') as fp:

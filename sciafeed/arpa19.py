@@ -5,10 +5,10 @@ import csv
 from datetime import datetime
 from os.path import basename, join, splitext
 
-from sciafeed import this_path
+from sciafeed import TEMPLATES_PATH
 
 MISSING_VALUE_MARKER = '32767'
-PARAMETERS_FILEPATH = join(this_path, 'arpa19_params.csv')
+PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpa19_params.csv')
 LIMITING_PARAMETERS = {
     'Tmedia': ('Tmin', 'Tmax'),
     'UR media': ('UR min', 'UR max'),
@@ -548,7 +548,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msgs = []
     msg = "START OF ANALYSIS OF ARPA19 FILE %r" % in_filepath
     msgs.append(msg)
-    msgs.append('='*len(msg))
+    msgs.append('=' * len(msg))
     msgs.append('')
 
     err_msgs, data_parsed = parse_and_check(
@@ -569,7 +569,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msgs.append('')
     msg = "END OF ANALYSIS OF ARPA19 FILE"
     msgs.append(msg)
-    msgs.append('='*len(msg))
+    msgs.append('=' * len(msg))
 
     if out_filepath:
         with open(out_filepath, 'w') as fp:

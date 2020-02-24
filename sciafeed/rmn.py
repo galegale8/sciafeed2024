@@ -6,9 +6,9 @@ import csv
 from datetime import datetime
 from os.path import join
 
-from sciafeed import this_path
+from sciafeed import TEMPLATES_PATH
 
-PARAMETERS_FILEPATH = join(this_path, 'rmn_params.csv')
+PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'rmn_params.csv')
 LIMITING_PARAMETERS = {}
 
 

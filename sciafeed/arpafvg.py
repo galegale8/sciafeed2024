@@ -498,50 +498,20 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     return ret_value
 
 
-def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
-                parameters_filepath=PARAMETERS_FILEPATH, limiting_params=LIMITING_PARAMETERS):
+def is_format_compliant(filepath):
     """
-    Read an arpafvg file located at `in_filepath` and generate a report on the parsing.
-    If `out_filepath` is defined, the report string is written on a file.
-    If the path `outdata_filepath` is defined, a file with the data parsed is created at the path.
-    Return the list of report strings and the data parsed.
+    Return True if the file located at `filepath` is compliant to the format, False otherwise.
 
-    :param in_filepath: arpafvg input file
-    :param out_filepath: path of the output report
-    :param outdata_filepath: path of the output file containing data
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (report_strings, data_parsed)
+    :param filepath: path to file to be checked
+    :return: True if the file is compliant, False otherwise
     """
-    msgs = []
-    msg = "START OF ANALYSIS OF arpafvg FILE %r" % in_filepath
-    msgs.append(msg)
-    msgs.append('=' * len(msg))
-    msgs.append('')
-
-    err_msgs, data_parsed = parse_and_check(
-        in_filepath, parameters_filepath=parameters_filepath, limiting_params=limiting_params)
-    if not err_msgs:
-        msg = "No errors found"
-        msgs.append(msg)
-    else:
-        for row_index, err_msg in err_msgs:
-            msgs.append("Row %s: %s" % (row_index, err_msg))
-
-    if outdata_filepath:
-        msgs.append('')
-        write_data(data_parsed, outdata_filepath)
-        msg = "Data saved on file %r" % outdata_filepath
-        msgs.append(msg)
-
-    msgs.append('')
-    msg = "END OF ANALYSIS OF arpafvg FILE"
-    msgs.append(msg)
-    msgs.append('=' * len(msg))
-
-    if out_filepath:
-        with open(out_filepath, 'w') as fp:
-            for msg in msgs:
-                fp.write(msg + '\n')
-
-    return msgs, data_parsed
+    filename = basename(filepath)
+    if validate_filename(filename):
+        return False
+    # check first 2 rows
+    with open(filepath) as fp:
+        row1 = fp.readline()
+        row2 = fp.readline()
+        if len(row1.split()) != 15 and len(row2.split()) != 15:
+            return False
+    return True

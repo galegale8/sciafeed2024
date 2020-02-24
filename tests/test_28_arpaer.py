@@ -685,31 +685,3 @@ def test_parse_and_check():
         (3, 'information of the date is wrong'),
         (1, "The value of 'UR media' is out of range [20.0, 100.0]")
     ]
-
-
-def test_make_report(tmpdir):
-    in_filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
-    parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
-    limiting_params = dict()
-    out_filepath = str(tmpdir.join('report.txt'))
-    outdata_filepath = str(tmpdir.join('data.csv'))
-    report_strings, data_parsed = arpaer.make_report(
-        in_filepath, out_filepath, outdata_filepath,
-                       parameters_filepath, limiting_params)
-    expected_rows = [
-        "Row 1: The value of 'UR media' is out of range [20.0, 100.0]",
-    ]
-    for row in expected_rows:
-        assert row in report_strings
-
-    in_filepath = join(TEST_DATA_PATH, 'arpaer', 'wrong_results1.json')
-    report_strings, data_parsed = arpaer.make_report(
-        in_filepath, out_filepath, outdata_filepath,
-        parameters_filepath, limiting_params)
-    expected_rows = [
-        'Row 2: information of the station is not parsable',
-        'Row 3: information of the date is wrong',
-        "Row 1: The value of 'UR media' is out of range [20.0, 100.0]",
-    ]
-    for row in expected_rows:
-        assert row in report_strings

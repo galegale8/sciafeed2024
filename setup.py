@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 with open('README.rst') as fh:
     long_description = fh.read()
 
-version = '0.1'
+version = '0.2'
 
 tests_require = [
         'pytest',
@@ -40,10 +40,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'make_arpa19_report = sciafeed.entry_points:make_arpa19_report',
-            'make_arpa21_report = sciafeed.entry_points:make_arpa21_report',
-            'make_arpafvg_report = sciafeed.entry_points:make_arpafvg_report',
-            'make_rmn_report = sciafeed.entry_points:make_rmn_report',
+            'make_report = sciafeed.entry_points:make_report',
         ],
     },
 )

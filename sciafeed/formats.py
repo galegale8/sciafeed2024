@@ -81,9 +81,10 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     msg = "END OF ANALYSIS OF %s FILE" % format_label
     msgs.append(msg)
     msgs.append('=' * len(msg))
+    msgs.append('')
 
     if out_filepath:
-        with open(out_filepath, 'w') as fp:
+        with open(out_filepath, 'a') as fp:
             for msg in msgs:
                 fp.write(msg + '\n')
 

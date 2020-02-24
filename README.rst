@@ -73,7 +73,7 @@ To generate html documentation from the code, launch the build script:
 
 .. code:: bash
 
-    ve/bin/sphinx-build docs docs/html
+    ve/bin/sphinx-build -E docs docs/html
 
 The documentation is readable from docs/html/index.html by a browser (for example, firefox):
 

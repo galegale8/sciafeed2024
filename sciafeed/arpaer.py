@@ -38,6 +38,8 @@ def build_sql(table_name, start=None, end=None, limit=None, only_bcodes=None, **
     """
     Build a SQL query for the ARPAER database.
     Assume `table_name` has the following columns (can be used on `kwargs`):
+    ::
+
     - _id
     - date
     - data

@@ -1,4 +1,6 @@
-
+"""
+This module contains the functions and utilities common to all SCIA data formats
+"""
 from sciafeed import arpa19, arpa21, arpaer, arpafvg, rmn
 
 

@@ -16,7 +16,7 @@ from sciafeed import formats
               help="customized file path containing information about parameters")
 def make_report(**kwargs):
     """
-    Parse an ARPA19 file located at `in_filepath` and generate a report.
+    Parse a file containing data located at `in_filepath` and generate a report.
     Optionally, it can also export parsed data.
     """
     msgs, _ = formats.make_report(**kwargs)

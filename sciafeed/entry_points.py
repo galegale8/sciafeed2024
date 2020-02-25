@@ -3,6 +3,7 @@ This modules provides the functions of the SCIA FEED package's entry points
 """
 from os import listdir, mkdir
 from os.path import exists, isfile, join
+import sys
 
 import click
 
@@ -45,14 +46,16 @@ def make_reports(**kwargs):
     outdata_folder = kwargs['outdata_folder']
     if kwargs['out_filepath'] and exists(kwargs['out_filepath']):
         print('wrong "out_filepath": the report must not exist or will be overwritten')
-        return
+        sys.exit(2)
+        # return
     if outdata_folder and not exists(outdata_folder):
         mkdir(outdata_folder)
-    for child in listdir(in_folder):
-        print('processing file %r' % child)
+    children = sorted(listdir(in_folder))
+    for child in children:
         in_filepath = join(in_folder, child)
         if not isfile(in_filepath):
             continue
+        print('processing file %r' % child)
         if outdata_folder:
             outdata_filepath = join(outdata_folder, child + '.csv')
         else:

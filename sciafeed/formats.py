@@ -49,7 +49,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
     """
     format_label, format_module = guess_format(in_filepath)
     if not format_module:
-        msgs, data_parsed = ["file %r has unknown format" % in_filepath], None
+        msgs, data_parsed = ["file %r has unknown format" % in_filepath, ''], None
         return msgs, data_parsed
     if not parameters_filepath:
         parameters_filepath = getattr(format_module, 'PARAMETERS_FILEPATH')

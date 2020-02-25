@@ -1442,5 +1442,5 @@ def test_make_report(tmpdir):
     report_strings, data_parsed = formats.make_report(
         in_filepath, out_filepath, outdata_filepath,
         parameters_filepath, limiting_params)
-    assert report_strings == ["file %r has unknown format" % in_filepath]
+    assert report_strings == ["file %r has unknown format" % in_filepath, '']
     assert data_parsed is None

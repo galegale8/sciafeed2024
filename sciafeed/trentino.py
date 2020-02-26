@@ -29,10 +29,10 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     csv_reader = csv.DictReader(csv_file, delimiter=delimiter)
     ret_value = dict()
     for row in csv_reader:
-        position = int(row['CSV_CODE'])
-        ret_value[position] = dict()
+        csv_code = row['CSV_CODE']
+        ret_value[csv_code] = dict()
         for prop in row.keys():
-            ret_value[position][prop] = row[prop].strip()
+            ret_value[csv_code][prop] = row[prop].strip()
     return ret_value
 
 
@@ -101,23 +101,22 @@ def guess_fieldnames(filepath, parameters_map):
     :return: the tuple (list of fieldnames, station_code, extra_station_props)
     """
     station_code = None
-    station_props_str = None
+    station_props_str = ''
     parameter = None
     with open(filepath, 'r', encoding='unicode_escape') as csv_file:
         for line in csv_file:
-            line_tokens = line.split(',')
+            line_tokens = [t.replace('"', '').replace("'", '').strip() for t in line.split(',')]
+            line_tokens = [t for t in line_tokens if t]
             if len(line_tokens) < 2:
                 continue
             elif len(line_tokens) > 3 and station_code and line_tokens[3].startswith(station_code):
                 station_props_str = line_tokens[3]
                 break
-            first_col, second_col = [t.strip() for t in line_tokens[:2]]
+            first_col, second_col = line_tokens[:2]
             if first_col == 'Time':
                 station_code = second_col
             elif first_col == 'and':
                 parameter = parameters_map.get(second_col)['par_code']
-            if station_code and parameter:
-                break
     if not station_code or not parameter:
         raise ValueError('trentino header not compliant')
     fieldnames = ['date', parameter, 'quality']

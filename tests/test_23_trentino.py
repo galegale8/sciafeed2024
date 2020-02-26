@@ -25,15 +25,23 @@ def test_load_parameter_thresholds():
     parameter_thresholds = trentino.load_parameter_thresholds(test_filepath)
     assert parameter_thresholds == expected_thresholds
 
+    test2_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_wrong_params.csv')
+    expected_thresholds = {'PREC': [0.0, 989.0]}
+    parameter_thresholds = trentino.load_parameter_thresholds(test2_filepath)
+    assert parameter_thresholds == expected_thresholds
+
 
 def test_parse_filename():
-    # TODO
-    pass
+    filename = 'T0001.csv'
+    assert trentino.parse_filename(filename) == 'T0001'
 
 
 def test_validate_filename():
-    # TODO
-    pass
+    filename = 'T0001.csv'
+    assert not trentino.validate_filename(filename)
+    filename = 'wrong.xls'
+    err_msg = trentino.validate_filename(filename)
+    assert err_msg == 'Extension expected must be .csv, found .xls'
 
 
 def test_guess_fieldnames():
@@ -64,3 +72,148 @@ def test_guess_fieldnames():
     assert fieldnames == ['date', 'Tmin', 'quality']
     assert station == 'T0001'
     assert not extra_info
+
+
+def test_parse_row():
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+    parameters_map = trentino.load_parameter_file(parameters_filepath=parameters_filepath)
+
+    # quality ok
+    for quality in ['1', '76']:
+        row = {
+            'date': '09:00:00 01/05/1930',
+            'Tmin': '10.0',
+            'quality': quality
+        }
+        expected = (
+            datetime(1930, 5, 1, 9, 0), {'Tmin': (10.0, True)}
+        )
+        effective = trentino.parse_row(row, parameters_map)
+        assert effective == expected
+
+    # quality 255 or 151: value None
+    for quality in ['151', '255']:
+        row = {
+            'date': '09:00:00 01/05/1930',
+            'Tmin': '10.0',
+            'quality': quality
+        }
+        expected = (
+            datetime(1930, 5, 1, 9, 0), {'Tmin': (None, True)}
+        )
+        effective = trentino.parse_row(row, parameters_map)
+        assert effective == expected
+
+    # quality bad
+    for quality in ['2', '140']:
+        row = {
+            'date': '09:00:00 01/05/1930',
+            'Tmin': '10.0',
+            'quality': quality
+        }
+        expected = (
+            datetime(1930, 5, 1, 9, 0), {'Tmin': (10.0, False)}
+        )
+        effective = trentino.parse_row(row, parameters_map)
+        assert effective == expected
+
+
+def test_validate_row_format():
+    # right row
+    row = {
+            'date': '09:00:00 01/05/1930',
+            'Tmin': '10.0',
+            'quality': '1'
+    }
+    err_msg = trentino.validate_row_format(row)
+    assert not err_msg
+
+    # wrong date format
+    row = {
+            'date': '09:00:00 31/02/1930',
+            'Tmin': '10.0',
+            'quality': '1'
+    }
+    err_msg = trentino.validate_row_format(row)
+    assert err_msg == 'the date format is wrong'
+
+    # wrong value for parameter
+    row = {
+            'date': '09:00:00 01/05/1930',
+            'Tmin': '?',
+            'quality': '1'
+    }
+    err_msg = trentino.validate_row_format(row)
+    assert err_msg == 'the value for Tmin is not numeric'
+
+
+def test_parse():
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+    expected_data = ('T0001', 46.06227631, {
+        datetime(1930, 5, 1, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 2, 9, 0): {'Tmin': (11.0, True)},
+        datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 4, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
+        datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 7, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 8, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 9, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 10, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 11, 9, 0): {'Tmin': (5.0, True)},
+        datetime(1930, 5, 12, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 13, 9, 0): {'Tmin': (None, True)},
+        datetime(1930, 5, 14, 9, 0): {'Tmin': (9.0, True)}
+    })
+    effective = trentino.parse(filepath, parameters_filepath)
+    assert effective == expected_data
+
+
+def test_write_data(tmpdir):
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    data = trentino.parse(filepath)
+    out_filepath = str(tmpdir.join('datafile.csv'))
+    expected_rows1 = [
+        'station;latitude;date;parameter;value;valid\n',
+        'T0001;46.06227631;1930-05-01T09:00:00;Tmin;10.0;1\n',
+        'T0001;46.06227631;1930-05-02T09:00:00;Tmin;11.0;1\n',
+        'T0001;46.06227631;1930-05-03T09:00:00;Tmin;10.0;1\n',
+        'T0001;46.06227631;1930-05-04T09:00:00;Tmin;8.0;1\n',
+        'T0001;46.06227631;1930-05-05T09:00:00;Tmin;12.0;1\n',
+        'T0001;46.06227631;1930-05-06T09:00:00;Tmin;8.0;1\n',
+        'T0001;46.06227631;1930-05-07T09:00:00;Tmin;10.0;1\n',
+        'T0001;46.06227631;1930-05-08T09:00:00;Tmin;7.0;1\n',
+        'T0001;46.06227631;1930-05-09T09:00:00;Tmin;8.0;1\n',
+        'T0001;46.06227631;1930-05-10T09:00:00;Tmin;7.0;1\n',
+        'T0001;46.06227631;1930-05-11T09:00:00;Tmin;5.0;1\n',
+        'T0001;46.06227631;1930-05-12T09:00:00;Tmin;7.0;1\n',
+        'T0001;46.06227631;1930-05-14T09:00:00;Tmin;9.0;1\n'
+    ]
+    assert not exists(out_filepath)
+    trentino.write_data(data, out_filepath)
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert rows == expected_rows1
+
+    # omit Tmin
+    out_filepath = str(tmpdir.join('datafile2.csv'))
+    expected_rows2 = ['station;latitude;date;parameter;value;valid\n']
+    assert not exists(out_filepath)
+    trentino.write_data(data, out_filepath, omit_parameters=('Tmin',))
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        assert rows == expected_rows2
+
+    # include missing
+    out_filepath = str(tmpdir.join('datafile3.csv'))
+    assert not exists(out_filepath)
+    trentino.write_data(data, out_filepath, omit_missing=False)
+    assert exists(out_filepath)
+    with open(out_filepath) as fp:
+        rows = fp.readlines()
+        for row in expected_rows1:
+            assert row in rows
+        assert 'T0001;46.06227631;1930-05-13T09:00:00;Tmin;;1\n' in rows

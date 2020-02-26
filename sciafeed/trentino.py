@@ -64,11 +64,11 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
 
 def parse_filename(filename: str):
     """
-    Return the <code of the station> corresponding to the trentino input file named `filename`.
+    Return the code of the station corresponding to the trentino input file named `filename`.
     The function assumes the filename is validated (see `validate_filename`).
 
     :param filename: the name of the trentino file
-    :return: the tuple (<code>, <start date>, <end date>)
+    :return: the code of the station
     """
     code, ext = splitext(filename)
     return code
@@ -165,7 +165,7 @@ def parse_row(row, parameters_map):
         param_value = None
     else:
         param_value = float(row[param_code].strip())
-    is_valid = row['quality'] in ('1', '76')
+    is_valid = row['quality'] in ('1', '76', '151', '255')
     prop_dict[param_code] = (param_value, is_valid)
     return the_time, prop_dict
 
@@ -186,7 +186,7 @@ def validate_row_format(row):
         err_msg = 'the date format is wrong'
         return err_msg
     for key, value in row.items():
-        if key not in ('date', 'quality'):
+        if key not in ('date', 'quality', None):
             # key is the parameter
             try:
                 float(value)
@@ -218,13 +218,14 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     fieldnames, station, stat_props = guess_fieldnames(filepath, parameters_map)
     lat = stat_props.get('lat', '')
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
     data = dict()
     for row in csv_reader:
-        if (row['date'], row['quality']) != ('', 'Qual'):
+        if (row['date'].strip(), row['quality'].strip()) != ('', 'Qual'):
             continue
         break
     for row in csv_reader:
+        row = {k.strip(): v.strip() for k, v in row.items() if k}
         the_time, prop_dict = parse_row(row, parameters_map)
         if prop_dict:
             data[the_time] = prop_dict

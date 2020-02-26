@@ -15,6 +15,7 @@ SCIA PostgreSQL database.
    entry_points
    formats
    rmn
+   trentino
    utils
 
 Indices and tables

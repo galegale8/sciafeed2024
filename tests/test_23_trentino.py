@@ -343,7 +343,7 @@ def test_parse_and_check():
 
     # right file
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
-    expected_data = ('T0001', {
+    expected_data = ('T0001', 46.06227631, {
         datetime(1930, 5, 1, 9, 0): {'Tmin': (10.0, True)},
         datetime(1930, 5, 2, 9, 0): {'Tmin': (11.0, True)},
         datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
@@ -373,7 +373,7 @@ def test_parse_and_check():
         (12, 'the row is duplicated with different values'),
         (13, 'the value for quality is missing'),
         (17, "The value of 'Tmin' is out of range [-40.0, 40.0]")]
-    assert parsed_data == ('T0001', {
+    assert parsed_data == ('T0001', 46.06227631, {
         datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
         datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
         datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},

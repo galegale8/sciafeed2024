@@ -161,7 +161,7 @@ def parse_row(row, parameters_map):
     prop_dict = dict()
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
-    if row['quality'].strip() in ('151', '255'):
+    if row['quality'].strip() in ('151', '255') or row[param_code].strip() == '':
         param_value = None
     else:
         param_value = float(row[param_code].strip())
@@ -189,7 +189,7 @@ def validate_row_format(row):
         if (key, value) == ('quality', ''):
             err_msg = 'the value for quality is missing'
             return err_msg
-        if key not in ('date', 'quality', None):
+        if key not in ('date', 'quality', None) and value != '':
             # key is the parameter
             try:
                 float(value)
@@ -238,7 +238,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
     Write `data` of a trentino file on the path `out_filepath` according to agreed conventions.
-    `data` is formatted according to the output of the function `parse`.
+    `data` is formatted according to the second output of the function `parse_and_check`.
 
     :param data: trentino file data
     :param out_filepath: output file where to write the data
@@ -454,7 +454,8 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
         # global error, no parsing
         return err_msgs, (None, data)
 
-    fieldnames, code, _ = guess_fieldnames(filepath, par_map)
+    fieldnames, code, extra_props = guess_fieldnames(filepath, par_map)
+    lat = extra_props.get('lat', '')
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
     j = 0
@@ -472,7 +473,7 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
         data[row_date] = props
         err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
         # err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
-    ret_value = err_msgs, (code, data)
+    ret_value = err_msgs, (code, lat, data)
     return ret_value
 
 

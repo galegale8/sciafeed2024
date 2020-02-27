@@ -502,4 +502,3 @@ def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     except:
         return False
     return True
-

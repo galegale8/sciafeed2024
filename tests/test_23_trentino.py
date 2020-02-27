@@ -217,3 +217,180 @@ def test_write_data(tmpdir):
         for row in expected_rows1:
             assert row in rows
         assert 'T0001;46.06227631;1930-05-13T09:00:00;Tmin;;1\n' in rows
+
+
+def test_validate_format():
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+
+    # right file
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    err_msgs = trentino.validate_format(filepath, parameters_filepath)
+    assert not err_msgs
+
+    # global errors
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong1.csv')
+    err_msgs = trentino.validate_format(filepath, parameters_filepath)
+    assert err_msgs == [(0, 'trentino header not compliant')]
+
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong1.xls')
+    err_msgs = trentino.validate_format(filepath, parameters_filepath)
+    assert err_msgs == [(0, 'Extension expected must be .csv, found .xls')]
+
+    # several formatting errors
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong3.csv')
+    err_msgs = trentino.validate_format(filepath, parameters_filepath)
+    assert err_msgs == [
+        (5, 'the date format is wrong'),
+        (6, 'the value for Tmin is not numeric'),
+        (8, 'the row is not strictly after the previous'),
+        (12, 'the row is duplicated with different values'),
+        (13, 'the value for quality is missing')
+    ]
+
+
+def test_row_weak_climatologic_check():
+    parameters_thresholds = {'PREC': [0.0, 989.0], 'Tmax': [-30.0, 50.0], 'Tmin': [-40.0, 40.0]}
+
+    # right row
+    parsed_row = (datetime(1930, 5, 1, 9, 0), {'Tmin': (10.0, True)})
+    err_msgs, parsed_row_updated = trentino.row_weak_climatologic_check(
+        parsed_row, parameters_thresholds)
+    assert not err_msgs
+    assert parsed_row_updated == parsed_row
+
+    # wrong rows: low
+    parsed_row = (datetime(1930, 5, 1, 9, 0), {'Tmin': (-100.0, True)})
+    err_msgs, parsed_row_updated = trentino.row_weak_climatologic_check(
+        parsed_row, parameters_thresholds)
+    assert err_msgs == ["The value of 'Tmin' is out of range [-40.0, 40.0]"]
+    assert parsed_row_updated == (datetime(1930, 5, 1, 9, 0), {'Tmin': (-100.0, False)})
+
+    # wrong rows: high
+    parsed_row = (datetime(1930, 5, 1, 9, 0), {'Tmin': (100.0, True)})
+    err_msgs, parsed_row_updated = trentino.row_weak_climatologic_check(
+        parsed_row, parameters_thresholds)
+    assert err_msgs == ["The value of 'Tmin' is out of range [-40.0, 40.0]"]
+    assert parsed_row_updated == (datetime(1930, 5, 1, 9, 0), {'Tmin': (100.0, False)})
+
+    # no check if not valid or None
+    for parsed_row in [
+        (datetime(1930, 5, 1, 9, 0), {'Tmin': (100.0, False)}),
+        (datetime(1930, 5, 1, 9, 0), {'Tmin': (None, True)})
+    ]:
+        err_msgs, parsed_row_updated = trentino.row_weak_climatologic_check(
+            parsed_row, parameters_thresholds)
+        assert not err_msgs
+        assert parsed_row_updated == parsed_row
+
+    # no check if no thresholds
+    parsed_row = (datetime(1930, 5, 1, 9, 0), {'Tmin': (100.0, True)})
+    err_msgs, parsed_row_updated = trentino.row_weak_climatologic_check(parsed_row)
+    assert not err_msgs
+    assert parsed_row_updated == parsed_row
+
+
+def test_do_weak_climatologic_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+
+    # right file
+    expected_data = ('T0001', {
+        datetime(1930, 5, 1, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 2, 9, 0): {'Tmin': (11.0, True)},
+        datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 4, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
+        datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 7, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 8, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 9, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 10, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 11, 9, 0): {'Tmin': (5.0, True)},
+        datetime(1930, 5, 12, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 13, 9, 0): {'Tmin': (None, True)},
+        datetime(1930, 5, 14, 9, 0): {'Tmin': (9.0, True)}
+    })
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    err_msgs, parsed_data = trentino.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert not err_msgs
+    assert parsed_data == expected_data
+
+    # with global formatting errors
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.xls')
+    err_msgs, parsed_data = trentino.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert err_msgs == [(0, 'Extension expected must be .csv, found .xls')]
+    assert not parsed_data
+
+    # with some errors
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong3.csv')
+    err_msgs, parsed_data = trentino.do_weak_climatologic_check(filepath, parameters_filepath)
+    assert err_msgs == [(17, "The value of 'Tmin' is out of range [-40.0, 40.0]")]
+    assert parsed_data == ('T0001', {
+        datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
+        datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 8, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 9, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 10, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 11, 9, 0): {'Tmin': (500.0, False)},
+        datetime(1930, 5, 12, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 13, 9, 0): {'Tmin': (None, True)},
+        datetime(1930, 5, 14, 9, 0): {'Tmin': (9.0, True)}
+    })
+
+
+def test_parse_and_check():
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+
+    # right file
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    expected_data = ('T0001', {
+        datetime(1930, 5, 1, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 2, 9, 0): {'Tmin': (11.0, True)},
+        datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 4, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
+        datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 7, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 8, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 9, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 10, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 11, 9, 0): {'Tmin': (5.0, True)},
+        datetime(1930, 5, 12, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 13, 9, 0): {'Tmin': (None, True)},
+        datetime(1930, 5, 14, 9, 0): {'Tmin': (9.0, True)}
+    })
+    err_msgs, parsed_data = trentino.parse_and_check(filepath, parameters_filepath)
+    assert not err_msgs
+    assert parsed_data == expected_data
+
+    # with some errors
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong3.csv')
+    err_msgs, parsed_data = trentino.parse_and_check(filepath, parameters_filepath)
+    assert err_msgs == [
+        (5, 'the date format is wrong'),
+        (6, 'the value for Tmin is not numeric'),
+        (8, 'the row is not strictly after the previous'),
+        (12, 'the row is duplicated with different values'),
+        (13, 'the value for quality is missing'),
+        (17, "The value of 'Tmin' is out of range [-40.0, 40.0]")]
+    assert parsed_data == ('T0001', {
+        datetime(1930, 5, 3, 9, 0): {'Tmin': (10.0, True)},
+        datetime(1930, 5, 5, 9, 0): {'Tmin': (12.0, True)},
+        datetime(1930, 5, 6, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 8, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 9, 9, 0): {'Tmin': (8.0, True)},
+        datetime(1930, 5, 10, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 11, 9, 0): {'Tmin': (500.0, False)},
+        datetime(1930, 5, 12, 9, 0): {'Tmin': (7.0, True)},
+        datetime(1930, 5, 13, 9, 0): {'Tmin': (None, True)},
+        datetime(1930, 5, 14, 9, 0): {'Tmin': (9.0, True)}
+    })
+
+
+def test_is_format_compliant():
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    assert trentino.is_format_compliant(filepath)
+    filepath = join(TEST_DATA_PATH, 'trentino', 'wrong1.csv')
+    assert not trentino.is_format_compliant(filepath)
+    filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
+    assert not trentino.is_format_compliant(filepath)

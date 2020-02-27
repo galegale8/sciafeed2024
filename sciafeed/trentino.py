@@ -157,15 +157,15 @@ def parse_row(row, parameters_map):
     :param parameters_map: dictionary of information about stored parameters at each position
     :return: (datetime object, prop_dict)
     """
-    the_time = datetime.strptime(row['date'], "%H:%M:%S %d/%m/%Y")
+    the_time = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
     prop_dict = dict()
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
-    if row['quality'] in ('151', '255'):
+    if row['quality'].strip() in ('151', '255'):
         param_value = None
     else:
         param_value = float(row[param_code].strip())
-    is_valid = row['quality'] in ('1', '76', '151', '255')
+    is_valid = row['quality'].strip() in ('1', '76', '151', '255')
     prop_dict[param_code] = (param_value, is_valid)
     return the_time, prop_dict
 
@@ -186,6 +186,9 @@ def validate_row_format(row):
         err_msg = 'the date format is wrong'
         return err_msg
     for key, value in row.items():
+        if (key, value) == ('quality', ''):
+            err_msg = 'the value for quality is missing'
+            return err_msg
         if key not in ('date', 'quality', None):
             # key is the parameter
             try:
@@ -393,7 +396,7 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     return ret_value
 
 
-def row_internal_consistence_check(parsed_row, limiting_params=None):
+def row_internal_consistence_check(parsed_row, limiting_params=None): # pragma: no cover
     """
     Get the internal consistent check for a parsed row of a trentino file.
     It assumes that the parsed row is written as result of the function `parse_row`.
@@ -409,7 +412,7 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
 
 
 def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                                  limiting_params=None):
+                                  limiting_params=None):  # pragma: no cover
     """
     Get the internal consistent check for a trentino file.
     Only rightly formatted rows are considered (see function `validate_format`).
@@ -453,7 +456,7 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
 
     fieldnames, code, _ = guess_fieldnames(filepath, par_map)
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
     j = 0
     for j, row in enumerate(csv_reader, 1):
         if (row['date'], row['quality']) != ('', 'Qual'):

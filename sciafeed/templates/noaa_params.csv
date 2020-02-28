@@ -1,0 +1,13 @@
+NOAA_CODE;description;par_code;min;max;unit
+TEMP;Temperatura media (°F);Tmedia;-31;113;°F
+DEWP;Punto di rugiada medio (°F);DEWP;;;
+SLP;Pressione media livello del mare, in hPa;P;960;1060;hPa
+STP;Pressione media livello della stazione, in hPa;STP;;;
+VISIB;Visibilità orizzontale media (miglia);VISIB;;;
+WDSP;Velicità media del vento (nodi);FF;0;198.272;m/s
+MXSPD;Velocità massima del vento (nodi);MXSPD;;;
+GUST;Raffica massima del vento (nodi);GUST;;;
+MAX;Temperatura massima (°F);Tmax;-22;122;°F
+MIN;Temperatura minima (°F);Tmin;-40;104;°F
+PRCP;Precipitazione cumulata (inches);PREC;0;38.937;inches
+SNDP;altezza manto nevoso;;;;

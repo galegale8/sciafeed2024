@@ -1,7 +1,7 @@
 """
 This module contains the functions and utilities common to all SCIA data formats
 """
-from sciafeed import arpa19, arpa21, arpaer, arpafvg, rmn, trentino
+from sciafeed import arpa19, arpa21, arpaer, arpafvg, noaa, rmn, trentino
 
 
 FORMAT_MODULES = (
@@ -10,7 +10,8 @@ FORMAT_MODULES = (
     ('ARPA-FVG', arpafvg),
     ('ARPA-ER', arpaer),
     ('RMN', rmn),
-    ('TRENTINO', trentino)
+    ('TRENTINO', trentino),
+    ('NOAA', noaa)
 )
 
 

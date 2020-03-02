@@ -8,7 +8,7 @@ from os.path import join, splitext
 
 from sciafeed import TEMPLATES_PATH
 
-MISSING_VALUE_MARKERS = (
+MISSING_VALUE_MARKERS = dict((
     ('TEMP', '9999.9'),
     ('DEWP', '9999.9'),
     ('SLP', '9999.9'),
@@ -21,7 +21,7 @@ MISSING_VALUE_MARKERS = (
     ('MIN', '9999.9'),
     ('PRCP', '99.99'),
     ('SNDP', '999.9')
-)
+))
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'noaa_params.csv')
 LIMITING_PARAMETERS = {
     'Tmedia': ('Tmin', 'Tmax'),
@@ -47,7 +47,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     csv_reader = csv.DictReader(csv_file, delimiter=delimiter)
     ret_value = dict()
     for row in csv_reader:
-        code = int(row['NOAA_CODE'])
+        code = row['NOAA_CODE']
         ret_value[code] = dict()
         for prop in row.keys():
             ret_value[code][prop] = row[prop].strip()
@@ -147,8 +147,10 @@ def validate_row_format(row):
     :param row: a row of the NOAA file
     :return: the string describing the error
     """
-    err_msg = None
-    if len(row) != 138:
+    err_msg = ''
+    if not row.strip():  # no errors on empty rows
+        return err_msg
+    if len(row.strip()) != 138:
         err_msg = 'the length of the row is not standard'
         return err_msg
     try:
@@ -248,7 +250,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [..., (row index, error message), ...]
     """
-    header = "STN--- WBAN   YEARMODA    TEMP       DEWP      SLP        STP       VISIB" \
+    HEADER = "STN--- WBAN   YEARMODA    TEMP       DEWP      SLP        STP       VISIB" \
              "      WDSP     MXSPD   GUST    MAX     MIN   PRCP   SNDP   FRSHTT"
     _, ext = splitext(filepath)
     if ext != '.op':
@@ -259,7 +261,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         last_row_date = None
         last_row = None
         for i, row in enumerate(fp, 1):
-            if i == 1 and row.strip() != header:
+            if i == 1 and row.strip() != HEADER:
                 return [(0, "file doesn't include a correct header")]
             if not row.strip() or i == 1:
                 continue

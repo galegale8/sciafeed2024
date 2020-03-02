@@ -159,7 +159,7 @@ def validate_row_format(row):
     except ValueError:
         err_msg = 'the reference time for the row is not parsable'
         return err_msg
-    if row[123] not in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+    if row[123] not in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', ' ']:
         err_msg = 'the precipitation flag is not parsable'
         return err_msg
 
@@ -378,7 +378,9 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
     err_msgs = []
     data = []
     with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
+        for _ in fp:
+            break  # avoid first line!
+        for i, row in enumerate(fp, 2):
             if not row.strip() or i in fmt_errors_dict:
                 continue
             parsed_row = parse_row(row, parameters_map=parameters_map)
@@ -414,7 +416,9 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
     err_msgs = []
     data = []
     with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
+        for _ in fp:
+            break  # avoid first line!
+        for i, row in enumerate(fp, 2):
             if not row.strip() or i in fmt_errors_dict:
                 continue
             parsed_row = parse_row(row, parameters_map=parameters_map)

@@ -520,14 +520,25 @@ def test_do_weak_climatologic_check(tmpdir):
     parsed = noaa.parse(filepath, parameters_filepath=parameters_filepath)
     err_msgs, parsed_after_check = noaa.do_weak_climatologic_check(filepath, parameters_filepath)
     assert err_msgs == [
-        (1, "The value of '3' is out of range [-350.0, 450.0]"),
-        (2, "The value of '4' is out of range [-400.0, 400.0]"),
-        (3, "The value of '5' is out of range [-300.0, 500.0]")
+        (2, "The value of 'Tmedia' is out of range [-31.0, 113.0]"),
+        (2, "The value of 'PREC' is out of range [0.0, 38.937]")
     ]
-    assert parsed_after_check[:2] == parsed[:2]
-    assert parsed_after_check[2][datetime(2012, 1, 1, 0, 0)]['3'] == (-570.0, False)
-    assert parsed_after_check[2][datetime(2012, 1, 1, 1, 0)]['4'] == (520.0, False)
-    assert parsed_after_check[2][datetime(2012, 1, 1, 2, 0)]['5'] == (580.0, False)
+    assert parsed_after_check[1:] == parsed[1:]
+    assert parsed_after_check[0][:2] == parsed[0][:2]
+    assert parsed_after_check[0][2] == {
+        'DEWP': (23.7, True),
+        'FF': (7.9, True),
+        'GUST': (None, True),
+        'MXSPD': (11.1, True),
+        'P': (None, True),
+        'PREC': (40.0, False),
+        'SNDP': (1.6, True),
+        'STP': (859.6, True),
+        'Tmax': (41.0, True),
+        'Tmedia': (-32.9, False),
+        'Tmin': (28.4, True),
+        'VISIB': (11.0, True)
+    }
 
     # with only formatting errors
     filepath = join(TEST_DATA_PATH, 'noaa', 'wrong2_160080-99999-2019.op')
@@ -538,42 +549,48 @@ def test_do_weak_climatologic_check(tmpdir):
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, parsed_after_check = noaa.do_weak_climatologic_check(
         filepath, parameters_filepath)
-    assert err_msgs == [(0, 'File extension must be .op')]
+    assert err_msgs == [(0, 'file extension must be .op')]
     assert not parsed_after_check
 
 
 def test_do_internal_consistence_check(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
-    filepath = join(TEST_DATA_PATH, 'noaa', 'loc01_00201_201201010000_201301010100.dat')
+    filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
     parsed = noaa.parse(filepath, parameters_filepath=parameters_filepath)
 
     # right file
-    limiting_params = {'3': ('4', '5')}
+    limiting_params = {'Tmedia': ('Tmin', 'Tmax')}
     err_msgs, parsed_after_check = noaa.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert not err_msgs
     assert parsed_after_check == parsed
 
-    # with errors
-    limiting_params = {'9': ('10', '4')}
+    # with specific errors
+    filepath = join(TEST_DATA_PATH, 'noaa', 'wrong3_160080-99999-2019.op')
+    limiting_params = {'Tmedia': ('Tmin', 'Tmax')}
+    parsed = noaa.parse(filepath, parameters_filepath=parameters_filepath)
     err_msgs, parsed_after_check = noaa.do_internal_consistence_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (1, "The values of '9' and '4' are not consistent"),
-        (2, "The values of '9' and '4' are not consistent"),
-        (3, "The values of '9' and '4' are not consistent"),
-        (4, "The values of '9' and '4' are not consistent"),
-        (5, "The values of '9' and '4' are not consistent"),
-        (6, "The values of '9' and '4' are not consistent"),
-        (7, "The values of '9' and '4' are not consistent"),
-        (8, "The values of '9' and '4' are not consistent"),
-        (9, "The values of '9' and '4' are not consistent"),
-        (20, "The values of '9' and '4' are not consistent")
+        (2, "The values of 'Tmedia' and 'Tmin' are not consistent"),
+        (9, "The values of 'Tmedia' and 'Tmin' are not consistent")
     ]
-    assert parsed_after_check[:2] == parsed[:2]
-    assert parsed_after_check[2][datetime(2012, 1, 1, 0, 0)]['9'] == (83.0, False)
-    assert parsed_after_check[2][datetime(2012, 1, 1, 1, 0)]['9'] == (81.0, False)
-    assert parsed_after_check[2][datetime(2012, 1, 1, 2, 0)]['9'] == (79.0, False)
+    assert parsed_after_check[1:-1] == parsed[1:-1]
+    assert parsed_after_check[-1][:-1] == parsed[-1][:-1]
+    assert parsed_after_check[-1][-1] == {
+        'DEWP': (23.7, True),
+        'FF': (7.9, True),
+        'GUST': (None, True),
+        'MXSPD': (11.1, True),
+        'P': (None, True),
+        'PREC': (0.0, True),
+        'SNDP': (1.6, True),
+        'STP': (859.6, True),
+        'Tmax': (41.0, True),
+        'Tmedia': (33.9, False),
+        'Tmin': (35.4, True),
+        'VISIB': (11.0, True)
+    }
 
     # no limiting parameters: no check
     err_msgs, parsed_after_check = noaa.do_internal_consistence_check(
@@ -582,7 +599,7 @@ def test_do_internal_consistence_check(tmpdir):
     assert parsed_after_check == parsed
 
     # with only formatting errors
-    filepath = join(TEST_DATA_PATH, 'noaa', 'wrong_00201_201201010000_201301010100.dat')
+    filepath = join(TEST_DATA_PATH, 'noaa', 'wrong2_160080-99999-2019.op')
     err_msgs, _ = noaa.do_internal_consistence_check(filepath, parameters_filepath)
     assert not err_msgs
 
@@ -590,474 +607,82 @@ def test_do_internal_consistence_check(tmpdir):
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, parsed_after_check = noaa.do_internal_consistence_check(
         filepath, parameters_filepath)
-    assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+    assert err_msgs == [(0, 'file extension must be .op')]
     assert not parsed_after_check
 
 
 def test_parse_and_check(tmpdir):
-    filepath = join(TEST_DATA_PATH, 'noaa', 'wrong_00202_201201010000_201301010100.dat')
+    filepath = join(TEST_DATA_PATH, 'noaa', 'wrong2_160080-99999-2019.op')
     parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
-    limiting_params = {'9': ('10', '4')}
+    limiting_params = {'Tmedia': ('Tmin', 'Tmax')}
     err_msgs, data_parsed = noaa.parse_and_check(
         filepath, parameters_filepath, limiting_params)
     assert err_msgs == [
-        (1, "The value of '3' is out of range [-350.0, 450.0]"),
-        (1, "The values of '9' and '4' are not consistent"),
-        (2, "The value of '4' is out of range [-400.0, 400.0]"),
-        (3, "The value of '5' is out of range [-300.0, 500.0]"),
-        (3, "The values of '9' and '4' are not consistent"),
-        (4, "The values of '9' and '4' are not consistent"),
-        (5, "The values of '9' and '4' are not consistent"),
-        (6, "The values of '9' and '4' are not consistent"),
-        (7, "The values of '9' and '4' are not consistent"),
-        (8, "The values of '9' and '4' are not consistent"),
-        (9, "The values of '9' and '4' are not consistent"),
-        (20, "The values of '9' and '4' are not consistent")
+        (2, 'the length of the row is not standard'),
+        (3, 'the reference time for the row is not parsable'),
+        (4, 'the precipitation flag is not parsable'),
+        (5, 'The number of components in the row is wrong'),
+        (6, 'The row contains not numeric values'),
+        (10, 'duplication of rows with different data'),
+        (12, 'it is not strictly after the previous')
     ]
-    assert data_parsed == ('00202', 37.33913, {
-        datetime(2012, 1, 1, 0, 0): {
-            '1': (None, False),
-            '10': (80.0, True),
-            '11': (85.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (242.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (-570.0, False),
-            '4': (55.0, True),
-            '5': (60.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (83.0, False)},
-        datetime(2012, 1, 1, 1, 0): {
-            '1': (None, False),
-            '10': (79.0, True),
-            '11': (83.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (354.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (56.0, True),
-            '4': (520.0, False),
-            '5': (59.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (81.0, True)},
-        datetime(2012, 1, 1, 2, 0): {
-            '1': (None, False),
-            '10': (79.0, True),
-            '11': (81.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (184.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (56.0, True),
-            '4': (53.0, True),
-            '5': (580.0, False),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (79.0, False)},
-        datetime(2012, 1, 1, 3, 0): {
-            '1': (None, False),
-            '10': (79.0, True),
-            '11': (85.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (244.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (50.0, True),
-            '4': (46.0, True),
-            '5': (57.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (82.0, False)},
-        datetime(2012, 1, 1, 4, 0): {
-            '1': (None, False),
-            '10': (82.0, True),
-            '11': (87.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (198.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (44.0, True),
-            '4': (39.0, True),
-            '5': (50.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (84.0, False)},
-        datetime(2012, 1, 1, 5, 0): {
-            '1': (None, False),
-            '10': (83.0, True),
-            '11': (88.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (198.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (46.0, True),
-            '4': (39.0, True),
-            '5': (49.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (84.0, False)},
-        datetime(2012, 1, 1, 6, 0): {
-            '1': (None, False),
-            '10': (82.0, True),
-            '11': (86.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (276.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (50.0, True),
-            '4': (44.0, True),
-            '5': (59.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (84.0, False)},
-        datetime(2012, 1, 1, 7, 0): {
-            '1': (None, False),
-            '10': (83.0, True),
-            '11': (85.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (133.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (59.0, True),
-            '4': (58.0, True),
-            '5': (62.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (83.0, False)},
-        datetime(2012, 1, 1, 8, 0): {
-            '1': (None, False),
-            '10': (80.0, True),
-            '11': (85.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (200.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (72.0, True),
-            '4': (62.0, True),
-            '5': (85.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (82.0, False)},
-        datetime(2012, 1, 1, 9, 0): {
-            '1': (None, False),
-            '10': (73.0, True),
-            '11': (86.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (160.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (93.0, True),
-            '4': (83.0, True),
-            '5': (111.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (80.0, True)},
-        datetime(2012, 1, 1, 10, 0): {
-            '1': (None, False),
-            '10': (67.0, True),
-            '11': (77.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (92.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (122.0, True),
-            '4': (111.0, True),
-            '5': (140.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (73.0, True)},
-        datetime(2012, 1, 1, 11, 0): {
-            '1': (None, False),
-            '10': (68.0, True),
-            '11': (78.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (143.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (135.0, True),
-            '4': (134.0, True),
-            '5': (140.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (74.0, True)},
-        datetime(2012, 1, 1, 12, 0): {
-            '1': (None, False),
-            '10': (76.0, True),
-            '11': (82.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (300.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (139.0, True),
-            '4': (136.0, True),
-            '5': (144.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (78.0, True)},
-        datetime(2012, 1, 1, 13, 0): {
-            '1': (None, False),
-            '10': (80.0, True),
-            '11': (85.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (260.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (140.0, True),
-            '4': (137.0, True),
-            '5': (145.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (82.0, True)},
-        datetime(2012, 1, 1, 14, 0): {
-            '1': (None, False),
-            '10': (84.0, True),
-            '11': (87.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (236.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (143.0, True),
-            '4': (139.0, True),
-            '5': (147.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (85.0, True)},
-        datetime(2012, 1, 1, 15, 0): {
-            '1': (None, False),
-            '10': (85.0, True),
-            '11': (90.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (235.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (141.0, True),
-            '4': (134.0, True),
-            '5': (146.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (86.0, True)},
-        datetime(2012, 1, 1, 16, 0): {
-            '1': (None, False),
-            '10': (91.0, True),
-            '11': (98.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (240.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (128.0, True),
-            '4': (123.0, True),
-            '5': (133.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (95.0, True)},
-        datetime(2012, 1, 1, 17, 0): {
-            '1': (None, False),
-            '10': (97.0, True),
-            '11': (100.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (246.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (119.0, True),
-            '4': (112.0, True),
-            '5': (123.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (98.0, True)},
-        datetime(2012, 1, 1, 18, 0): {
-            '1': (None, False),
-            '10': (100.0, True),
-            '11': (100.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (322.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (110.0, True),
-            '4': (106.0, True),
-            '5': (113.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (100.0, True)},
-        datetime(2012, 1, 1, 19, 0): {
-            '1': (None, False),
-            '10': (100.0, True),
-            '11': (100.0, True),
-            '12': (None, False),
-            '13': (None, False),
-            '14': (None, False),
-            '15': (None, False),
-            '16': (None, False),
-            '17': (None, False),
-            '18': (None, False),
-            '19': (None, False),
-            '2': (65.0, False),
-            '20': (0.0, True),
-            '21': (None, False),
-            '3': (99.0, True),
-            '4': (95.0, True),
-            '5': (106.0, True),
-            '6': (None, False),
-            '7': (None, False),
-            '8': (None, False),
-            '9': (100.0, False)}})
+    assert data_parsed == [
+        ({'code': '160080', 'wban': '99999'}, datetime(2019, 1, 6, 0, 0), {
+            'DEWP': (23.3, True),
+            'FF': (7.5, True),
+            'GUST': (None, True),
+            'MXSPD': (8.9, True),
+            'P': (None, True),
+            'PREC': (0.0, True),
+            'SNDP': (4.7, True),
+            'STP': (857.8, True),
+            'Tmax': (34.2, True),
+            'Tmedia': (29.3, True),
+            'Tmin': (27.0, True),
+            'VISIB': (7.9, True)}),
+        ({'code': '160080', 'wban': '99999'}, datetime(2019, 1, 6, 0, 0), {
+            'DEWP': (23.3, True),
+            'FF': (7.5, True),
+            'GUST': (None, True),
+            'MXSPD': (8.9, True),
+            'P': (None, True),
+            'PREC': (0.0, True),
+            'SNDP': (4.7, True),
+            'STP': (857.8, True),
+            'Tmax': (34.2, True),
+            'Tmedia': (29.3, True),
+            'Tmin': (27.0, True),
+            'VISIB': (7.9, True)}),
+        ({'code': '160080', 'wban': '99999'}, datetime(2019, 1, 7, 0, 0), {
+            'DEWP': (21.7, True),
+            'FF': (7.1, True),
+            'GUST': (None, True),
+            'MXSPD': (8.9, True),
+            'P': (None, True),
+            'PREC': (0.0, True),
+            'SNDP': (4.7, True),
+            'STP': (858.9, True),
+            'Tmax': (32.4, True),
+            'Tmedia': (27.8, True),
+            'Tmin': (23.0, True),
+            'VISIB': (7.4, True)}),
+        ({'code': '160080', 'wban': '99999'}, datetime(2019, 1, 9, 0, 0), {
+            'DEWP': (24.0, True),
+            'FF': (5.7, True),
+            'GUST': (None, True),
+            'MXSPD': (8.0, True),
+            'P': (None, True),
+            'PREC': (0.12, True),
+            'SNDP': (5.9, True),
+            'STP': (848.0, True),
+            'Tmax': (35.2, True),
+            'Tmedia': (28.1, True),
+            'Tmin': (21.6, True),
+            'VISIB': (3.5, True)})
+    ]
 
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = noaa.parse_and_check(
         filepath, parameters_filepath, limiting_params)
-    assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+    assert err_msgs == [(0, 'file extension must be .op')]

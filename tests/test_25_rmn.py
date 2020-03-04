@@ -421,7 +421,7 @@ def test_parse():
     assert effective == (station, expected_data)
 
 
-def test_write_data(tmpdir):
+def test_export(tmpdir):
     filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
     data = rmn.parse(filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
@@ -526,14 +526,14 @@ def test_write_data(tmpdir):
     assert not exists(out_filepath)
 
     # complete write
-    rmn.write_data(data, out_filepath)
+    rmn.export(data, out_filepath)
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()
         assert rows == expected_rows
 
     # omit some parameters and include missing ones
-    rmn.write_data(data, out_filepath, omit_parameters=('FF', ), omit_missing=False)
+    rmn.export(data, out_filepath, omit_parameters=('FF', ), omit_missing=False)
     expected_rows = [
         'station;latitude;date;parameter;value;valid\n',
         'ANCONA;;2018-01-01T00:00:00;DD;180.0;1\n',

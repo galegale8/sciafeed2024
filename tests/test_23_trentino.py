@@ -170,7 +170,7 @@ def test_parse():
     assert effective == expected_data
 
 
-def test_write_data(tmpdir):
+def test_export(tmpdir):
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     data = trentino.parse(filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
@@ -191,7 +191,7 @@ def test_write_data(tmpdir):
         'T0001;46.06227631;1930-05-14T09:00:00;Tmin;9.0;1\n'
     ]
     assert not exists(out_filepath)
-    trentino.write_data(data, out_filepath)
+    trentino.export(data, out_filepath)
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()
@@ -201,7 +201,7 @@ def test_write_data(tmpdir):
     out_filepath = str(tmpdir.join('datafile2.csv'))
     expected_rows2 = ['station;latitude;date;parameter;value;valid\n']
     assert not exists(out_filepath)
-    trentino.write_data(data, out_filepath, omit_parameters=('Tmin',))
+    trentino.export(data, out_filepath, omit_parameters=('Tmin',))
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()
@@ -210,7 +210,7 @@ def test_write_data(tmpdir):
     # include missing
     out_filepath = str(tmpdir.join('datafile3.csv'))
     assert not exists(out_filepath)
-    trentino.write_data(data, out_filepath, omit_missing=False)
+    trentino.export(data, out_filepath, omit_missing=False)
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()

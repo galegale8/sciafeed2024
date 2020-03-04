@@ -377,7 +377,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, include_empty=False
     return data
 
 
-def write_data(data, out_filepath, omit_parameters=()):
+def export(data, out_filepath, omit_parameters=()):
     """
     Write a CSV file with a representation of the downloaded data.
     Input `data` has the format as returned by the function `parse`.
@@ -408,7 +408,7 @@ def write_data(data, out_filepath, omit_parameters=()):
                 row['level'] = level
                 row['trange'] = trange
                 row['value'] = value
-                row['valid'] = is_valid
+                row['valid'] = is_valid and '1' or '0'
                 writer.writerow(row)
 
 

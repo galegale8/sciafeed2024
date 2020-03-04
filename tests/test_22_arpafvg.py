@@ -224,7 +224,7 @@ def test_parse():
 
 
 
-def test_write_data(tmpdir):
+def test_export(tmpdir):
     filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
     data = arpafvg.parse(filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
@@ -272,7 +272,7 @@ def test_write_data(tmpdir):
         '00001;46.077222;2018-01-01T05:00:00;INSOL;0.0;1\n'
     ]
     assert not exists(out_filepath)
-    arpafvg.write_data(data, out_filepath, omit_parameters=('Pstaz',))
+    arpafvg.export(data, out_filepath, omit_parameters=('Pstaz',))
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()
@@ -280,7 +280,7 @@ def test_write_data(tmpdir):
 
     # in case of some values marked as None, we can decide to not write them
     data[2][datetime(2018, 1, 1, 1, 0, 0)]['PREC'] = (None, True)
-    arpafvg.write_data(data, out_filepath, omit_parameters=('Pstaz',), omit_missing=True)
+    arpafvg.export(data, out_filepath, omit_parameters=('Pstaz',), omit_missing=True)
     with open(out_filepath) as fp:
         rows = fp.readlines()
         assert len(rows) == 40

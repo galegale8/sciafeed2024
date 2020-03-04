@@ -798,7 +798,7 @@ def test_parse():
     assert effective == (station, latitude, expected_data_valid)
 
 
-def test_write_data(tmpdir):
+def test_export(tmpdir):
     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     data = arpa19.parse(filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
@@ -886,7 +886,7 @@ def test_write_data(tmpdir):
         '70001;43.876999;2013-01-01T19:00:00;UR media;100.0;1\n'
     ]
     assert not exists(out_filepath)
-    arpa19.write_data(data, out_filepath, omit_parameters=('6', '7', '8', '12'))
+    arpa19.export(data, out_filepath, omit_parameters=('6', '7', '8', '12'))
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()

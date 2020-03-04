@@ -199,7 +199,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return station, data
 
 
-def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
+def export(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
     Write `data` of an rmn file on the path `out_filepath` according to agreed conventions.
     `data` is formatted according to the output of the function `parse`.

@@ -207,7 +207,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     return data
 
 
-def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
+def export(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
     Write `data` of a NOAA file on the path `out_filepath` according to agreed conventions.
     `data` is formatted according to the output of the function `parse`.
@@ -236,7 +236,7 @@ def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
                 row = base_row.copy()
                 row['parameter'] = parameter
                 row['value'] = value
-                row['valid'] = is_valid
+                row['valid'] = is_valid and '1' or '0'
                 writer.writerow(row)
 
 

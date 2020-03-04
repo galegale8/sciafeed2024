@@ -74,8 +74,8 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
 
     if outdata_filepath:
         msgs.append('')
-        write_data = getattr(format_module, 'write_data')
-        write_data(data_parsed, outdata_filepath)
+        export_function = getattr(format_module, 'export')
+        export_function(data_parsed, outdata_filepath)
         msg = "Data saved on file %r" % outdata_filepath
         msgs.append(msg)
 

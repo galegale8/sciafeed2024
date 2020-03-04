@@ -256,7 +256,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     return ret_value
 
 
-def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
+def export(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
     Write `data` of an arpa21 file on the path `out_filepath` according to agreed conventions.
     `data` is formatted according to the output of the function `parse`.

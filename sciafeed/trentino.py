@@ -235,7 +235,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return station, lat, data
 
 
-def write_data(data, out_filepath, omit_parameters=(), omit_missing=True):
+def export(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
     Write `data` of a trentino file on the path `out_filepath` according to agreed conventions.
     `data` is formatted according to the second output of the function `parse_and_check`.

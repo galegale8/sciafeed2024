@@ -479,53 +479,57 @@ def test_parse():
     ]
 
 
-def test_write_data(tmpdir, mocker):
+def test_export(tmpdir, mocker):
     filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
     data = arpaer.parse(filepath, parameters_filepath)
     out_filepath = str(tmpdir.join('datafile.csv'))
     expected_rows = [
         'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;56;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;38;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;65;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;70;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;44;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;14;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;254;55;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;PREC;1;1;0.0;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;PREC;1;1;0.0;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;0;70;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;2;77;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;3;54;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;254;75;True\n"
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;56;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;38;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;65;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;44;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;14;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR "
+        'media;103;254;55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;PREC;1;1;0.0;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;0;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;2;77;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;3;54;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR "
+        'media;103;254;75;1\n'
     ]
     assert not exists(out_filepath)
-    arpaer.write_data(data, out_filepath)
+    arpaer.export(data, out_filepath)
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()
         assert rows == expected_rows
     expected_rows = [
         'station;latitude;longitude;network;date;parameter;level;trange;value;valid\n',
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;56;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;38;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;65;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;70;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;44;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;14;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;254;55;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;0;70;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;2;77;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;3;54;True\n",
-        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;254;75;True\n"
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;56;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;0;38;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;65;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;2;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;44;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR media;103;3;14;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 00:00:00;UR "
+        'media;103;254;55;1\n',
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;0;70;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;2;77;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR media;103;3;54;1\n",
+        "San Nicolo';4504139;958959;agrmet;2020-02-06 01:00:00;UR "
+        'media;103;254;75;1\n'
     ]
     out_filepath = str(tmpdir.join('datafile2.csv'))
     assert not exists(out_filepath)
-    arpaer.write_data(data, out_filepath, omit_parameters=('PREC',))
+    arpaer.export(data, out_filepath, omit_parameters=('PREC',))
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         rows = fp.readlines()

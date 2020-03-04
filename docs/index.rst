@@ -14,6 +14,7 @@ SCIA PostgreSQL database.
    arpafvg
    entry_points
    formats
+   noaa
    rmn
    trentino
    utils

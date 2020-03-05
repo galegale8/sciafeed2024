@@ -13,12 +13,13 @@ tests_require = [
       ]
 development_require = [
         'ipython',
-        'sphinx==2.3.1',
+        'sphinx==2.4.3',
         'sphinx_rtd_theme==0.4.3',
         'sphinx-click',
 ]
 install_requires = [
     'click==7.0',
+    'xlrd==1.2.0',
 ]
 
 setup(

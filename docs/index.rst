@@ -12,6 +12,7 @@ SCIA PostgreSQL database.
    arpa21
    arpaer
    arpafvg
+   bolzano
    entry_points
    formats
    noaa

@@ -5,6 +5,8 @@ from datetime import datetime
 import logging
 import os.path
 
+import xlrd
+
 from sciafeed import this_path
 
 
@@ -51,3 +53,52 @@ def setup_log(func):  # pragma: no cover
                 logger.addHandler(fh)
         return func(*args, **kwargs)
     return inner
+
+
+def parse_cell(cell, datemode, datepattern='%d.%m.%Y'):
+    """
+    Try to get the raw value of an Excel cell as string/unicode
+
+    :param cell: xlrd Cell object of xlrd
+    :param datemode: attribute of the worksheet to help parsing date cells
+    :param datepattern: pattern used by cells containing dates (as used by datetime.strftime)
+    :return: the unicode string of the value of the cell
+    """
+    if cell.ctype == xlrd.XL_CELL_NUMBER:
+        if cell.value == int(cell.value):
+            # parse integer
+            return str(int(cell.value))
+        else:
+            # parse float
+            return str(cell.value)
+    if cell.ctype == xlrd.XL_CELL_BOOLEAN:
+        # parse boolean
+        return str(int(cell.value))
+    if cell.ctype == xlrd.XL_CELL_DATE:
+        # parse date
+        # WARNING: libreoffice is not compliant with Excel for dates!
+        dtime = xlrd.xldate.xldate_as_datetime(cell.value, datemode)
+        dtime_str = dtime.strftime(datepattern)
+        return dtime_str
+    return cell.value
+
+
+def load_excel(filepath, sheet_index=0, sheet_name=None):
+    """
+    Try to parse the EXCEL file content, returning a list of rows, each row a list of cells.
+
+    :param filepath: path to the Excel file
+    :param sheet_index: the sheet index to read (starts from 0). Ignored if `sheet_name` != None
+    :param sheet_name: the name of the sheet to read.
+    :return: (header, rows, errors)
+    """
+    workbook = xlrd.open_workbook(filepath)
+    if sheet_name:
+        sheet = workbook.sheet_by_name(sheet_name)
+    else:
+        sheet = workbook.sheet_by_index(sheet_index)
+    rows = []
+    for row_index in range(sheet.nrows):
+        row = [parse_cell(sheet.cell(row_index, i), workbook.datemode) for i in range(sheet.ncols)]
+        rows.append(row)
+    return rows

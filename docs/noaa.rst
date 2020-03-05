@@ -1,6 +1,6 @@
 
-formats
--------
+noaa
+----
 
 .. automodule:: sciafeed.noaa
    :members:

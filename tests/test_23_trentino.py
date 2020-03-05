@@ -4,7 +4,7 @@ from os.path import join, exists
 
 from sciafeed import trentino
 from . import TEST_DATA_PATH
-from pprint import pprint
+
 import pytest
 
 

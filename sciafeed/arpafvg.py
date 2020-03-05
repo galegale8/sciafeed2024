@@ -358,7 +358,7 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
     err_msgs = []
     ret_props = props.copy()
     for par_code, (par_value, par_flag) in props.items():
-        if par_code not in limiting_params or not par_flag:
+        if par_code not in limiting_params or not par_flag or par_value is None:
             # no check if the parameter is flagged invalid or no in the limiting_params
             continue
         par_code_min, par_code_max = limiting_params[par_code]

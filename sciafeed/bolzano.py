@@ -3,7 +3,7 @@ This module contains functions and utilities to parse a BOLZANO file
 """
 import csv
 from datetime import datetime
-from os.path import basename, join
+from os.path import join, splitext
 
 from sciafeed import TEMPLATES_PATH
 from sciafeed import utils
@@ -71,6 +71,10 @@ def get_station_props(filepath):
     :param filepath: path to the input BOLZANO file
     :return: the list [station properties, column_index]
     """
+    name, ext = splitext(filepath)
+    if ext.lower() != '.xls':
+        err_msg = 'Extension expected must be .xls, found %s' % ext
+        raise ValueError(err_msg)
     rows = utils.load_excel(filepath)
     stat_props = dict()
     # check only first 20 rows
@@ -113,7 +117,7 @@ def parse_row(row, parameters_map):
     prop_dict = dict()
     for col_indx, par_props in parameters_map.items():
         par_code = par_props['par_code']
-        par_value = str(row[col_indx-1]).strip().replace(',', '.')
+        par_value = str(row[int(col_indx)-1]).strip().replace(',', '.')
         if par_value == '':
             par_value = None
         else:
@@ -139,12 +143,12 @@ def validate_row_format(row):
         err_msg = 'the date format is wrong'
         return err_msg
     for cell in row[2:]:
-        cell = str(cell).strip().replace(',', '')
+        cell = str(cell).strip().replace(',', '.')
         if cell != '':
             try:
                 float(cell)
             except (TypeError, ValueError):
-                err_msg = 'the value %s is not numeric' % cell
+                err_msg = 'the row contains values not numeric'
                 return err_msg
     return err_msg
 
@@ -356,7 +360,7 @@ def row_internal_consistence_check(parsed_row, limiting_params=None):
     err_msgs = []
     ret_props = props.copy()
     for par_code, (par_value, par_flag) in props.items():
-        if par_code not in limiting_params or not par_flag:
+        if par_code not in limiting_params or not par_flag or par_value is None:
             # no check if the parameter is floagged invalid or no in the limiting_params
             continue
         par_code_min, par_code_max = limiting_params[par_code]
@@ -446,7 +450,7 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     fmt_err_indexes_dict = dict(fmt_err_msgs)
     if 0 in fmt_err_indexes_dict:
         # global error, no parsing
-        return err_msgs, (None, data)
+        return err_msgs, None
     code = get_station_props(filepath)['code']
     rows = utils.load_excel(filepath)
     if not rows:

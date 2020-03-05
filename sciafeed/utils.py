@@ -55,7 +55,7 @@ def setup_log(func):  # pragma: no cover
     return inner
 
 
-def parse_cell(cell, datemode, datepattern='%d.%m.%Y'):
+def cell_str(cell, datemode, datepattern='%d.%m.%Y'):
     """
     Try to get the raw value of an Excel cell as string/unicode
 
@@ -99,6 +99,6 @@ def load_excel(filepath, sheet_index=0, sheet_name=None):
         sheet = workbook.sheet_by_index(sheet_index)
     rows = []
     for row_index in range(sheet.nrows):
-        row = [parse_cell(sheet.cell(row_index, i), workbook.datemode) for i in range(sheet.ncols)]
+        row = [cell_str(sheet.cell(row_index, i), workbook.datemode) for i in range(sheet.ncols)]
         rows.append(row)
     return rows

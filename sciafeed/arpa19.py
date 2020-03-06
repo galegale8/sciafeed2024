@@ -4,9 +4,9 @@ This module contains the functions and utilities to parse an ARPA file with 19 v
 import csv
 from datetime import datetime
 import itertools
-import operator
 from os.path import basename, join, splitext
 
+from sciafeed import checks
 from sciafeed import TEMPLATES_PATH
 
 MISSING_VALUE_MARKER = '32767'
@@ -132,6 +132,25 @@ def validate_filename(filename: str):
     return err_msg
 
 
+def extract_metadata(filepath):
+    """
+    Extract station information and extra metadata from a file `filepath`
+    of format arpa19.
+    Return the list of dictionaries [stat_props, extra_metadata]
+
+    :param filepath: path to the file to validate
+    :return: [stat_props, extra_metadata]
+    """
+    filename = basename(filepath)
+    err_msg = validate_filename(filename)
+    if err_msg:
+        raise ValueError(err_msg)
+    code, start_obj, end_obj = parse_filename(filename)
+    stat_props = {'code': code}
+    extra_metadata = {'start_date': start_obj, 'end_date': end_obj}
+    return [stat_props, extra_metadata]
+
+
 def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER,
               stat_props=None):
     """
@@ -252,37 +271,6 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     return data
 
 
-def export(data, out_filepath, omit_parameters=(), omit_missing=True):
-    """
-    Write `data` of an ARPA19 file on the path `out_filepath` according to agreed conventions.
-    `data` is formatted according to the output of the function `parse`.
-
-    :param data: ARPA19 file data
-    :param out_filepath: output file where to write the data
-    :param omit_parameters: list of the parameters to omit
-    :param omit_missing: if False, include also values marked as missing
-    """
-    fieldnames = ['station', 'latitude', 'date', 'parameter', 'value', 'valid']
-    with open(out_filepath, 'w') as csv_out_file:
-        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
-        writer.writeheader()
-        for measure in sorted(data, key=operator.itemgetter(1)):
-            stat_props, current_date, par_code, par_value, par_flag = measure
-            if par_code in omit_parameters:
-                continue
-            if omit_missing and par_value is None:
-                continue
-            row = {
-                'station': stat_props.get('code', ''),
-                'latitude': stat_props.get('lat', ''),
-                'date': current_date.isoformat(),
-                'parameter': par_code,
-                'value': par_value,
-                'valid': par_flag and '1' or '0'
-            }
-            writer.writerow(row)
-
-
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpa19 file and validate it against the format.
@@ -338,88 +326,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
-def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
-    """
-    Get the weak climatologic check for a parsed row of an arpa19 file, i.e. it flags
-    as invalid a value is out of a defined range.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the resulting data with flags updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param parsed_row: the row of a arpa19 file
-    :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if not parameters_thresholds:
-        parameters_thresholds = dict()
-    err_msgs = []
-    data = []
-    for measure in parsed_row:
-        stat_props, row_date, par_code, par_value, par_flag = measure
-        if par_code not in parameters_thresholds or not par_flag or par_value is None:
-            # no check if limiting parameters are flagged invalid or value is None
-            data.append(measure)
-            continue
-        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
-        if not (min_threshold <= par_value <= max_threshold):
-            par_flag = False
-            err_msg = "The value of %r is out of range [%s, %s]" \
-                      % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
-        new_measure = [stat_props, row_date, par_code, par_value, par_flag]
-        data.append(new_measure)
-    return err_msgs, data
-
-
-def row_internal_consistence_check(parsed_row, limiting_params=None):
-    """
-    Get the internal consistent check for a parsed row of a arpa19 file.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the parsed_row modified.
-    `limiting_params` is a dict {code: (code_min, code_max), ...}.
-
-    :param parsed_row: the row of a arpa19 file
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if limiting_params is None:
-        limiting_params = dict()
-    err_msgs = []
-    data = []
-    for (stat_props, row_date), measures in itertools.groupby(parsed_row, key=lambda x: x[:2]):
-        # here measures have all the same station and date
-        props = {m[2]: (m[3], m[4]) for m in measures}
-        for par_code, (par_value, par_flag) in props.items():
-            if par_code not in limiting_params or not par_flag or par_value is None:
-                # no check if the parameter is floagged invalid or no in the limiting_params
-                measure = [stat_props, row_date, par_code, par_value, par_flag]
-                data.append(measure)
-                continue
-            par_code_min, par_code_max = limiting_params[par_code]
-            par_code_min_value, par_code_min_flag = props[par_code_min]
-            par_code_max_value, par_code_max_flag = props[par_code_max]
-            # check minimum
-            if par_code_min_flag and par_code_min_value is not None:
-                par_code_min_value = float(par_code_min_value)
-                if par_value < par_code_min_value:
-                    par_flag = False
-                    err_msg = "The values of %r and %r are not consistent" \
-                              % (par_code, par_code_min)
-                    err_msgs.append(err_msg)
-            # check maximum
-            if par_code_max_flag and par_code_max_value is not None:
-                par_code_max_value = float(par_code_max_value)
-                if par_value > par_code_max_value:
-                    par_flag = False
-                    err_msg = "The values of %r and %r are not consistent" \
-                              % (par_code, par_code_max)
-                    err_msgs.append(err_msg)
-            measure = [stat_props, row_date, par_code, par_value, par_flag]
-            data.append(measure)
-    return err_msgs, data
-
-
-# entry point candidate
+# TODO: move to check
 def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Get the weak climatologic check for an arpa19 file, i.e. it flags
@@ -448,17 +355,17 @@ def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH
         for i, row in enumerate(fp, 1):
             if not row.strip() or i in fmt_errors_dict:
                 continue
-            parsed_row = parse_row(row, parameters_map=parameters_map, stat_props=stat_props)
-            err_msgs_row, parsed_row = row_weak_climatologic_check(
-                parsed_row, parameters_thresholds)
+            row_data = parse_row(row, parameters_map=parameters_map, stat_props=stat_props)
+            err_msgs_row, row_data = checks.data_weak_climatologic_check(
+                row_data, parameters_thresholds)
             for err_msg_row in err_msgs_row:
                 err_msgs.append((i, err_msg_row))
-            data.extend(parsed_row)
+            data.extend(row_data)
     ret_value = err_msgs, data
     return ret_value
 
 
-# entry point candidate
+# TODO: move to checks
 def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                                   limiting_params=None):
     """
@@ -488,15 +395,17 @@ def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEP
         for i, row in enumerate(fp, 1):
             if not row.strip() or i in fmt_errors_dict:
                 continue
-            parsed_row = parse_row(row, parameters_map, stat_props=stat_props)
-            err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+            row_data = parse_row(row, parameters_map, stat_props=stat_props)
+            err_msgs_row, row_data = checks.data_internal_consistence_check(
+                row_data, limiting_params)
             for err_msg_row in err_msgs_row:
                 err_msgs.append((i, err_msg_row))
-            data.extend(parsed_row)
+            data.extend(row_data)
     ret_value = err_msgs, data
     return ret_value
 
 
+# TODO: move other place
 def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                     limiting_params=LIMITING_PARAMETERS):
     """
@@ -522,7 +431,7 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     fmt_err_indexes_dict = dict(fmt_err_msgs)
     if 0 in fmt_err_indexes_dict:
         # global error, no parsing
-        return err_msgs, (None, None, data)
+        return err_msgs, None
 
     code, _, _ = parse_filename(filename)
     stat_props = {'code': code}
@@ -530,10 +439,12 @@ def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
         for i, row in enumerate(fp, 1):
             if not row.strip() or i in fmt_err_indexes_dict:
                 continue
-            parsed_row = parse_row(row, par_map, stat_props=stat_props)
-            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            data.extend(parsed_row)
+            row_data = parse_row(row, par_map, stat_props=stat_props)
+            err_msgs1_row, row_data = checks.data_weak_climatologic_check(
+                row_data, par_thresholds)
+            err_msgs2_row, row_data = checks.data_internal_consistence_check(
+                row_data, limiting_params)
+            data.extend(row_data)
             err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
             err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
     ret_value = err_msgs, data

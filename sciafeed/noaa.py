@@ -183,7 +183,17 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
           missing_value_markers=MISSING_VALUE_MARKERS):
     """
     Read a NOAA file located at `filepath` and returns the data stored inside. 
-    Data returned is a list of results of the function `parse_row`.
+    Data returned is a list of results of the function `parse_row`, i.e. a list
+    of tuple (stat_props, datetime object, prop_dict) where:
+    - stat_props is a dictionary of properties of the station
+    - date is the reference date for the measures
+    - prop_dict is a dictionary of kind:
+    ::
+
+        { ....
+          param_i_code: (param_i_value, flag),
+          ...
+        }
     
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.

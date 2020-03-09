@@ -673,3 +673,92 @@ def test_do_file_internal_consistence_check(tmpdir):
 #     assert not parsed_after_check
 #
 #
+
+
+# def test_do_weak_climatologic_check(tmpdir):
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpa21', 'arpa21_params.csv')
+#
+#     # right file
+#     filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
+#     parsed = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
+#     err_msgs, parsed_after_check = arpa21.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with specific errors
+#     filepath = join(TEST_DATA_PATH, 'arpa21', 'wrong_00202_201201010000_201301010100.dat')
+#     parsed = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
+#     err_msgs, parsed_after_check = arpa21.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert err_msgs == [
+#         (1, "The value of '3' is out of range [-350.0, 450.0]"),
+#         (2, "The value of '4' is out of range [-400.0, 400.0]"),
+#         (3, "The value of '5' is out of range [-300.0, 500.0]")
+#     ]
+#     assert parsed_after_check[:2] == parsed[:2]
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 0, 0)]['3'] == (-570.0, False)
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 1, 0)]['4'] == (520.0, False)
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 2, 0)]['5'] == (580.0, False)
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'arpa21', 'wrong_00201_201201010000_201301010100.dat')
+#     err_msgs, _ = arpa21.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, parsed_after_check = arpa21.do_weak_climatologic_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+#     assert not parsed_after_check
+#
+#
+# def test_do_internal_consistence_check(tmpdir):
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpa21', 'arpa21_params.csv')
+#     filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
+#     parsed = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
+#
+#     # right file
+#     limiting_params = {'3': ('4', '5')}
+#     err_msgs, parsed_after_check = arpa21.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with errors
+#     limiting_params = {'9': ('10', '4')}
+#     err_msgs, parsed_after_check = arpa21.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [
+#         (1, "The values of '9' and '4' are not consistent"),
+#         (2, "The values of '9' and '4' are not consistent"),
+#         (3, "The values of '9' and '4' are not consistent"),
+#         (4, "The values of '9' and '4' are not consistent"),
+#         (5, "The values of '9' and '4' are not consistent"),
+#         (6, "The values of '9' and '4' are not consistent"),
+#         (7, "The values of '9' and '4' are not consistent"),
+#         (8, "The values of '9' and '4' are not consistent"),
+#         (9, "The values of '9' and '4' are not consistent"),
+#         (20, "The values of '9' and '4' are not consistent")
+#     ]
+#     assert parsed_after_check[:2] == parsed[:2]
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 0, 0)]['9'] == (83.0, False)
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 1, 0)]['9'] == (81.0, False)
+#     assert parsed_after_check[2][datetime(2012, 1, 1, 2, 0)]['9'] == (79.0, False)
+#
+#     # no limiting parameters: no check
+#     err_msgs, parsed_after_check = arpa21.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'arpa21', 'wrong_00201_201201010000_201301010100.dat')
+#     err_msgs, _ = arpa21.do_internal_consistence_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, parsed_after_check = arpa21.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+#     assert not parsed_after_check

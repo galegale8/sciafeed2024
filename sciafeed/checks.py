@@ -198,3 +198,92 @@ def do_file_internal_consistence_check(filepath, parameters_filepath,
             data.extend(row_data)
     ret_value = err_msgs, data
     return ret_value
+
+
+#
+# def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+#     """
+#     Get the weak climatologic check for a BOLZANO file, i.e. it flags
+#     as invalid a value is out of a defined range.
+#     Only rightly formatted rows are considered (see function `validate_format`).
+#     Return the list of tuples (row index, error message), and the resulting data with flags
+#     updated.
+#     `parameters_thresholds` is a dict {code: (min, max), ...}.
+#
+#     :param filepath: path to the BOLZANO file
+#     :param parameters_filepath: path to the CSV file containing info about stored parameters
+#     :return: ([..., (row index, err_msg), ...], data_parsed)
+#     """
+#     fmt_errors = validate_format(filepath, parameters_filepath)
+#     fmt_errors_dict = dict(fmt_errors)
+#     if 0 in fmt_errors_dict:
+#         # global formatting error: no parsing
+#         return fmt_errors, None
+#     parameters_map = load_parameter_file(parameters_filepath)
+#     parameters_thresholds = load_parameter_thresholds(parameters_filepath)
+#     code = get_station_props(filepath)['code']
+#     err_msgs = []
+#     data = dict()
+#     rows = utils.load_excel(filepath)
+#     if not rows:
+#         return [], None
+#     j = 0
+#     for j, row in enumerate(rows):
+#         date_cell = [cell for cell in row if 'Data' in str(cell)]
+#         if date_cell:
+#             break
+#     for i, row in enumerate(rows[j+2:], j+3):
+#         if i in fmt_errors_dict:
+#             continue
+#         parsed_row = parse_row(row, parameters_map=parameters_map)
+#         err_msgs_row, parsed_row = row_weak_climatologic_check(
+#             parsed_row, parameters_thresholds)
+#         for err_msg_row in err_msgs_row:
+#             err_msgs.append((i, err_msg_row))
+#         row_date, props = parsed_row
+#         data[row_date] = props
+#     ret_value = err_msgs, (code, data)
+#     return ret_value
+
+
+# def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
+#                                   limiting_params=None):
+#     """
+#     Get the internal consistent check for a BOLZANO file.
+#     Only rightly formatted rows are considered (see function `validate_format`).
+#     Return the list of tuples (row index, error message), and the resulting data with flags
+#     updated.
+#
+#     :param filepath: path to the BOLZANO file
+#     :param parameters_filepath: path to the CSV file containing info about stored parameters
+#     :param limiting_params: dictionary of limiting parameters for each parameter code
+#     :return: ([..., (row index, err_msg), ...], data_parsed)
+#     """
+#     fmt_errors = validate_format(filepath, parameters_filepath)
+#     fmt_errors_dict = dict(fmt_errors)
+#     if 0 in fmt_errors_dict:
+#         # global formatting error: no parsing
+#         return fmt_errors, None
+#     code = get_station_props(filepath)['code']
+#     parameters_map = load_parameter_file(parameters_filepath)
+#     err_msgs = []
+#     data = dict()
+#     rows = utils.load_excel(filepath)
+#     if not rows:
+#         return err_msgs, (code, data)
+#     j = 0
+#     for j, row in enumerate(rows):
+#         date_cell = [cell for cell in row if 'Data' in str(cell)]
+#         if date_cell:
+#             break
+#     for i, row in enumerate(rows[j+2:], j+3):
+#         if i in fmt_errors_dict:
+#             continue
+#         parsed_row = parse_row(row, parameters_map=parameters_map)
+#         err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+#         for err_msg_row in err_msgs_row:
+#             err_msgs.append((i, err_msg_row))
+#         row_date, props = parsed_row
+#         data[row_date] = props
+#     ret_value = err_msgs, (code, data)
+#     return ret_value

@@ -58,6 +58,52 @@ def parse_and_check(filepath, parameters_filepath, limiting_params, format_label
     ret_value = err_msgs, data
     return ret_value
 
+# def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
+#                     limiting_params=LIMITING_PARAMETERS):
+#     """
+#     Read a BOLZANO file located at `filepath`, and parse data inside it, doing
+#     - format validation
+#     - weak climatologic check
+#     - internal consistence check
+#     Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
+#     (row index, error message) of the errors found.
+#
+#     :param filepath: path to the BOLZANO file
+#     :param parameters_filepath: path to the CSV file containing info about stored parameters
+#     :param limiting_params: dictionary of limiting parameters for each parameter code
+#     :return: (err_msgs, data_parsed)
+#     """
+#     par_map = load_parameter_file(parameters_filepath)
+#     par_thresholds = load_parameter_thresholds(parameters_filepath)
+#     err_msgs = []
+#     data = dict()
+#     fmt_err_msgs = validate_format(filepath, parameters_filepath)
+#     err_msgs.extend(fmt_err_msgs)
+#     fmt_err_indexes_dict = dict(fmt_err_msgs)
+#     if 0 in fmt_err_indexes_dict:
+#         # global error, no parsing
+#         return err_msgs, None
+#     code = get_station_props(filepath)['code']
+#     rows = utils.load_excel(filepath)
+#     if not rows:
+#         return err_msgs, (code, data)
+#     j = 0
+#     for j, row in enumerate(rows):
+#         date_cell = [cell for cell in row if 'Data' in str(cell)]
+#         if date_cell:
+#             break
+#     for i, row in enumerate(rows[j+2:], j+3):
+#         if i in fmt_err_indexes_dict:
+#             continue
+#         parsed_row = parse_row(row, par_map)
+#         err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
+#         err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
+#         row_date, props = parsed_row
+#         data[row_date] = props
+#         err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
+#         err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+#     ret_value = err_msgs, (code, data)
+#     return ret_value
 
 def make_report(in_filepath, out_filepath=None, outdata_filepath=None,
                 parameters_filepath=None, limiting_params=None):

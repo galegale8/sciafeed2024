@@ -216,15 +216,6 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 
       [(stat_props, datetime object, par_code, par_value, flag), ...]
 
-    Read an arpafvg file located at `filepath` and returns the data stored inside. Value
-    returned is a tuple (station_code, station_latitude, data) where data is a dictionary of type:
-    :: 
-
-        {   timeA: { par1_name: (par1_value,flag), ....},
-            timeB: { par1_name: (par1_value,flag), ....},
-            ...
-        }
-
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
 

@@ -674,6 +674,41 @@ def test_do_file_internal_consistence_check(tmpdir):
 #
 #
 
+    # parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
+    #
+    # # right file
+    # filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
+    # parsed = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
+    # err_msgs, parsed_after_check = arpafvg.do_weak_climatologic_check(
+    #     filepath, parameters_filepath)
+    # assert not err_msgs
+    # assert parsed_after_check == parsed
+    #
+    # # with specific errors
+    # filepath = join(TEST_DATA_PATH, 'arpafvg', 'wrong_00002_2018010101_2019010101.dat')
+    # parsed = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
+    # err_msgs, parsed_after_check = arpafvg.do_weak_climatologic_check(filepath, parameters_filepath)
+    # assert err_msgs == [
+    #     (1, "The value of 'FF' is out of range [0.0, 102.0]"),
+    #     (2, "The value of 'DD' is out of range [0.0, 360.0]"),
+    #     (3, "The value of 'PREC' is out of range [0.0, 989.0]")
+    # ]
+    # assert parsed_after_check[:2] == parsed[:2]
+    # assert parsed_after_check[2][datetime(2018, 1, 1, 1, 0)]['FF'] == (103.0, False)
+    # assert parsed_after_check[2][datetime(2018, 1, 1, 2, 0)]['DD'] == (361.0, False)
+    # assert parsed_after_check[2][datetime(2018, 1, 1, 3, 0)]['PREC'] == (1000.0, False)
+    # # with only formatting errors
+    # filepath = join(TEST_DATA_PATH, 'arpafvg', 'wrong_00001_2018010101_2019010101.dat')
+    # err_msgs, _ = arpafvg.do_weak_climatologic_check(filepath, parameters_filepath)
+    # assert not err_msgs
+    #
+    # # global error
+    # filepath = str(tmpdir.join('report.txt'))
+    # err_msgs, parsed_after_check = arpafvg.do_weak_climatologic_check(
+    #     filepath, parameters_filepath)
+    # assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+    # assert not parsed_after_check
+
 
 # def test_do_weak_climatologic_check(tmpdir):
 #     parameters_filepath = join(TEST_DATA_PATH, 'arpa21', 'arpa21_params.csv')
@@ -762,3 +797,122 @@ def test_do_file_internal_consistence_check(tmpdir):
 #         filepath, parameters_filepath)
 #     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
 #     assert not parsed_after_check
+
+
+# def test_do_internal_consistence_check(tmpdir):
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
+#     filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
+#     parsed = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
+#
+#     # right file
+#     limiting_params = {'Tmedia': ('FF', 'DD')}  # 2: 6:5
+#     err_msgs, parsed_after_check = arpafvg.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with errors
+#     limiting_params = {'PREC': ('Bagnatura_f', 'DD')}  # 1: 4:5
+#     err_msgs, parsed_after_check = arpafvg.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [
+#         (1, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+#         (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+#         (3, "The values of 'PREC' and 'Bagnatura_f' are not consistent")
+#     ]
+#     assert parsed_after_check[:2] == parsed[:2]
+#     assert parsed_after_check[2][datetime(2018, 1, 1, 1, 0)]['PREC'] == (0.0, False)
+#     assert parsed_after_check[2][datetime(2018, 1, 1, 2, 0)]['PREC'] == (0.0, False)
+#     assert parsed_after_check[2][datetime(2018, 1, 1, 3, 0)]['PREC'] == (0.0, False)
+#
+#     # no limiting parameters: no check
+#     err_msgs, parsed_after_check = arpafvg.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'arpafvg', 'wrong_00001_2018010101_2019010101.dat')
+#     err_msgs, _ = arpafvg.do_internal_consistence_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, parsed_after_check = arpafvg.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+#     assert not parsed_after_check
+
+
+# def test_do_internal_consistence_check(tmpdir):
+#     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+#     parsed = bolzano.parse(filepath, parameters_filepath=parameters_filepath)
+#
+#     # file with errors
+#     limiting_params = {'Tmin': ('PREC', 'Tmax')}
+#     err_msgs, parsed_after_check = bolzano.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [
+#         (15, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (16, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (17, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (18, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (19, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (20, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (21, "The values of 'Tmin' and 'PREC' are not consistent")
+#     ]
+#     assert parsed_after_check == ('02500MS', {
+#         datetime(1981, 1, 1, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (3.0, True)},
+#         datetime(1981, 1, 2, 0, 0): {
+#             'PREC': (0.4, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, False)},
+#         datetime(1981, 1, 3, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, False)},
+#         datetime(1981, 1, 4, 0, 0): {
+#             'PREC': (14.5, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (1.0, False)},
+#         datetime(1981, 1, 5, 0, 0): {
+#             'PREC': (5.1, True),
+#             'Tmax': (3.0, True),
+#             'Tmin': (-8.0, False)},
+#         datetime(1981, 1, 6, 0, 0): {
+#             'PREC': (1.0, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-8.0, False)},
+#         datetime(1981, 1, 7, 0, 0): {
+#             'PREC': (6.1, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-9.0, False)},
+#         datetime(1981, 1, 8, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (-7.0, True),
+#             'Tmin': (-13.0, False)}})
+#
+#     # no limiting parameters: no check
+#     err_msgs, parsed_after_check = bolzano.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'wrong2.xls')
+#     err_msgs, _ = bolzano.do_internal_consistence_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     with open(filepath, 'w'):
+#         pass
+#     err_msgs, parsed_after_check = bolzano.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .xls, found .txt')]
+#     assert not parsed_after_check
+

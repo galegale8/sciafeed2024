@@ -1881,3 +1881,228 @@ def test_parse_and_check(tmpdir):
 #         parameters_filepath, limiting_params)
 #     assert report_strings == ["file %r has unknown format" % in_filepath, '']
 #     assert data_parsed is None
+
+# def test_parse_and_check(tmpdir):
+#     filepath = join(TEST_DATA_PATH, 'arpafvg', 'wrong_00001_2018010101_2019010101.dat')
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
+#     limiting_params = {'PREC': ('Bagnatura_f', 'DD')}  # 1: 4:5
+#     err_msgs, data_parsed = arpafvg.parse_and_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [
+#         (1, 'The number of components in the row is wrong'),
+#         (3, 'duplication of rows with different data'),
+#         (4, 'the latitude changes'),
+#         (6, 'it is not strictly after the previous'),
+#         (7, 'the time is not coherent with the filename'),
+#         (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent"),
+#         (5, "The values of 'PREC' and 'Bagnatura_f' are not consistent")
+#     ]
+#     assert data_parsed == ('00001', 46.077222, {
+#         datetime(2018, 1, 1, 2, 0): {
+#             'Bagnatura_f': (59.0, True),
+#             'DD': (317.0, True),
+#             'FF': (1.6, True),
+#             'INSOL': (0.0, True),
+#             'PREC': (0.0, False),
+#             'Pstaz': (1001.0, True),
+#             'RADSOL': (0.0, True),
+#             'Tmedia': (3.1, True),
+#             'UR media': (85.0, True)},
+#         datetime(2018, 1, 1, 4, 0): {
+#             'Bagnatura_f': (39.0, True),
+#             'DD': (345.0, True),
+#             'FF': (1.2, True),
+#             'INSOL': (0.0, True),
+#             'PREC': (0.0, False),
+#             'Pstaz': (1000.0, True),
+#             'RADSOL': (0.0, True),
+#             'Tmedia': (3.4, True),
+#             'UR media': (82.0, True)}}
+#     )
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, _ = arpafvg.parse_and_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+
+
+
+# def test_do_weak_climatologic_check():
+#     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+#
+#     # right file
+#     expected_data = ('02500MS', {
+#         datetime(1981, 1, 1, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (3.0, True)},
+#         datetime(1981, 1, 2, 0, 0): {
+#             'PREC': (0.4, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, True)},
+#         datetime(1981, 1, 3, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, True)},
+#         datetime(1981, 1, 4, 0, 0): {
+#             'PREC': (14.5, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (1.0, True)},
+#         datetime(1981, 1, 5, 0, 0): {
+#             'PREC': (5.1, True),
+#             'Tmax': (3.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 6, 0, 0): {
+#             'PREC': (1.0, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 7, 0, 0): {
+#             'PREC': (6.1, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-9.0, True)},
+#         datetime(1981, 1, 8, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (-7.0, True),
+#             'Tmin': (-13.0, True)}}
+#     )
+#     err_msgs, parsed_data = bolzano.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_data == expected_data
+#
+#     # with global formatting errors
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'wrong1.xls')
+#     err_msgs, parsed_data = bolzano.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'BOLZANO file not compliant')]
+#     assert not parsed_data
+#
+#     # with some errors
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'wrong3.xls')
+#     err_msgs, parsed_data = bolzano.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert err_msgs == [
+#         (17, "The value of 'Tmax' is out of range [-30.0, 50.0]"),
+#         (24, "The value of 'PREC' is out of range [0.0, 989.0]")]
+#     assert parsed_data == ('02500MS', {
+#         datetime(1981, 1, 3, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, True)},
+#         datetime(1981, 1, 4, 0, 0): {
+#             'PREC': (14.5, True),
+#             'Tmax': (9999.0, False),
+#             'Tmin': (1.0, True)},
+#         datetime(1981, 1, 5, 0, 0): {
+#             'PREC': (5.1, True),
+#             'Tmax': (3.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 6, 0, 0): {
+#             'PREC': (1.0, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 7, 0, 0): {
+#             'PREC': (6.1, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-9.0, True)},
+#         datetime(1981, 1, 8, 0, 0): {
+#             'PREC': (-3.0, False),
+#             'Tmax': (-7.0, True),
+#             'Tmin': (-13.0, True)}})
+
+
+# def test_parse_and_check(tmpdir):
+#     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
+#
+#     # right file
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+#     expected_data = ('02500MS', {
+#         datetime(1981, 1, 1, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (3.0, True)},
+#         datetime(1981, 1, 2, 0, 0): {
+#             'PREC': (0.4, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, True)},
+#         datetime(1981, 1, 3, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, True)},
+#         datetime(1981, 1, 4, 0, 0): {
+#             'PREC': (14.5, True),
+#             'Tmax': (9.0, True),
+#             'Tmin': (1.0, True)},
+#         datetime(1981, 1, 5, 0, 0): {
+#             'PREC': (5.1, True),
+#             'Tmax': (3.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 6, 0, 0): {
+#             'PREC': (1.0, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-8.0, True)},
+#         datetime(1981, 1, 7, 0, 0): {
+#             'PREC': (6.1, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-9.0, True)},
+#         datetime(1981, 1, 8, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (-7.0, True),
+#             'Tmin': (-13.0, True)}})
+#     err_msgs, parsed_data = bolzano.parse_and_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_data == expected_data
+#
+#     # with some errors
+#     limiting_params = {'Tmin': ('PREC', 'Tmax')}
+#     filepath = join(TEST_DATA_PATH, 'bolzano', 'wrong3.xls')
+#     err_msgs, parsed_data = bolzano.parse_and_check(filepath, parameters_filepath,
+#                                                     limiting_params=limiting_params)
+#     assert err_msgs == [
+#         (14, 'the date format is wrong'),
+#         (15, 'the row contains values not numeric'),
+#         (18, 'the row is not strictly after the previous'),
+#         (22, 'the row is duplicated with different values'),
+#         (16, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (17, "The value of 'Tmax' is out of range [-30.0, 50.0]"),
+#         (17, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (19, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (20, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (21, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (23, "The values of 'Tmin' and 'PREC' are not consistent"),
+#         (24, "The value of 'PREC' is out of range [0.0, 989.0]")
+#     ]
+#     assert parsed_data == ('02500MS', {
+#         datetime(1981, 1, 3, 0, 0): {
+#             'PREC': (0.0, True),
+#             'Tmax': (5.0, True),
+#             'Tmin': (-4.0, False)},
+#         datetime(1981, 1, 4, 0, 0): {
+#             'PREC': (14.5, True),
+#             'Tmax': (9999.0, False),
+#             'Tmin': (1.0, False)},
+#         datetime(1981, 1, 5, 0, 0): {
+#             'PREC': (5.1, True),
+#             'Tmax': (3.0, True),
+#             'Tmin': (-8.0, False)},
+#         datetime(1981, 1, 6, 0, 0): {
+#             'PREC': (1.0, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-8.0, False)},
+#         datetime(1981, 1, 7, 0, 0): {
+#             'PREC': (6.1, True),
+#             'Tmax': (-5.0, True),
+#             'Tmin': (-9.0, False)},
+#         datetime(1981, 1, 8, 0, 0): {
+#             'PREC': (-3.0, False),
+#             'Tmax': (-7.0, True),
+#             'Tmin': (-13.0, True)}}
+#     )
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     with open(filepath, 'w'):
+#         pass
+#     err_msgs, parsed_after_check = bolzano.parse_and_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [(0, 'Extension expected must be .xls, found .txt')]
+#     assert not parsed_after_check

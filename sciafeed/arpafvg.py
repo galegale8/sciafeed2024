@@ -125,40 +125,55 @@ def validate_filename(filename: str):
     return err_msg
 
 
-def parse_row(row, parameters_map):
+def extract_metadata(filepath):
     """
-    Parse a row of a arpafvg file, and return the parsed data as a tuple of kind:
+    Extract station information and extra metadata from a file `filepath`
+    of format arpa-fvg.
+    Return the list of dictionaries [stat_props, extra_metadata]
+
+    :param filepath: path to the file to validate
+    :return: [stat_props, extra_metadata]
+    """
+    filename = basename(filepath)
+    err_msg = validate_filename(filename)
+    if err_msg:
+        raise ValueError(err_msg)
+    code, start_obj, end_obj = parse_filename(filename)
+    stat_props = {'code': code}
+    extra_metadata = {'start_date': start_obj, 'end_date': end_obj}
+    return [stat_props, extra_metadata]
+
+
+def parse_row(row, parameters_map, stat_props=None):
+    """
+    Parse a row of a arpafvg file, and return the parsed data. Data structure is as a list:
     ::
 
-      (datetime object, latitude, prop_dict)
-
-    where prop_dict is:
-    ::
-
-        { ....
-          param_i_code: (param_i_value, flag),
-          ...
-        }
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
 
     :param row: a row of the arpafvg file
     :param parameters_map: dictionary of information about stored parameters at each position
+    :param stat_props: default stat_props if not provided in the row
     :return: (datetime object, latitude, prop_dict)
     """
+    if stat_props is None:
+        stat_props = dict()
+    else:
+        stat_props = stat_props.copy()
     tokens = row.split()
+    stat_props['lat'] = float(tokens[14])
     date_str = ''.join(tokens[:4])
     date_obj = datetime.strptime(date_str, '%y%m%d%H.%M')
-    ret_value1 = date_obj
-    ret_value2 = float(tokens[14])
-    ret_value3 = dict()
     par_values = tokens[5:14]
+    data = []
     for i, param_i_value_str in enumerate(par_values):
         param_i_code = parameters_map[i + 1]['par_code']
         param_i_value = float(param_i_value_str)
-        ret_value3[param_i_code] = (param_i_value, True)
-    ret_value = (ret_value1, ret_value2, ret_value3)
-    return ret_value
+        measure = [stat_props, date_obj, param_i_code, param_i_value, True]
+        data.append(measure)
+    return data
 
 
 def validate_row_format(row):
@@ -195,6 +210,12 @@ def validate_row_format(row):
 # entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
+    Read an arpafvg file located at `filepath` and returns the data stored inside. 
+    Data structure is as a list:
+    ::
+
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
+
     Read an arpafvg file located at `filepath` and returns the data stored inside. Value
     returned is a tuple (station_code, station_latitude, data) where data is a dictionary of type:
     :: 
@@ -213,15 +234,16 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """""
     parameters_map = load_parameter_file(parameters_filepath)
     code, _, _ = parse_filename(basename(filepath))
-    data = dict()
+    stat_props = {'code': code}
+    data = []
     with open(filepath) as fp:
         for row in fp:
             if not row.strip():
                 continue
-            row_date, lat, props = parse_row(row, parameters_map)
-            data[row_date] = props
-    ret_value = (code, lat, data)
-    return ret_value
+            parsed_row = parse_row(
+                row, parameters_map, stat_props=stat_props)
+            data.extend(parsed_row)
+    return data
 
 
 def export(data, out_filepath, omit_parameters=(), omit_missing=True):
@@ -274,11 +296,12 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         return [(0, err_msg)]
     found_errors = []
     code, start, end = parse_filename(filename)
+    stat_props = {'code': code}
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
-        last_lat = None
         last_row_date = None
         last_row = None
+        official_lat = None
         for i, row in enumerate(fp, 1):
             if not row.strip():
                 continue
@@ -286,25 +309,27 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             if err_msg:
                 found_errors.append((i, err_msg))
                 continue
-            current_row_date, current_lat, props = parse_row(row, parameters_map)
-            if not start <= current_row_date <= end:
-                err_msg = "the time is not coherent with the filename"
-                found_errors.append((i, err_msg))
+            row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+            if not row_measures:
                 continue
-            if last_lat and last_lat != current_lat:
-                err_msg = "the latitude changes"
-                found_errors.append((i, err_msg))
-                continue
+            current_row_date = row_measures[0][1]
+            if not official_lat:
+                # NOTE: assuming the official latitude is the one in the first row
+                official_lat = row_measures[0][0].get('lat')
+            current_row_lat = row_measures[0][0].get('lat')
             if last_row_date and last_row_date > current_row_date:
                 err_msg = "it is not strictly after the previous"
                 found_errors.append((i, err_msg))
-                continue
-            if last_row and last_row_date and last_row_date == current_row_date and \
+            elif official_lat and official_lat != current_row_lat:
+                err_msg = "the latitude changes"
+                found_errors.append((i, err_msg))
+            elif last_row and last_row_date and last_row_date == current_row_date and \
                     row != last_row:
                 err_msg = "duplication of rows with different data"
                 found_errors.append((i, err_msg))
-                continue
-            last_lat = current_lat
+            elif not start <= current_row_date <= end:
+                err_msg = "the time is not coherent with the filename"
+                found_errors.append((i, err_msg))
             last_row_date = current_row_date
             last_row = row
     return found_errors

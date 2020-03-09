@@ -568,10 +568,108 @@ def test_data_weak_climatologic_check():
     assert out_data == input_data
 
 
-def test_do_file_weak_climatologic_check():
+def test_do_file_weak_climatologic_check(tmpdir):
     pass
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
+#
+#     # right file
+#     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
+#     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+#     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with specific errors
+#     filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70002_201301010000_201401010100.dat')
+#     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+#     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert err_msgs == [
+#         (1, "The value of '1' is out of range [0.0, 1020.0]"),
+#         (2, "The value of '2' is out of range [0.0, 360.0]"),
+#         (3, "The value of '3' is out of range [-350.0, 450.0]"),
+#     ]
+#     assert parsed_after_check[0] == [
+#         {'code': '70002', 'lat': 43.876999}, datetime(2013, 1, 1, 0, 0), '1', 2000.0, False]
+#     parsed_after_check[0][-1] = True
+#     assert parsed_after_check[20] == [
+#         {'code': '70002', 'lat': 43.876999}, datetime(2013, 1, 1, 1, 0), '2', 361.0, False]
+#     parsed_after_check[20][-1] = True
+#     assert parsed_after_check[40] == [
+#         {'code': '70002', 'lat': 43.876999}, datetime(2013, 1, 1, 2, 0), '3', -351.0, False]
+#     parsed_after_check[40][-1] = True
+#     assert parsed_after_check == parsed
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
+#     err_msgs, _ = arpa19.do_weak_climatologic_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, parsed_after_check = arpa19.do_weak_climatologic_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+#     assert not parsed_after_check
+#
 
 
-def test_do_file_internal_consistence_check():
+def test_do_file_internal_consistence_check(tmpdir):
     pass
-
+#     parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
+#     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
+#     parsed = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+#
+#     # right file
+#     limiting_params = {'3': ('4', '5')}
+#     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with errors
+#     limiting_params = {'3': ('1', '2')}
+#     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+#         filepath, parameters_filepath, limiting_params)
+#     assert err_msgs == [
+#         (5, "The values of '3' and '2' are not consistent"),
+#         (6, "The values of '3' and '2' are not consistent"),
+#         (7, "The values of '3' and '2' are not consistent"),
+#         (10, "The values of '3' and '2' are not consistent"),
+#         (20, "The values of '3' and '2' are not consistent")
+#     ]
+#     assert parsed_after_check[78] == [
+#         {'code': '70001', 'lat': 43.876999}, datetime(2013, 1, 1, 4, 0), '3', 64.0, False]
+#     parsed_after_check[78][-1] = True
+#     assert parsed_after_check[97] == [
+#         {'code': '70001', 'lat': 43.876999}, datetime(2013, 1, 1, 5, 0), '3', 67.0, False]
+#     parsed_after_check[97][-1] = True
+#     assert parsed_after_check[116] == [
+#         {'code': '70001', 'lat': 43.876999}, datetime(2013, 1, 1, 6, 0), '3', 65.0, False]
+#     parsed_after_check[116][-1] = True
+#     assert parsed_after_check[173] == [
+#         {'code': '70001', 'lat': 43.876999}, datetime(2013, 1, 1, 9, 0), '3', 106.0, False]
+#     parsed_after_check[173][-1] = True
+#     assert parsed_after_check[363] == [
+#         {'code': '70001', 'lat': 43.876999}, datetime(2013, 1, 1, 19, 0), '3', 99.0, False]
+#     parsed_after_check[363][-1] = True
+#     assert parsed_after_check == parsed
+#
+#     # no limiting parameters: no check
+#     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert not err_msgs
+#     assert parsed_after_check == parsed
+#
+#     # with only formatting errors
+#     filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')
+#     err_msgs, _ = arpa19.do_internal_consistence_check(filepath, parameters_filepath)
+#     assert not err_msgs
+#
+#     # global error
+#     filepath = str(tmpdir.join('report.txt'))
+#     err_msgs, parsed_after_check = arpa19.do_internal_consistence_check(
+#         filepath, parameters_filepath)
+#     assert err_msgs == [(0, 'Extension expected must be .dat, found .txt')]
+#     assert not parsed_after_check
+#
+#

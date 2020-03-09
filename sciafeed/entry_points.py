@@ -7,7 +7,7 @@ import sys
 
 import click
 
-from sciafeed import formats
+from sciafeed import process
 
 
 @click.command()
@@ -23,7 +23,7 @@ def make_report(**kwargs):
     Parse a file containing data located at `in_filepath` and generate a report.
     Optionally, it can also export parsed data.
     """
-    msgs, _ = formats.make_report(**kwargs)
+    msgs, _ = process.make_report(**kwargs)
     if not kwargs['out_filepath']:
         for msg in msgs:
             print(msg)
@@ -60,7 +60,7 @@ def make_reports(**kwargs):
             outdata_filepath = join(outdata_folder, child + '.csv')
         else:
             outdata_filepath = None
-        current_msgs, _ = formats.make_report(
+        current_msgs, _ = process.make_report(
             in_filepath,
             outdata_filepath=outdata_filepath,
             out_filepath=kwargs['out_filepath']

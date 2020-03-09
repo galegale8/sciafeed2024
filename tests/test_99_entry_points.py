@@ -36,7 +36,7 @@ def test_make_report(tmpdir):
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
-        assert len(lines) == 101
+        assert len(lines) == 36
         assert lines[0] == 'station;latitude;date;parameter;value;valid\n'
 
     # ------------  arpa21 ------------

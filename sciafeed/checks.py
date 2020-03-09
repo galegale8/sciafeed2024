@@ -1,4 +1,16 @@
+"""
+This module contains the functions and utilities to check climatologic data.
+`data` is a python structure, of kind:
+..
+ [(stat_props, datetime object, par_code, par_value, flag), ...]
 
+where:
+- stat_props: a python dictionary containing information to identify a station
+- datetime object: a datetime.datetime instance that is the time of measurement
+- par_code: the parameter code
+- par_value: the parameter value
+- flag: a boolean flag to consider valid or not the value
+"""
 import itertools
 
 from sciafeed import formats
@@ -93,7 +105,6 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     return err_msgs, data_modified
 
 
-# entry point candidate
 def do_file_weak_climatologic_check(filepath, parameters_filepath, format_label=None):
     """
     Get the weak climatologic check for an input file, i.e. it flags
@@ -117,10 +128,13 @@ def do_file_weak_climatologic_check(filepath, parameters_filepath, format_label=
     if 0 in fmt_errors_dict:
         # global formatting error: no parsing
         return fmt_errors, None
-    stat_props, extra_metadata = formats.extract_metadata(filepath, format_label)
+
+    extract_metadata_f = getattr(format_module, 'extract_metadata')
     load_parameter_f = getattr(format_module, 'load_parameter_file')
     load_parameter_thresholds_f = getattr(format_module, 'load_parameter_thresholds')
     parse_row_f = getattr(format_module, 'parse_row')
+
+    stat_props, _ = extract_metadata_f(filepath)
     parameters_map = load_parameter_f(parameters_filepath)
     parameters_thresholds = load_parameter_thresholds_f(parameters_filepath)
     err_msgs = []
@@ -139,7 +153,6 @@ def do_file_weak_climatologic_check(filepath, parameters_filepath, format_label=
     return ret_value
 
 
-# entry point candidate
 def do_file_internal_consistence_check(filepath, parameters_filepath,
                                        limiting_params=None, format_label=None):
     """
@@ -165,10 +178,13 @@ def do_file_internal_consistence_check(filepath, parameters_filepath,
         return fmt_errors, None
     if limiting_params is None:
         limiting_params = dict()
-    stat_props, extra_metadata = formats.extract_metadata(filepath, format_label)
+
+    extract_metadata_f = getattr(format_module, 'extract_metadata')
     load_parameter_f = getattr(format_module, 'load_parameter_file')
     parse_row_f = getattr(format_module, 'parse_row')
+
     parameters_map = load_parameter_f(parameters_filepath)
+    stat_props, extra_metadata = extract_metadata_f(filepath)
     err_msgs = []
     data = []
     with open(filepath) as fp:

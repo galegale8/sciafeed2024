@@ -412,13 +412,14 @@ def export(data, out_filepath, omit_parameters=()):
                 writer.writerow(row)
 
 
-def validate_format(filepath):
+def validate_format(filepath, parameters_filepath=None):
     """
     Open an ARPA-ER file and validate it against the format.
     Return the list of tuples (row index, error message) of the errors found.
     row_index=0 is used only for global formatting errors.
 
     :param filepath: path to the arpa-er file
+    :param parameters_filepath: not used at the moment (maintained for API compliance)
     :return: [..., (row index, error message), ...]
     """
     ret_value = []

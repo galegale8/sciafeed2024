@@ -1,10 +1,10 @@
 """
 This module contains the functions and utilities to check climatologic data.
 `data` is a python structure, of kind:
-..
- [(stat_props, datetime object, par_code, par_value, flag), ...]
+::
 
-where:
+    [(stat_props, datetime object, par_code, par_value, flag), ...]
+
 - stat_props: a python dictionary containing information to identify a station
 - datetime object: a datetime.datetime instance that is the time of measurement
 - par_code: the parameter code
@@ -19,7 +19,7 @@ def data_internal_consistence_check(input_data, limiting_params=None):
     Get the internal consistent check for an input data object.
     It assumes that `input_data` has an agreed structure, i.e.:
     ::
-        [(stat_props, date obj, par_code, par_value, par_flag), ....]
+    [(stat_props, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the data with flags modified.
     `limiting_params` is a dict {code: (code_min, code_max), ...}.
@@ -73,7 +73,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     as invalid a value if it is out of a defined range.
     It assumes that `input_data` has an agreed structure i.e.:
     ::
-        [(stat_props, date obj, par_code, par_value, par_flag), ....]
+    [(stat_props, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the resulting data with flags updated.
     `parameters_thresholds` is a dict {code: (min, max), ...}.

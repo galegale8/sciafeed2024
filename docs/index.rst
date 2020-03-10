@@ -13,9 +13,12 @@ SCIA PostgreSQL database.
    arpaer
    arpafvg
    bolzano
+   checks
    entry_points
+   export
    formats
    noaa
+   process
    rmn
    trentino
    utils

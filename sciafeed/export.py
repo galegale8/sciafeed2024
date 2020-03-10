@@ -1,10 +1,10 @@
 """
 This module contains the functions and utilities to export data structure to file.
 `data` is a python structure, of kind:
-..
- [(stat_props, datetime object, par_code, par_value, flag), ...]
+::
 
-where:
+    [(stat_props, datetime object, par_code, par_value, flag), ...]
+
 - stat_props: a python dictionary containing information to identify a station
 - datetime object: a datetime.datetime instance that is the time of measurement
 - par_code: the parameter code

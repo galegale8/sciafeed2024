@@ -207,6 +207,14 @@ def validate_row_format(row):
     return err_msg
 
 
+def rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
+    with open(filepath) as fp:
+        for row in fp:
+            if not row.strip():
+                continue
+            yield row
+
+
 # entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
@@ -224,51 +232,13 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, station_latitude, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    code, _, _ = parse_filename(basename(filepath))
-    stat_props = {'code': code}
+    stat_props, extra_metadata = extract_metadata(filepath)
     data = []
-    with open(filepath) as fp:
-        for row in fp:
-            if not row.strip():
-                continue
-            parsed_row = parse_row(
-                row, parameters_map, stat_props=stat_props)
-            data.extend(parsed_row)
+    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+        parsed_row = parse_row(
+            row, parameters_map, stat_props=stat_props)
+        data.extend(parsed_row)
     return data
-
-
-def export(data, out_filepath, omit_parameters=(), omit_missing=True):
-    """
-    Write `data` of an arpafvg file on the path `out_filepath` according to agreed conventions.
-    `data` is formatted according to the output of the function `parse`.
-
-    :param data: arpafvg file data
-    :param out_filepath: output file where to write the data
-    :param omit_parameters: list of the parameters to omit
-    :param omit_missing: if False, include also values marked as missing
-    """
-    fieldnames = ['station', 'latitude', 'date', 'parameter', 'value', 'valid']
-    code, lat, time_data = data
-    with open(out_filepath, 'w') as csv_out_file:
-        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
-        writer.writeheader()
-        for current_date in sorted(time_data):
-            base_row = {
-                'station': code,
-                'latitude': lat,
-                'date': current_date.isoformat()
-            }
-            current_data = time_data[current_date]
-            for parameter in current_data:
-                if parameter in omit_parameters:
-                    continue
-                row = base_row.copy()
-                row['value'], row['valid'] = current_data[parameter]
-                if omit_missing and row['value'] is None:
-                    continue
-                row['parameter'] = parameter
-                row['valid'] = row['valid'] and '1' or '0'
-                writer.writerow(row)
 
 
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
@@ -324,198 +294,6 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             last_row_date = current_row_date
             last_row = row
     return found_errors
-
-
-def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
-    """
-    Get the weak climatologic check for a parsed row of an arpafvg file, i.e. it flags
-    as invalid a value is out of a defined range.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the resulting data with flags updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param parsed_row: the row of a arpafvg file
-    :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if not parameters_thresholds:
-        parameters_thresholds = dict()
-    row_date, lat, props = parsed_row
-    err_msgs = []
-    ret_props = props.copy()
-    for par_code, (par_value, par_flag) in props.items():
-        if par_code not in parameters_thresholds or not par_flag or par_value is None:
-            # no check if limiting parameters are flagged invalid or value is None
-            continue
-        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
-        if not (min_threshold <= par_value <= max_threshold):
-            ret_props[par_code] = (par_value, False)
-            err_msg = "The value of %r is out of range [%s, %s]" \
-                      % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
-    parsed_row_updated = (row_date, lat, ret_props)
-    return err_msgs, parsed_row_updated
-
-
-def row_internal_consistence_check(parsed_row, limiting_params=None):
-    """
-    Get the internal consistent check for a parsed row of a arpafvg file.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the parsed_row modified.
-    `limiting_params` is a dict {code: (code_min, code_max), ...}.
-
-    :param parsed_row: the row of a arpafvg file
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if limiting_params is None:
-        limiting_params = dict()
-    row_date, lat, props = parsed_row
-    err_msgs = []
-    ret_props = props.copy()
-    for par_code, (par_value, par_flag) in props.items():
-        if par_code not in limiting_params or not par_flag or par_value is None:
-            # no check if the parameter is flagged invalid or no in the limiting_params
-            continue
-        par_code_min, par_code_max = limiting_params[par_code]
-        par_code_min_value, par_code_min_flag = props[par_code_min]
-        par_code_max_value, par_code_max_flag = props[par_code_max]
-        # check minimum
-        if par_code_min_flag and par_code_min_value is not None:
-            par_code_min_value = float(par_code_min_value)
-            if par_value < par_code_min_value:
-                ret_props[par_code] = (par_value, False)
-                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_min)
-                err_msgs.append(err_msg)
-        # check maximum
-        if par_code_max_flag and par_code_max_value is not None:
-            par_code_max_value = float(par_code_max_value)
-            if par_value > par_code_max_value:
-                ret_props[par_code] = (par_value, False)
-                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_max)
-                err_msgs.append(err_msg)
-    return err_msgs, (row_date, lat, ret_props)
-
-
-# entry point candidate
-def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
-    """
-    Get the weak climatologic check for an arpafvg file, i.e. it flags
-    as invalid a value is out of a defined range.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param filepath: path to the arpafvg file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    fmt_errors = validate_format(filepath, parameters_filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    code, _, _ = parse_filename(basename(filepath))
-    parameters_map = load_parameter_file(parameters_filepath)
-    parameters_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data = dict()
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map=parameters_map)
-            err_msgs_row, parsed_row = row_weak_climatologic_check(
-                parsed_row, parameters_thresholds)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            row_date, lat, props = parsed_row
-            data[row_date] = props
-    ret_value = err_msgs, (code, lat, data)
-    return ret_value
-
-
-# entry point candidate
-def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                                  limiting_params=None):
-    """
-    Get the internal consistent check for an arpafvg file.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the arpafvg file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    fmt_errors = validate_format(filepath, parameters_filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    if limiting_params is None:
-        limiting_params = dict()
-    code, _, _ = parse_filename(basename(filepath))
-    parameters_map = load_parameter_file(parameters_filepath)
-    err_msgs = []
-    data = dict()
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map)
-            err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            row_date, lat, props = parsed_row
-            data[row_date] = props
-    ret_value = err_msgs, (code, lat, data)
-    return ret_value
-
-
-def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                    limiting_params=LIMITING_PARAMETERS):
-    """
-    Read an arpafvg file located at `filepath`, and parse data inside it, doing
-    - format validation
-    - weak climatologic check
-    - internal consistence check
-    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
-    (row index, error message) of the errors found.
-
-    :param filepath: path to the arpafvg file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    filename = basename(filepath)
-    par_map = load_parameter_file(parameters_filepath)
-    par_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data = dict()
-    fmt_err_msgs = validate_format(filepath, parameters_filepath)
-    err_msgs.extend(fmt_err_msgs)
-    fmt_err_indexes_dict = dict(fmt_err_msgs)
-    if 0 in fmt_err_indexes_dict:
-        # global error, no parsing
-        return err_msgs, (None, None, data)
-
-    code, _, _ = parse_filename(filename)
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_err_indexes_dict:
-                continue
-            parsed_row = parse_row(row, par_map)
-            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            row_date, lat, props = parsed_row
-            data[row_date] = props
-            err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-            err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
-    ret_value = err_msgs, (code, lat, data)
-    return ret_value
 
 
 def is_format_compliant(filepath):

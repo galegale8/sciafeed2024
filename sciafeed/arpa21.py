@@ -235,6 +235,14 @@ def validate_row_format(row):
     return err_msg
 
 
+def rows_generator(filepath, parameters_map, station_props, extra_metadata):
+    with open(filepath) as fp:
+        for row in fp:
+            if not row.strip():
+                continue
+            yield row
+
+
 # entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
           missing_value_marker=MISSING_VALUE_MARKER):
@@ -255,17 +263,13 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     :return: (station_code, station_latitude, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    code, _, _ = parse_filename(basename(filepath))
-    stat_props = {'code': code}
+    stat_props, extra_metadata = extract_metadata(filepath)
     data = []
-    with open(filepath) as fp:
-        for row in fp:
-            if not row.strip():
-                continue
-            parsed_row = parse_row(
-                row, parameters_map, only_valid=only_valid,
-                missing_value_marker=missing_value_marker, stat_props=stat_props)
-            data.extend(parsed_row)
+    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+        parsed_row = parse_row(
+            row, parameters_map, only_valid=only_valid,
+            missing_value_marker=missing_value_marker, stat_props=stat_props)
+        data.extend(parsed_row)
     return data
 
 

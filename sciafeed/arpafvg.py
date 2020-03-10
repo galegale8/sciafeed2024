@@ -209,10 +209,10 @@ def validate_row_format(row):
 
 def rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
     with open(filepath) as fp:
-        for row in fp:
+        for i, row in enumerate(fp, 1):
             if not row.strip():
                 continue
-            yield row
+            yield i, row
 
 
 # entry point candidate
@@ -234,7 +234,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     parameters_map = load_parameter_file(parameters_filepath)
     stat_props, extra_metadata = extract_metadata(filepath)
     data = []
-    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
         parsed_row = parse_row(
             row, parameters_map, stat_props=stat_props)
         data.extend(parsed_row)

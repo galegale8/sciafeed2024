@@ -181,12 +181,12 @@ def rows_generator(filepath, parameters_map, station_props, extra_metadata):
     fieldnames, station = guess_fieldnames(filepath, parameters_map)
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
-    for row in csv_reader:
+    for i, row in enumerate(csv_reader, 1):
         if (row['DATA'], row['ORA']) != ('DATA', 'ORA'):
             continue
         break
-    for row in csv_reader:
-        yield row
+    for j, row in enumerate(csv_reader, i+1):
+        yield j, row
 
 
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
@@ -209,7 +209,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     stat_props, extra_metadata = extract_metadata(filepath)
     stat_props['code'] = station
     data = []
-    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
         parsed_row = parse_row(row, parameters_map, stat_props)
         data.extend(parsed_row)
     return data

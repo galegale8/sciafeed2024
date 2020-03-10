@@ -219,32 +219,23 @@ def rows_generator(filepath, parameters_map, station_props, extra_metadata):
     fieldnames, _, _ = guess_fieldnames(filepath, parameters_map)
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
-    for row in csv_reader:
+    for j, row in enumerate(csv_reader, 1):
         if (row['date'].strip(), row['quality'].strip()) != ('', 'Qual'):
             continue
         break
-    for row in csv_reader:
+    for i, row in enumerate(csv_reader, j+1):
         row = {k.strip(): v.strip() for k, v in row.items() if k}
-        yield row
+        yield i, row
 
 
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Read an arpa19 file located at `filepath` and returns the data stored inside. 
+    Read a trentino file located at `filepath` and returns the data stored inside. 
     Data structure is as a list:
     ::
 
       [(stat_props, datetime object, par_code, par_value, flag), ...]
-      
-    Read a trentino file located at `filepath` and returns the data stored inside. Value
-    returned is a tuple (station_code, lat, data) where data is a dictionary of type:
-    :: 
-
-        {   timeA: { par1_name: (par1_value,flag), ....},
-            timeB: { par1_name: (par1_value,flag), ....},
-            ...
-        }
-
+    
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
 
@@ -256,7 +247,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     _, extra_metadata = extract_metadata(filepath)
     _, _, stat_props = guess_fieldnames(filepath, parameters_map)
     data = []
-    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
         parsed_row = parse_row(row, parameters_map, stat_props)
         data.extend(parsed_row)
     return data

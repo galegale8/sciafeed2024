@@ -168,12 +168,12 @@ def validate_row_format(row):
 def rows_generator(filepath, parameters_map, station_props, extra_metadata):
     # NOTE: assuming the column with the date is the second one
     date_column_indx = 1
-    for row in utils.load_excel(filepath):
+    for i, row in enumerate(utils.load_excel(filepath), 1):
         try:
             datetime.strptime(row[date_column_indx], "%d.%m.%Y")
         except ValueError:
             continue
-        yield row
+        yield i, row
 
 
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
@@ -193,7 +193,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     parameters_map = load_parameter_file(parameters_filepath)
     station_props, extra_metadata = extract_metadata(filepath)
     data = []
-    for row in rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
         row_data = parse_row(row, parameters_map, station_props)
         data.extend(row_data)
     return data

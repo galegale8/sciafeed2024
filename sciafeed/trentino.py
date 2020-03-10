@@ -135,30 +135,45 @@ def guess_fieldnames(filepath, parameters_map):
     return fieldnames, station_code, station_props
 
 
-def parse_row(row, parameters_map):
+def extract_metadata(filepath):
     """
-    Parse a row of a trentino file, and return the parsed data as a tuple of kind:
+    Extract station information and extra metadata from a file `filepath`
+    of format trentino.
+    Return the list of dictionaries [stat_props, extra_metadata]
+
+    :param filepath: path to the file to validate
+    :return: [stat_props, extra_metadata]
+    """
+    filename = basename(filepath)
+    err_msg = validate_filename(filename)
+    if err_msg:
+        raise ValueError(err_msg)
+    code = parse_filename(filename)
+    stat_props = {'code': code}
+    extra_metadata = dict()
+    return [stat_props, extra_metadata]
+
+
+def parse_row(row, parameters_map, stat_props=None):
+    """
+    Parse a row of a trentino file, and return the parsed data. Data structure is as a list:
     ::
 
-      (datetime object, prop_dict)
-
-    where prop_dict is:
-    ::
-
-        { ....
-          param_i_code: (param_i_value, flag),
-          ...
-        }
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
 
     :param row: a row dictionary of the trentino file as parsed by csv.DictReader
     :param parameters_map: dictionary of information about stored parameters at each position
+    :param stat_props: default stat_props if not provided in the row
     :return: (datetime object, prop_dict)
     """
-    the_time = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
-    prop_dict = dict()
+    if stat_props is None:
+        stat_props = dict()
+    else:
+        stat_props = stat_props.copy()
+    date_obj = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
     if row['quality'].strip() in ('151', '255') or row[param_code].strip() == '':
@@ -166,8 +181,9 @@ def parse_row(row, parameters_map):
     else:
         param_value = float(row[param_code].strip())
     is_valid = row['quality'].strip() in ('1', '76', '151', '255')
-    prop_dict[param_code] = (param_value, is_valid)
-    return the_time, prop_dict
+    measure = [stat_props, date_obj, param_code, param_value, is_valid]
+    data = [measure]
+    return data
 
 
 def validate_row_format(row):
@@ -199,8 +215,27 @@ def validate_row_format(row):
     return err_msg
 
 
+def rows_generator(filepath, parameters_map, station_props, extra_metadata):
+    fieldnames, _, _ = guess_fieldnames(filepath, parameters_map)
+    csv_file = open(filepath, 'r', encoding='unicode_escape')
+    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
+    for row in csv_reader:
+        if (row['date'].strip(), row['quality'].strip()) != ('', 'Qual'):
+            continue
+        break
+    for row in csv_reader:
+        row = {k.strip(): v.strip() for k, v in row.items() if k}
+        yield row
+
+
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
+    Read an arpa19 file located at `filepath` and returns the data stored inside. 
+    Data structure is as a list:
+    ::
+
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      
     Read a trentino file located at `filepath` and returns the data stored inside. Value
     returned is a tuple (station_code, lat, data) where data is a dictionary of type:
     :: 
@@ -218,55 +253,13 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, lat, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    fieldnames, station, stat_props = guess_fieldnames(filepath, parameters_map)
-    lat = stat_props.get('lat', '')
-    csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
-    data = dict()
-    for row in csv_reader:
-        if (row['date'].strip(), row['quality'].strip()) != ('', 'Qual'):
-            continue
-        break
-    for row in csv_reader:
-        row = {k.strip(): v.strip() for k, v in row.items() if k}
-        the_time, prop_dict = parse_row(row, parameters_map)
-        if prop_dict:
-            data[the_time] = prop_dict
-    return station, lat, data
-
-
-def export(data, out_filepath, omit_parameters=(), omit_missing=True):
-    """
-    Write `data` of a trentino file on the path `out_filepath` according to agreed conventions.
-    `data` is formatted according to the second output of the function `parse_and_check`.
-
-    :param data: trentino file data
-    :param out_filepath: output file where to write the data
-    :param omit_parameters: list of the parameters to omit
-    :param omit_missing: if False, include also values marked as missing
-    """
-    fieldnames = ['station', 'latitude', 'date', 'parameter', 'value', 'valid']
-    code, lat, time_data = data
-    with open(out_filepath, 'w') as csv_out_file:
-        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
-        writer.writeheader()
-        for current_date in sorted(time_data):
-            base_row = {
-                'station': code,
-                'latitude': lat,
-                'date': current_date.isoformat()
-            }
-            current_data = time_data[current_date]
-            for parameter in current_data:
-                if parameter in omit_parameters:
-                    continue
-                row = base_row.copy()
-                row['value'], row['valid'] = current_data[parameter]
-                if omit_missing and row['value'] is None:
-                    continue
-                row['parameter'] = parameter
-                row['valid'] = row['valid'] and '1' or '0'
-                writer.writerow(row)
+    _, extra_metadata = extract_metadata(filepath)
+    _, _, stat_props = guess_fieldnames(filepath, parameters_map)
+    data = []
+    for row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+        parsed_row = parse_row(row, parameters_map, stat_props)
+        data.extend(parsed_row)
+    return data
 
 
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
@@ -306,7 +299,10 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         if err_msg:
             found_errors.append((i, err_msg))
             continue
-        cur_time, _ = parse_row(row, parameters_map)
+        row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+        if not row_measures:
+            continue
+        cur_time = row_measures[0][1]
         if last_time and cur_time == last_time and last_row != row:
             err_msg = 'the row is duplicated with different values'
             found_errors.append((i, err_msg))
@@ -319,162 +315,6 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         last_row = row
 
     return found_errors
-
-
-def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
-    """
-    Get the weak climatologic check for a parsed row of a trentino file, i.e. it flags
-    as invalid a value is out of a defined range.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the resulting data with flags updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param parsed_row: the row of a trentino file
-    :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if not parameters_thresholds:
-        parameters_thresholds = dict()
-    row_date, props = parsed_row
-    err_msgs = []
-    ret_props = props.copy()
-    for par_code, (par_value, par_flag) in props.items():
-        if par_code not in parameters_thresholds or not par_flag or par_value is None:
-            # no check if limiting parameters are flagged invalid or the value is None
-            continue
-        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
-        if not (min_threshold <= par_value <= max_threshold):
-            ret_props[par_code] = (par_value, False)
-            err_msg = "The value of %r is out of range [%s, %s]" \
-                      % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
-    parsed_row_updated = (row_date, ret_props)
-    return err_msgs, parsed_row_updated
-
-
-def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
-    """
-    Get the weak climatologic check for a trentino file, i.e. it flags
-    as invalid a value is out of a defined range.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param filepath: path to the trentino file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    fmt_errors = validate_format(filepath, parameters_filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    parameters_map = load_parameter_file(parameters_filepath)
-    parameters_thresholds = load_parameter_thresholds(parameters_filepath)
-    fieldnames, code, _ = guess_fieldnames(filepath, parameters_map)
-    err_msgs = []
-    data = dict()
-    csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
-    j = 0
-    for j, row in enumerate(csv_reader, 1):
-        if (row['date'], row['quality']) != ('', 'Qual'):
-            continue
-        break
-    for i, row in enumerate(csv_reader, j+1):
-        if i in fmt_errors_dict:
-            continue
-        parsed_row = parse_row(row, parameters_map=parameters_map)
-        err_msgs_row, parsed_row = row_weak_climatologic_check(
-            parsed_row, parameters_thresholds)
-        for err_msg_row in err_msgs_row:
-            err_msgs.append((i, err_msg_row))
-        row_date, props = parsed_row
-        data[row_date] = props
-    ret_value = err_msgs, (code, data)
-    return ret_value
-
-
-def row_internal_consistence_check(parsed_row, limiting_params=None): # pragma: no cover
-    """
-    Get the internal consistent check for a parsed row of a trentino file.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the parsed_row modified.
-    `limiting_params` is a dict {code: (code_min, code_max), ...}.
-
-    :param parsed_row: the row of a trentino file
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    err_msg = 'Each row has only a parameter: cannot do internal consistence check'
-    raise NotImplementedError(err_msg)
-
-
-def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                                  limiting_params=None):  # pragma: no cover
-    """
-    Get the internal consistent check for a trentino file.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the trentino file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    err_msg = 'Each row has only a parameter: cannot do internal consistence check'
-    raise NotImplementedError(err_msg)
-
-
-def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                    limiting_params=LIMITING_PARAMETERS):
-    """
-    Read a trentino file located at `filepath`, and parse data inside it, doing
-    - format validation
-    - weak climatologic check
-    - internal consistence check
-    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
-    (row index, error message) of the errors found.
-
-    :param filepath: path to the trentino file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    par_map = load_parameter_file(parameters_filepath)
-    par_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data = dict()
-    fmt_err_msgs = validate_format(filepath, parameters_filepath)
-    err_msgs.extend(fmt_err_msgs)
-    fmt_err_indexes_dict = dict(fmt_err_msgs)
-    if 0 in fmt_err_indexes_dict:
-        # global error, no parsing
-        return err_msgs, (None, data)
-
-    fieldnames, code, extra_props = guess_fieldnames(filepath, par_map)
-    lat = extra_props.get('lat', '')
-    csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
-    j = 0
-    for j, row in enumerate(csv_reader, 1):
-        if (row['date'], row['quality']) != ('', 'Qual'):
-            continue
-        break
-    for i, row in enumerate(csv_reader, j+1):
-        if i in fmt_err_indexes_dict:
-            continue
-        parsed_row = parse_row(row, par_map)
-        err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-        # err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-        row_date, props = parsed_row
-        data[row_date] = props
-        err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-        # err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
-    ret_value = err_msgs, (code, lat, data)
-    return ret_value
 
 
 def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):

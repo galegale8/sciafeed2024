@@ -80,23 +80,25 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
     return ret_value
 
 
-def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS):
+def extract_metadata(filepath):
     """
-    Parse a row of a NOAA file, and return the parsed data as a tuple of kind:
+    Extract station information and extra metadata from a file `filepath`
+    of format NOAA.
+    Return the list of dictionaries [stat_props, extra_metadata]
+
+    :param filepath: path to the file to validate
+    :return: [stat_props, extra_metadata]
+    """
+    stat_props, extra_metadata = dict(), dict()
+    return [stat_props, extra_metadata]
+
+
+def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, stat_props=None):
+    """
+    Parse a row of a NOAA file, and return the parsed data. Data structure is as a list:
     ::
 
-      (stat_props, datetime object, prop_dict)
-
-    The output is the tuple (stat_props, date, measures), where:
-    - stat_props is a dictionary of properties of the station
-    - date is the reference date for the measures
-    - prop_dict is a dictionary of kind:
-    ::
-
-        { ....
-          param_i_code: (param_i_value, flag),
-          ...
-        }
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
@@ -104,13 +106,16 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS):
     :param row: a row of the NOAA file
     :param parameters_map: dictionary of information about stored parameters at each position
     :param missing_value_markers: the map of the strings used as a marker for missing value
+    :param stat_props: default stat_props if not provided in the row
     :return: (datetime object, prop_dict)
     """
     date_str = row[14:22]
-    stat_props = {
-        'code': row[0:6].strip(),
-        'wban': row[7:12].strip()
-    }
+    if stat_props is None:
+        stat_props = dict()
+    else:
+        stat_props = stat_props.copy()
+    stat_props['code'] = row[0:6].strip()
+    stat_props['wban'] = row[7:12].strip()
     prop_dict_raw = {
         'TEMP': row[24:30],
         'DEWP': row[35:41],
@@ -126,16 +131,17 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS):
         'SNDP': row[125:130],
     }
     date_obj = datetime.strptime(date_str, '%Y%m%d')
-    prop_dict = dict()
+    data = []
     for noaa_code, par_props in parameters_map.items():
+        par_code = par_props['par_code']
         par_value_str = prop_dict_raw[noaa_code].strip()
         if par_value_str in (missing_value_markers.get(noaa_code), ''):
             par_value = None
         else:
             par_value = float(par_value_str.replace('*', ''))
-        prop_dict[par_props['par_code']] = (par_value, True)
-    ret_value = (stat_props, date_obj, prop_dict)
-    return ret_value
+        measure = [stat_props, date_obj, par_code, par_value, True]
+        data.append(measure)
+    return data
 
 
 def validate_row_format(row):
@@ -182,18 +188,11 @@ def validate_row_format(row):
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
           missing_value_markers=MISSING_VALUE_MARKERS):
     """
-    Read a NOAA file located at `filepath` and returns the data stored inside. 
-    Data returned is a list of results of the function `parse_row`, i.e. a list
-    of tuple (stat_props, datetime object, prop_dict) where:
-    - stat_props is a dictionary of properties of the station
-    - date is the reference date for the measures
-    - prop_dict is a dictionary of kind:
+    Read a NOAA file located at `filepath` and returns the data stored inside.  
+    Data structure is as a list:
     ::
 
-        { ....
-          param_i_code: (param_i_value, flag),
-          ...
-        }
+      [(stat_props, datetime object, par_code, par_value, flag), ...]
     
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
@@ -213,41 +212,8 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
                 continue
             parsed_row = parse_row(row, parameters_map,
                                    missing_value_markers=missing_value_markers)
-            data.append(parsed_row)
+            data.extend(parsed_row)
     return data
-
-
-def export(data, out_filepath, omit_parameters=(), omit_missing=True):
-    """
-    Write `data` of a NOAA file on the path `out_filepath` according to agreed conventions.
-    `data` is formatted according to the output of the function `parse`.
-
-    :param data: NOAA file data
-    :param out_filepath: output file where to write the data
-    :param omit_parameters: list of the parameters to omit
-    :param omit_missing: if False, include also values marked as missing
-    """
-    fieldnames = ['station', 'latitude', 'date', 'parameter', 'value', 'valid']
-    with open(out_filepath, 'w') as csv_out_file:
-        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
-        writer.writeheader()
-        for data_item in sorted(data, key=operator.itemgetter(1)):  # sort by date
-            stat_props, date_obj, prop_dict = data_item
-            base_row = {
-                'station': stat_props['code'],
-                'latitude': '',
-                'date': date_obj.isoformat(),
-            }
-            for parameter, (value, is_valid) in prop_dict.items():
-                if parameter in omit_parameters:
-                    continue
-                if value is None and omit_missing:
-                    continue
-                row = base_row.copy()
-                row['parameter'] = parameter
-                row['value'] = value
-                row['valid'] = is_valid and '1' or '0'
-                writer.writerow(row)
 
 
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
@@ -279,7 +245,10 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             if err_msg:
                 found_errors.append((i, err_msg))
                 continue
-            stat_props, current_row_date, prop_dict = parse_row(row, parameters_map)
+            row_measures = parse_row(row, parameters_map)
+            if not row_measures:
+                continue
+            current_row_date = row_measures[0][1]
             if last_row_date and last_row_date > current_row_date:
                 err_msg = "it is not strictly after the previous"
                 found_errors.append((i, err_msg))
@@ -292,192 +261,6 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             last_row_date = current_row_date
             last_row = row
     return found_errors
-
-
-def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
-    """
-    Get the weak climatologic check for a parsed row of a NOAA file, i.e. it flags
-    as invalid a value is out of a defined range.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the resulting data with flags updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param parsed_row: the row of a NOAA file
-    :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if not parameters_thresholds:
-        parameters_thresholds = dict()
-    stat_props, date_obj, prop_dict = parsed_row
-    err_msgs = []
-    ret_props = prop_dict.copy()
-    for par_code, (par_value, par_flag) in prop_dict.items():
-        if par_code not in parameters_thresholds or not par_flag or par_value is None:
-            # no check if limiting parameters are flagged invalid or value is None
-            continue
-        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
-        if not (min_threshold <= par_value <= max_threshold):
-            ret_props[par_code] = (par_value, False)
-            err_msg = "The value of %r is out of range [%s, %s]" \
-                      % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
-    parsed_row_updated = (stat_props, date_obj, ret_props)
-    return err_msgs, parsed_row_updated
-
-
-def row_internal_consistence_check(parsed_row, limiting_params=None):
-    """
-    Get the internal consistent check for a parsed row of a NOAA file.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the parsed_row modified.
-    `limiting_params` is a dict {code: (code_min, code_max), ...}.
-
-    :param parsed_row: the row of a NOAA file
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    if limiting_params is None:
-        limiting_params = dict()
-    stat_props, date_obj, props = parsed_row
-    err_msgs = []
-    ret_props = props.copy()
-    for par_code, (par_value, par_flag) in props.items():
-        if par_code not in limiting_params or not par_flag or par_value is None:
-            # no check if the parameter is floagged invalid or no in the limiting_params
-            continue
-        par_code_min, par_code_max = limiting_params[par_code]
-        par_code_min_value, par_code_min_flag = props[par_code_min]
-        par_code_max_value, par_code_max_flag = props[par_code_max]
-        # check minimum
-        if par_code_min_flag and par_code_min_value is not None:
-            par_code_min_value = float(par_code_min_value)
-            if par_value < par_code_min_value:
-                ret_props[par_code] = (par_value, False)
-                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_min)
-                err_msgs.append(err_msg)
-        # check maximum
-        if par_code_max_flag and par_code_max_value is not None:
-            par_code_max_value = float(par_code_max_value)
-            if par_value > par_code_max_value:
-                ret_props[par_code] = (par_value, False)
-                err_msg = "The values of %r and %r are not consistent" % (par_code, par_code_max)
-                err_msgs.append(err_msg)
-    return err_msgs, (stat_props, date_obj, ret_props)
-
-
-# entry point candidate
-def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
-    """
-    Get the weak climatologic check for a NOAA file, i.e. it flags
-    as invalid a value is out of a defined range.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the NOAA file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    fmt_errors = validate_format(filepath, parameters_filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    parameters_map = load_parameter_file(parameters_filepath)
-    parameters_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data = []
-    with open(filepath) as fp:
-        for _ in fp:
-            break  # avoid first line!
-        for i, row in enumerate(fp, 2):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map=parameters_map)
-            err_msgs_row, parsed_row = row_weak_climatologic_check(
-                parsed_row, parameters_thresholds)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            data.append(parsed_row)
-    ret_value = err_msgs, data
-    return ret_value
-
-
-# entry point candidate
-def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                                  limiting_params=None):
-    """
-    Get the internal consistent check for a NOAA file.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the NOAA file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: ([..., (row index, err_msg), ...], data_parsed)
-    """
-    fmt_errors = validate_format(filepath, parameters_filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    parameters_map = load_parameter_file(parameters_filepath)
-    err_msgs = []
-    data = []
-    with open(filepath) as fp:
-        for _ in fp:
-            break  # avoid first line!
-        for i, row in enumerate(fp, 2):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map=parameters_map)
-            err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            data.append(parsed_row)
-    ret_value = err_msgs, data
-    return ret_value
-
-
-def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                    limiting_params=LIMITING_PARAMETERS):
-    """
-    Read a NOAA file located at `filepath`, and parse data inside it, doing
-    - format validation
-    - weak climatologic check
-    - internal consistence check
-    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
-    (row index, error message) of the errors found.
-
-    :param filepath: path to the NOAA file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    par_map = load_parameter_file(parameters_filepath)
-    par_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data = dict()
-    fmt_err_msgs = validate_format(filepath, parameters_filepath)
-    err_msgs.extend(fmt_err_msgs)
-    fmt_err_indexes_dict = dict(fmt_err_msgs)
-    if 0 in fmt_err_indexes_dict:
-        # global error, no parsing
-        return err_msgs, (None, None, data)
-    data = []
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_err_indexes_dict or i == 1:
-                continue
-            parsed_row = parse_row(row, par_map)
-            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-            err_msgs2_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            data.append(parsed_row)
-            err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-            err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
-    ret_value = err_msgs, data
-    return ret_value
 
 
 def is_format_compliant(filepath):

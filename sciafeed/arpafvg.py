@@ -125,13 +125,14 @@ def validate_filename(filename: str):
     return err_msg
 
 
-def extract_metadata(filepath):
+def extract_metadata(filepath, parameters_filepath):
     """
     Extract station information and extra metadata from a file `filepath`
     of format arpa-fvg.
     Return the list of dictionaries [stat_props, extra_metadata]
 
     :param filepath: path to the file to validate
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [stat_props, extra_metadata]
     """
     filename = basename(filepath)
@@ -232,11 +233,10 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, station_latitude, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    stat_props, extra_metadata = extract_metadata(filepath)
+    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
-        parsed_row = parse_row(
-            row, parameters_map, stat_props=stat_props)
+        parsed_row = parse_row(row, parameters_map, stat_props=stat_props)
         data.extend(parsed_row)
     return data
 

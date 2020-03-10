@@ -64,20 +64,21 @@ def test_get_station_props():
 
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+    parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
     expected = [{
         'code': '02500MS',
         'desc': 'Marienberg - Monte Maria',
         'height': '1310',
         'utmx': '616288',
         'utmy': '5173583'}, dict()]
-    effective = bolzano.extract_metadata(filepath)
+    effective = bolzano.extract_metadata(filepath, parameters_filepath)
     assert effective == expected
 
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.txt')
     with pytest.raises(ValueError):
-        bolzano.extract_metadata(filepath)
+        bolzano.extract_metadata(filepath, parameters_filepath)
 
-from pprint import pprint
+
 def test_parse_row():
     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
     parameters_map = bolzano.load_parameter_file(parameters_filepath=parameters_filepath)

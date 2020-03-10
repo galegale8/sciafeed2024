@@ -99,16 +99,20 @@ def guess_fieldnames(filepath, parameters_map):
     return fieldnames, station
 
 
-def extract_metadata(filepath):
+def extract_metadata(filepath, parameters_filepath):
     """
     Extract station information and extra metadata from a file `filepath`
     of format RMN.
     Return the list of dictionaries [stat_props, extra_metadata]
 
     :param filepath: path to the file to validate
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [stat_props, extra_metadata]
     """
-    stat_props, extra_metadata = dict(), dict()
+    parameters_map = load_parameter_file(parameters_filepath)
+    fieldnames, station = guess_fieldnames(filepath, parameters_map)
+    stat_props = {'code': station}
+    extra_metadata = {'fieldnames': fieldnames}
     return [stat_props, extra_metadata]
 
 
@@ -178,7 +182,7 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, station_props, extra_metadata):
-    fieldnames, station = guess_fieldnames(filepath, parameters_map)
+    fieldnames = extra_metadata['fieldnames']
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
     for i, row in enumerate(csv_reader, 1):
@@ -205,9 +209,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    fieldnames, station = guess_fieldnames(filepath, parameters_map)
-    stat_props, extra_metadata = extract_metadata(filepath)
-    stat_props['code'] = station
+    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
         parsed_row = parse_row(row, parameters_map, stat_props)

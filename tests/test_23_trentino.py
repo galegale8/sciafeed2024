@@ -76,9 +76,11 @@ def test_guess_fieldnames():
 
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
-    stat_props, extra_metadata = trentino.extract_metadata(filepath)
-    assert stat_props == {'code': 'T0001'}
-    assert extra_metadata == dict()
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+    stat_props, extra_metadata = trentino.extract_metadata(filepath, parameters_filepath)
+    assert stat_props == {'code': 'T0001', 'lat': 46.06227631, 'lon': 11.23670156,
+                          'height': 475.0, 'desc': 'Pergine Valsugana (Convento)'}
+    assert extra_metadata == {'fieldnames': ['date', 'Tmin', 'quality']}
 
 
 def test_parse_row():

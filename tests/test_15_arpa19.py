@@ -104,7 +104,8 @@ def test_validate_filename():
 def test_extract_metadata(tmpdir):
     # right file
     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
-    stat_props, extra_metadata = arpa19.extract_metadata(filepath)
+    parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
+    stat_props, extra_metadata = arpa19.extract_metadata(filepath, parameters_filepath)
     assert stat_props == {'code': '70001'}
     assert extra_metadata == {
         'start_date': datetime(2013, 1, 1, 0, 0),
@@ -114,7 +115,7 @@ def test_extract_metadata(tmpdir):
     # wrong file
     filepath = str(tmpdir.join('afilename.csv'))
     with pytest.raises(ValueError):
-        stat_props, extra_metadata = arpa19.extract_metadata(filepath)
+        stat_props, extra_metadata = arpa19.extract_metadata(filepath, parameters_filepath)
 
 
 def test_parse_row():

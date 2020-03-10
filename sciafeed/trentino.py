@@ -135,22 +135,23 @@ def guess_fieldnames(filepath, parameters_map):
     return fieldnames, station_code, station_props
 
 
-def extract_metadata(filepath):
+def extract_metadata(filepath, parameters_filepath):
     """
     Extract station information and extra metadata from a file `filepath`
     of format trentino.
     Return the list of dictionaries [stat_props, extra_metadata]
 
     :param filepath: path to the file to validate
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [stat_props, extra_metadata]
     """
+    parameters_map = load_parameter_file(parameters_filepath)
+    fieldnames, _, stat_props = guess_fieldnames(filepath, parameters_map)
     filename = basename(filepath)
     err_msg = validate_filename(filename)
     if err_msg:
         raise ValueError(err_msg)
-    code = parse_filename(filename)
-    stat_props = {'code': code}
-    extra_metadata = dict()
+    extra_metadata = {'fieldnames': fieldnames}
     return [stat_props, extra_metadata]
 
 
@@ -216,7 +217,7 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, station_props, extra_metadata):
-    fieldnames, _, _ = guess_fieldnames(filepath, parameters_map)
+    fieldnames = extra_metadata['fieldnames']
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
     for j, row in enumerate(csv_reader, 1):
@@ -244,8 +245,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, lat, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    _, extra_metadata = extract_metadata(filepath)
-    _, _, stat_props = guess_fieldnames(filepath, parameters_map)
+    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
         parsed_row = parse_row(row, parameters_map, stat_props)

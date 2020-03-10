@@ -32,7 +32,8 @@ def test_load_parameter_thresholds():
 
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
-    md = noaa.extract_metadata(filepath)
+    parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
+    md = noaa.extract_metadata(filepath, parameters_filepath)
     assert md == [dict(), dict()]
 
 

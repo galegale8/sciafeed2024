@@ -90,13 +90,14 @@ def get_station_props(filepath):
     raise ValueError('BOLZANO file not compliant')
 
 
-def extract_metadata(filepath):
+def extract_metadata(filepath, parameters_filepath):
     """
     Extract station information and extra metadata from a file `filepath`
     of format bolzano.
     Return the list of dictionaries [stat_props, extra_metadata]
 
     :param filepath: path to the file to validate
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [stat_props, extra_metadata]
     """
     stat_props = get_station_props(filepath)
@@ -191,7 +192,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: (station_code, data)
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    station_props, extra_metadata = extract_metadata(filepath)
+    station_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
         row_data = parse_row(row, parameters_map, station_props)
@@ -210,7 +211,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: [..., (row index, error message), ...]
     """
     try:
-        stat_props, _ = extract_metadata(filepath)
+        stat_props, _ = extract_metadata(filepath, parameters_filepath)
     except ValueError as err:
         return [(0, str(err))]
     parameters_map = load_parameter_file(parameters_filepath)

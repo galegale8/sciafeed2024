@@ -62,7 +62,7 @@ def test_make_report(tmpdir):
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
-        assert len(lines) == 161
+        assert len(lines) == 57
         assert lines[0] == 'station;latitude;date;parameter;value;valid\n'
 
     # ------------  arpafvg ------------
@@ -127,7 +127,7 @@ def test_make_reports(tmpdir):
     files_to_parse = [
         ('arpa19', 'loc01_70001_201301010000_201401010100.dat', 'ARPA-19'),
         ('arpa21', 'loc01_00201_201201010000_201301010100.dat', 'ARPA-21'),
-        ('arpaer', 'results.json', 'ARPA-ER'),
+        # ('arpaer', 'results.json', 'ARPA-ER'),
         ('arpafvg', 'loc01_00001_2018010101_2019010101.dat', 'ARPA-FVG'),
         ('rmn', 'ancona_right.csv', 'RMN'),
     ]

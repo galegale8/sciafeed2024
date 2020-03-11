@@ -117,8 +117,9 @@ def guess_fieldnames(filepath, parameters_map):
                 station_code = second_col
             elif first_col == 'and':
                 parameter = parameters_map.get(second_col)['par_code']
-    if not station_code or not parameter:
+    if not station_code or not parameter or len(station_code) < 2:
         raise ValueError('trentino header not compliant')
+    station_code = station_code[1:]
     fieldnames = ['date', parameter, 'quality']
     tokens = station_props_str.split()
     try:

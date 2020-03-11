@@ -1460,7 +1460,7 @@ def test_parse_and_check(tmpdir):
     # --- trentino format ---
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
-    stat_props = {'cod_utente': 'T0001', 'desc': 'Pergine Valsugana (Convento)',
+    stat_props = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
                   'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156}
     expected_data = [
         [stat_props, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],

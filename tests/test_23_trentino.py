@@ -53,7 +53,7 @@ def test_guess_fieldnames():
     assert fieldnames == ['date', 'Tmin', 'quality']
     assert station == 'T0001'
     assert extra_info == {
-        'code': 'T0001',
+        'cod_utente': 'T0001',
         'lat': 46.06227631,
         'lon': 11.23670156,
         'height': 475.0,
@@ -78,7 +78,7 @@ def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
     stat_props, extra_metadata = trentino.extract_metadata(filepath, parameters_filepath)
-    assert stat_props == {'code': 'T0001', 'lat': 46.06227631, 'lon': 11.23670156,
+    assert stat_props == {'cod_utente': 'T0001', 'lat': 46.06227631, 'lon': 11.23670156,
                           'height': 475.0, 'desc': 'Pergine Valsugana (Convento)'}
     assert extra_metadata == {'fieldnames': ['date', 'Tmin', 'quality']}
 
@@ -153,7 +153,7 @@ def test_validate_row_format():
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
-    station_props = {'code': 'T0001', 'desc': 'Pergine Valsugana (Convento)',
+    station_props = {'cod_utente': 'T0001', 'desc': 'Pergine Valsugana (Convento)',
                      'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156}
     expected_data = [
         [station_props, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],

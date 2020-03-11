@@ -140,7 +140,7 @@ def extract_metadata(filepath, parameters_filepath):
     if err_msg:
         raise ValueError(err_msg)
     code, start_obj, end_obj = parse_filename(filename)
-    stat_props = {'code': code}
+    stat_props = {'cod_utente': code}
     extra_metadata = {'start_date': start_obj, 'end_date': end_obj}
     return [stat_props, extra_metadata]
 
@@ -257,7 +257,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         return [(0, err_msg)]
     found_errors = []
     code, start, end = parse_filename(filename)
-    stat_props = {'code': code}
+    stat_props = {'cod_utente': code}
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_row_date = None

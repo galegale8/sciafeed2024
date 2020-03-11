@@ -93,7 +93,7 @@ def guess_fieldnames(filepath, parameters_map):
     """
     Parse a trentino file to guess the right CSV header, the station code and some
     extra station properties.
-    Station properties is a dictionary witk keys ['code', 'desc', 'lat', 'lon', height'].
+    Station properties is a dictionary witk keys ['cod_utente', 'desc', 'lat', 'lon', height'].
     The measured parameters are taken from the parameters_map dictionary.
 
     :param filepath: path to the input trentino file
@@ -123,7 +123,7 @@ def guess_fieldnames(filepath, parameters_map):
     tokens = station_props_str.split()
     try:
         station_props = dict([
-            ('code', station_code),
+            ('cod_utente', station_code),
             ('lat', float([t for t in tokens if t.startswith('Lat:')][0][4:])),
             ('lon', float([t for t in tokens if t.startswith('Long:')][0][5:])),
             ('height', float([t for t in tokens if t.startswith('Elev:')][0][5:])),

@@ -111,7 +111,7 @@ def extract_metadata(filepath, parameters_filepath):
     """
     parameters_map = load_parameter_file(parameters_filepath)
     fieldnames, station = guess_fieldnames(filepath, parameters_map)
-    stat_props = {'code': station}
+    stat_props = {'cod_utente': station}
     extra_metadata = {'fieldnames': fieldnames}
     return [stat_props, extra_metadata]
 
@@ -234,7 +234,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             raise ValueError('not found station name')
     except ValueError as err:
         return [(0, str(err))]
-    stat_props = {'code': station}
+    stat_props = {'cod_utente': station}
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
     j = 0

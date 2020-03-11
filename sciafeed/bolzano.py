@@ -66,7 +66,7 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
 def get_station_props(filepath):
     """
     Parse a BOLZANO file to guess some station properties.
-    Station properties is a dictionary witk keys ['code', 'desc', 'utmx', 'utmy', height'].
+    Station properties is a dictionary witk keys ['cod_utente', 'desc', 'utmx', 'utmy', height'].
 
     :param filepath: path to the input BOLZANO file
     :return: the list [station properties, column_index]
@@ -82,7 +82,7 @@ def get_station_props(filepath):
         for j, cell in enumerate(row):
             if 'stazione' in cell and not stat_props:
                 stat_props['desc'] = row[j+1].strip()
-                stat_props['code'] = rows[i+1][j+1].strip()
+                stat_props['cod_utente'] = rows[i+1][j+1].strip()
                 stat_props['utmx'] = rows[i+2][j+1].strip()
                 stat_props['utmy'] = rows[i+3][j+1].strip()
                 stat_props['height'] = rows[i+4][j+1].strip()

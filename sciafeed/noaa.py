@@ -115,7 +115,7 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
         stat_props = dict()
     else:
         stat_props = stat_props.copy()
-    stat_props['code'] = row[0:6].strip()
+    stat_props['cod_utente'] = row[0:6].strip()
     stat_props['wban'] = row[7:12].strip()
     prop_dict_raw = {
         'TEMP': row[24:30],

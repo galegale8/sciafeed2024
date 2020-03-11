@@ -29,11 +29,11 @@ def parse_and_check(filepath, parameters_filepath, limiting_params=None, format_
         return [(0, "the file has unknown format")], None
     load_parameter_f = getattr(format_module, 'load_parameter_file')
     load_parameter_thresholds_f = getattr(format_module, 'load_parameter_thresholds')
-    extract_metadata_f = getattr(format_module, 'extract_metadata')
     parse_row_f = getattr(format_module, 'parse_row')
     rows_generator_f = getattr(format_module, 'rows_generator')
 
-    stat_props, extra_metadata = extract_metadata_f(filepath, parameters_filepath)
+    stat_props, extra_metadata = formats.extract_metadata(
+        filepath, parameters_filepath, format_label)
     par_map = load_parameter_f(parameters_filepath)
     par_thresholds = load_parameter_thresholds_f(parameters_filepath)
 

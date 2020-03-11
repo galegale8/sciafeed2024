@@ -25,7 +25,7 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     :param omit_parameters: list of the parameters to omit
     :param omit_missing: if False, include also values marked as missing
     """
-    fieldnames = ['station', 'latitude', 'date', 'parameter', 'value', 'valid']
+    fieldnames = ['cod_utente', 'cod_rete', 'reghiscentral', 'date', 'parameter', 'value', 'valid']
     with open(out_filepath, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
@@ -36,8 +36,9 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
             if omit_missing and par_value is None:
                 continue
             row = {
-                'station': stat_props.get('code', ''),
-                'latitude': stat_props.get('lat', ''),
+                'cod_utente': stat_props.get('cod_utente', ''),
+                'cod_rete': stat_props.get('cod_rete', ''),
+                'reghiscentral': stat_props.get('reghiscentral', 'ND'),
                 'date': current_date.isoformat(),
                 'parameter': par_code,
                 'value': par_value,

@@ -16,7 +16,7 @@ def test_load_parameter_file():
         assert 'par_code' in parameter_map[i]
         assert 'description' in parameter_map[i]
 
-from pprint import pprint
+
 def test_load_parameter_thresholds():
     test_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
     expected_thresholds = {
@@ -166,53 +166,53 @@ def test_validate_format(tmpdir):
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
-    lat = 46.077222
+    stat_props = {'cod_utente': '00001', 'lat': 46.077222}
     expected_data = [
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'Tmedia', 2.8, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'UR media', 86.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 58.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'DD', 357.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'FF', 0.5, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'PREC', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'Tmedia', 3.1, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'UR media', 85.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'Bagnatura_f', 59.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'DD', 317.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'FF', 1.6, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'Pstaz', 1001.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'RADSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 2, 0), 'INSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'PREC', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'Tmedia', 3.4, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'UR media', 82.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'Bagnatura_f', 39.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'DD', 345.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'FF', 1.2, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'Pstaz', 1000.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'RADSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 3, 0), 'INSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'PREC', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'Tmedia', 3.4, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'UR media', 82.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'Bagnatura_f', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'DD', 313.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'FF', 1.8, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'Pstaz', 999.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'RADSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 4, 0), 'INSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'PREC', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'Tmedia', 3.4, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'UR media', 83.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'Bagnatura_f', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'DD', 348.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'FF', 0.9, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'Pstaz', 998.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'RADSOL', 0.0, True],
-        [{'code': '00001', 'lat': lat}, datetime(2018, 1, 1, 5, 0), 'INSOL', 0.0, True]
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'Tmedia', 2.8, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'UR media', 86.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 58.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'DD', 357.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'FF', 0.5, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'PREC', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'Tmedia', 3.1, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'UR media', 85.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'Bagnatura_f', 59.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'DD', 317.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'FF', 1.6, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'Pstaz', 1001.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'RADSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 2, 0), 'INSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'PREC', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'Tmedia', 3.4, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'UR media', 82.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'Bagnatura_f', 39.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'DD', 345.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'FF', 1.2, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'Pstaz', 1000.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'RADSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 3, 0), 'INSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'PREC', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'Tmedia', 3.4, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'UR media', 82.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'Bagnatura_f', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'DD', 313.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'FF', 1.8, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'Pstaz', 999.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'RADSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 4, 0), 'INSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'PREC', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'Tmedia', 3.4, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'UR media', 83.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'Bagnatura_f', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'DD', 348.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'FF', 0.9, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'Pstaz', 998.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'RADSOL', 0.0, True],
+        [stat_props, datetime(2018, 1, 1, 5, 0), 'INSOL', 0.0, True]
     ]
     effective = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
     assert effective == expected_data

@@ -3,8 +3,8 @@ This module contains the functions and utilities to parse a NOAA file
 """
 import csv
 from datetime import datetime
-import operator
-from os.path import join, splitext
+from os.path import abspath, join, splitext
+from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
 
@@ -82,24 +82,23 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
 
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract station information and extra metadata from a file `filepath`
-    of format NOAA.
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Extract generic metadata information from a file `filepath` of format NOAA.
+    Return the dictionary of the metadata extracted.
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
-    stat_props, extra_metadata = dict(), dict()
-    return [stat_props, extra_metadata]
+    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:])}
+    return metadata
 
 
-def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, stat_props=None):
+def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, metadata=None):
     """
     Parse a row of a NOAA file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
@@ -107,16 +106,16 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
     :param row: a row of the NOAA file
     :param parameters_map: dictionary of information about stored parameters at each position
     :param missing_value_markers: the map of the strings used as a marker for missing value
-    :param stat_props: default stat_props if not provided in the row
+    :param metadata: default metadata if not provided in the row
     :return: (datetime object, prop_dict)
     """
     date_str = row[14:22]
-    if stat_props is None:
-        stat_props = dict()
+    if metadata is None:
+        metadata = dict()
     else:
-        stat_props = stat_props.copy()
-    stat_props['cod_utente'] = row[0:6].strip()
-    stat_props['wban'] = row[7:12].strip()
+        metadata = metadata.copy()
+    metadata['cod_utente'] = row[0:6].strip()
+    metadata['wban'] = row[7:12].strip()
     prop_dict_raw = {
         'TEMP': row[24:30],
         'DEWP': row[35:41],
@@ -140,7 +139,7 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
             par_value = None
         else:
             par_value = float(par_value_str.replace('*', ''))
-        measure = [stat_props, date_obj, par_code, par_value, True]
+        measure = [metadata, date_obj, par_code, par_value, True]
         data.append(measure)
     return data
 
@@ -185,7 +184,7 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_map, station_props, extra_metadata):
+def rows_generator(filepath, parameters_map, metadata):
     with open(filepath) as fp:
         for _ in fp:
             break  # avoid first line!
@@ -203,7 +202,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
     
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
@@ -211,14 +210,14 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     :param filepath: path to the NOAA file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param missing_value_markers: the map of the strings used as a marker for missing value
-    :return: list of parsed rows
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_map, metadata):
         parsed_row = parse_row(row, parameters_map,
-                               missing_value_markers=missing_value_markers)
+                               missing_value_markers=missing_value_markers, metadata=metadata)
         data.extend(parsed_row)
     return data
 

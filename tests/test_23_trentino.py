@@ -77,10 +77,11 @@ def test_guess_fieldnames():
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
-    stat_props, extra_metadata = trentino.extract_metadata(filepath, parameters_filepath)
-    assert stat_props == {'cod_utente': '0001', 'lat': 46.06227631, 'lon': 11.23670156,
-                          'height': 475.0, 'desc': 'Pergine Valsugana (Convento)'}
-    assert extra_metadata == {'fieldnames': ['date', 'Tmin', 'quality']}
+    metadata = trentino.extract_metadata(filepath, parameters_filepath)
+    assert metadata == {'cod_utente': '0001', 'lat': 46.06227631, 'lon': 11.23670156,
+                        'height': 475.0, 'desc': 'Pergine Valsugana (Convento)',
+                        'fieldnames': ['date', 'Tmin', 'quality'],
+                        'source': 'trentino/T0001.csv'}
 
 
 def test_parse_row():
@@ -153,23 +154,25 @@ def test_validate_row_format():
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
-    station_props = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
-                     'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156}
+    metadata = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
+                'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156,
+                'fieldnames': ['date', 'Tmin', 'quality'],
+                'source': 'trentino/T0001.csv'}
     expected_data = [
-        [station_props, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],
-        [station_props, datetime(1930, 5, 2, 9, 0), 'Tmin', 11.0, True],
-        [station_props, datetime(1930, 5, 3, 9, 0), 'Tmin', 10.0, True],
-        [station_props, datetime(1930, 5, 4, 9, 0), 'Tmin', 8.0, True],
-        [station_props, datetime(1930, 5, 5, 9, 0), 'Tmin', 12.0, True],
-        [station_props, datetime(1930, 5, 6, 9, 0), 'Tmin', 8.0, True],
-        [station_props, datetime(1930, 5, 7, 9, 0), 'Tmin', 10.0, True],
-        [station_props, datetime(1930, 5, 8, 9, 0), 'Tmin', 7.0, True],
-        [station_props, datetime(1930, 5, 9, 9, 0), 'Tmin', 8.0, True],
-        [station_props, datetime(1930, 5, 10, 9, 0), 'Tmin', 7.0, True],
-        [station_props, datetime(1930, 5, 11, 9, 0), 'Tmin', 5.0, True],
-        [station_props, datetime(1930, 5, 12, 9, 0), 'Tmin', 7.0, True],
-        [station_props, datetime(1930, 5, 13, 9, 0), 'Tmin', None, True],
-        [station_props, datetime(1930, 5, 14, 9, 0), 'Tmin', 9.0, True]
+        [metadata, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],
+        [metadata, datetime(1930, 5, 2, 9, 0), 'Tmin', 11.0, True],
+        [metadata, datetime(1930, 5, 3, 9, 0), 'Tmin', 10.0, True],
+        [metadata, datetime(1930, 5, 4, 9, 0), 'Tmin', 8.0, True],
+        [metadata, datetime(1930, 5, 5, 9, 0), 'Tmin', 12.0, True],
+        [metadata, datetime(1930, 5, 6, 9, 0), 'Tmin', 8.0, True],
+        [metadata, datetime(1930, 5, 7, 9, 0), 'Tmin', 10.0, True],
+        [metadata, datetime(1930, 5, 8, 9, 0), 'Tmin', 7.0, True],
+        [metadata, datetime(1930, 5, 9, 9, 0), 'Tmin', 8.0, True],
+        [metadata, datetime(1930, 5, 10, 9, 0), 'Tmin', 7.0, True],
+        [metadata, datetime(1930, 5, 11, 9, 0), 'Tmin', 5.0, True],
+        [metadata, datetime(1930, 5, 12, 9, 0), 'Tmin', 7.0, True],
+        [metadata, datetime(1930, 5, 13, 9, 0), 'Tmin', None, True],
+        [metadata, datetime(1930, 5, 14, 9, 0), 'Tmin', 9.0, True]
     ]
     effective = trentino.parse(filepath, parameters_filepath)
     assert effective == expected_data

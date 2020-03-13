@@ -3,7 +3,8 @@ This module contains functions and utilities to parse a BOLZANO file
 """
 import csv
 from datetime import datetime
-from os.path import join, splitext
+from os.path import abspath, join, splitext
+from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
 from sciafeed import utils
@@ -92,38 +93,39 @@ def get_station_props(filepath):
 
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract station information and extra metadata from a file `filepath`
-    of format bolzano.
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Extract generic metadata information from a file `filepath` of format bolzano.
+    Return the dictionary of the metadata extracted.
+    The function assumes the station information is complaint against the format (see function
+    `get_station_props`).
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
-    stat_props = get_station_props(filepath)
-    extra_metadata = dict()
-    return [stat_props, extra_metadata]
+    metadata = get_station_props(filepath)
+    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    return metadata
 
 
-def parse_row(row, parameters_map, stat_props=None):
+def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a BOLZANO file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
 
     :param row: a list of values for each cell of the original Excel file
     :param parameters_map: dictionary of information about stored parameters at each position
-    :param stat_props: default stat_props if not provided in the row
-    :return: (datetime object, prop_dict)
+    :param metadata: default metadata if not provided in the row
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """
-    if stat_props is None:
-        stat_props = dict()
+    if metadata is None:
+        metadata = dict()
     else:
-        stat_props = stat_props.copy()
+        metadata = metadata.copy()
     # NOTE: assuming the column with the date is the second one
     date_obj = datetime.strptime(row[1].strip(), "%d.%m.%Y")
     data = []
@@ -134,7 +136,7 @@ def parse_row(row, parameters_map, stat_props=None):
             par_value = None
         else:
             par_value = float(par_value)
-        measure = [stat_props, date_obj, par_code, par_value, True]
+        measure = [metadata, date_obj, par_code, par_value, True]
         data.append(measure)
     return data
 
@@ -166,7 +168,7 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_map, station_props, extra_metadata):
+def rows_generator(filepath, parameters_map, metadata):
     # NOTE: assuming the column with the date is the second one
     date_column_indx = 1
     for i, row in enumerate(utils.load_excel(filepath), 1):
@@ -182,20 +184,20 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     Parse a row of a BOLZANO file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
       
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
 
     :param filepath: path to the BOLZANO file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: (station_code, data)
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    station_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    for i, row in rows_generator(filepath, parameters_filepath, station_props, extra_metadata):
-        row_data = parse_row(row, parameters_map, station_props)
+    for i, row in rows_generator(filepath, parameters_filepath, metadata):
+        row_data = parse_row(row, parameters_map, metadata)
         data.extend(row_data)
     return data
 
@@ -211,9 +213,10 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :return: [..., (row index, error message), ...]
     """
     try:
-        stat_props, _ = extract_metadata(filepath, parameters_filepath)
+        get_station_props(filepath)
     except ValueError as err:
         return [(0, str(err))]
+    metadata = extract_metadata(filepath, parameters_filepath)
     parameters_map = load_parameter_file(parameters_filepath)
     rows = utils.load_excel(filepath)
     if not rows:
@@ -231,7 +234,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         if err_msg:
             found_errors.append((i, err_msg))
             continue
-        row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+        row_measures = parse_row(row, parameters_map, metadata=metadata)
         if not row_measures:
             continue
         cur_time = row_measures[0][1]

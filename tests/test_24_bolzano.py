@@ -65,12 +65,12 @@ def test_get_station_props():
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
-    expected = [{
+    expected = {
         'cod_utente': '02500MS',
         'desc': 'Marienberg - Monte Maria',
         'height': '1310',
         'utmx': '616288',
-        'utmy': '5173583'}, dict()]
+        'utmy': '5173583', 'source': 'bolzano/MonteMaria.xls'}
     effective = bolzano.extract_metadata(filepath, parameters_filepath)
     assert effective == expected
 
@@ -117,7 +117,8 @@ def test_parse():
     station_info_expected = {'cod_utente': '02500MS',
                              'desc': 'Marienberg - Monte Maria',
                              'height': '1310', 'utmx': '616288',
-                             'utmy': '5173583'}
+                             'utmy': '5173583',
+                             'source': 'bolzano/MonteMaria.xls'}
     data_info_expected = [
         [datetime(1981, 1, 1, 0, 0), 'Tmin', 3.0, True],
         [datetime(1981, 1, 1, 0, 0), 'Tmax', 9.0, True],

@@ -3,7 +3,8 @@ This module contains functions and utilities to parse a file with format used by
 """
 import csv
 from datetime import datetime
-from os.path import basename, join, splitext
+from os.path import abspath, basename, join, splitext
+from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
 
@@ -103,6 +104,9 @@ def guess_fieldnames(filepath, parameters_map):
     station_code = None
     station_props_str = ''
     parameter = None
+    err_msg = validate_filename(basename(filepath))
+    if err_msg:
+        raise ValueError(err_msg)
     with open(filepath, 'r', encoding='unicode_escape') as csv_file:
         for line in csv_file:
             line_tokens = [t.replace('"', '').replace("'", '').strip() for t in line.split(',')]
@@ -133,48 +137,48 @@ def guess_fieldnames(filepath, parameters_map):
             tokens[tokens.index('-')+1:tokens.index('Lat:%s' % station_props['lat'])])
     except (IndexError, TypeError, ValueError):
         station_props = dict()
+    if not station_code:
+        raise ValueError('not found station name')
     return fieldnames, station_code, station_props
 
 
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract station information and extra metadata from a file `filepath`
-    of format trentino.
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Extract generic metadata information from a file `filepath` of format trentino.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file is validated against the format (see function
+    `guess_fieldnames`).
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
     parameters_map = load_parameter_file(parameters_filepath)
-    fieldnames, _, stat_props = guess_fieldnames(filepath, parameters_map)
-    filename = basename(filepath)
-    err_msg = validate_filename(filename)
-    if err_msg:
-        raise ValueError(err_msg)
-    extra_metadata = {'fieldnames': fieldnames}
-    return [stat_props, extra_metadata]
+    fieldnames, _, metadata = guess_fieldnames(filepath, parameters_map)
+    metadata['fieldnames'] = fieldnames
+    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    return metadata
 
 
-def parse_row(row, parameters_map, stat_props=None):
+def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a trentino file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
 
     :param row: a row dictionary of the trentino file as parsed by csv.DictReader
     :param parameters_map: dictionary of information about stored parameters at each position
-    :param stat_props: default stat_props if not provided in the row
+    :param metadata: default metadata if not provided in the row
     :return: (datetime object, prop_dict)
     """
-    if stat_props is None:
-        stat_props = dict()
+    if metadata is None:
+        metadata = dict()
     else:
-        stat_props = stat_props.copy()
+        metadata = metadata.copy()
     date_obj = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
@@ -183,7 +187,7 @@ def parse_row(row, parameters_map, stat_props=None):
     else:
         param_value = float(row[param_code].strip())
     is_valid = row['quality'].strip() in ('1', '76', '151', '255')
-    measure = [stat_props, date_obj, param_code, param_value, is_valid]
+    measure = [metadata, date_obj, param_code, param_value, is_valid]
     data = [measure]
     return data
 
@@ -217,10 +221,10 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_map, station_props, extra_metadata):
-    fieldnames = extra_metadata['fieldnames']
+def rows_generator(filepath, parameters_map, metadata):
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=metadata['fieldnames'])
+    j = 0
     for j, row in enumerate(csv_reader, 1):
         if (row['date'].strip(), row['quality'].strip()) != ('', 'Qual'):
             continue
@@ -236,20 +240,20 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
     
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
 
     :param filepath: path to the trentino file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: (station_code, lat, data)
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
-        parsed_row = parse_row(row, parameters_map, stat_props)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        parsed_row = parse_row(row, parameters_map, metadata)
         data.extend(parsed_row)
     return data
 
@@ -264,20 +268,14 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [..., (row index, error message), ...]
     """
-    filename = basename(filepath)
-    err_msg = validate_filename(filename)
-    if err_msg:
-        return [(0, err_msg)]
     parameters_map = load_parameter_file(parameters_filepath)
     try:
-        fieldnames, station, stat_props = guess_fieldnames(filepath, parameters_map)
-        if not station:
-            raise ValueError('not found station name')
+        guess_fieldnames(filepath, parameters_map)
     except ValueError as err:
         return [(0, str(err))]
-
+    metadata = extract_metadata(filepath, parameters_filepath)
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=metadata['fieldnames'])
     j = 0
     for j, row in enumerate(csv_reader, 1):
         if (row['date'], row['quality']) != ('', 'Qual'):
@@ -291,7 +289,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         if err_msg:
             found_errors.append((i, err_msg))
             continue
-        row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+        row_measures = parse_row(row, parameters_map, metadata=metadata)
         if not row_measures:
             continue
         cur_time = row_measures[0][1]
@@ -319,9 +317,7 @@ def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     parameters_map = load_parameter_file(parameters_filepath)
     try:
-        fieldnames, station, _ = guess_fieldnames(filepath, parameters_map)
-        if not station:
-            return False
+        guess_fieldnames(filepath, parameters_map)
     except:
         return False
     return True

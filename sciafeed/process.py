@@ -32,8 +32,7 @@ def parse_and_check(filepath, parameters_filepath, limiting_params=None, format_
     parse_row_f = getattr(format_module, 'parse_row')
     rows_generator_f = getattr(format_module, 'rows_generator')
 
-    stat_props, extra_metadata = formats.extract_metadata(
-        filepath, parameters_filepath, format_label)
+    metadata = formats.extract_metadata(filepath, parameters_filepath, format_label)
     par_map = load_parameter_f(parameters_filepath)
     par_thresholds = load_parameter_thresholds_f(parameters_filepath)
 
@@ -46,10 +45,10 @@ def parse_and_check(filepath, parameters_filepath, limiting_params=None, format_
         # global error, no parsing
         return err_msgs, None
 
-    for i, row in rows_generator_f(filepath, par_map, stat_props, extra_metadata):
+    for i, row in rows_generator_f(filepath, par_map, metadata):
         if not row or i in fmt_err_indexes_dict:
             continue
-        row_data = parse_row_f(row, par_map, stat_props=stat_props)
+        row_data = parse_row_f(row, par_map, metadata=metadata)
         err_msgs1_row, row_data = checks.data_weak_climatologic_check(
             row_data, par_thresholds)
         err_msgs2_row, row_data = checks.data_internal_consistence_check(

@@ -3,7 +3,8 @@ This module contains the functions and utilities to parse an ARPA file with 19 v
 """
 import csv
 from datetime import datetime
-from os.path import basename, join, splitext
+from os.path import abspath, basename, join, splitext
+from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
 
@@ -78,16 +79,12 @@ def parse_filename(filename: str):
     :return: the tuple (<code>, <start date>, <end date>)
     """
     name, ext = splitext(filename)
-    assert ext.lower() == '.dat'
     tokens = name.split('_')
-    assert len(tokens) == 4
     code = tokens[1].zfill(5)
-    assert len(code) == 5
     start_str = tokens[2]
     end_str = tokens[3]
     start_obj = datetime.strptime(start_str, '%Y%m%d%H%M')
     end_obj = datetime.strptime(end_str, '%Y%m%d%H%M')
-    assert start_obj <= end_obj
     ret_value = (code, start_obj, end_obj)
     return ret_value
 
@@ -132,31 +129,30 @@ def validate_filename(filename: str):
 
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract station information and extra metadata from a file `filepath`
-    of format arpa19.
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Extract generic metadata information from a file `filepath` of format arpa19.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file name is validated against the format (see function
+    `validate_filename`).
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
     filename = basename(filepath)
-    err_msg = validate_filename(filename)
-    if err_msg:
-        raise ValueError(err_msg)
     code, start_obj, end_obj = parse_filename(filename)
-    stat_props = {'cod_utente': code}
-    extra_metadata = {'start_date': start_obj, 'end_date': end_obj}
-    return [stat_props, extra_metadata]
+    ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
+                 'source': source}
+    return ret_value
 
 
 def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER,
-              stat_props=None):
+              metadata=None):
     """
     Parse a row of a arpa19 file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
@@ -164,18 +160,18 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     :param row: a row of the arpa19 file
     :param parameters_map: dictionary of information about stored parameters at each position
     :param only_valid: parse only values flagged as valid (default: False)
-    :param stat_props: default stat_props if not provided in the row
+    :param metadata: default metadata if not provided in the row
     :param missing_value_marker: the string used as a marker for missing value
-    :return: [(stat_props, datetime object, par_code, par_value, flag), ...]
+    :return: [(metadata, datetime object, par_code, par_value, flag, source), ...]
     """
-    if stat_props is None:
-        stat_props = dict()
+    if metadata is None:
+        metadata = dict()
     else:
-        stat_props = stat_props.copy()
+        metadata = metadata.copy()
     tokens = row.split()
     date_str = tokens[0]
     date_obj = datetime.strptime(date_str, '%Y%m%d%H%M')
-    stat_props['lat'] = float(tokens[1])
+    metadata['lat'] = float(tokens[1])
     par_values = tokens[2:21]
     par_flags = tokens[21:]
     data = []
@@ -188,7 +184,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         flag = float(flag_num) <= 1
         if not flag and only_valid:
             continue
-        measure = [stat_props, date_obj, param_i_code, param_i_value, flag]
+        measure = [metadata, date_obj, param_i_code, param_i_value, flag]
         data.append(measure)
     return data
 
@@ -236,7 +232,7 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_map, station_props, extra_metadata):
+def rows_generator(filepath, parameters_map, metadata):
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
             if not row.strip():
@@ -252,7 +248,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
@@ -261,15 +257,15 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param only_valid: parse only values flagged as valid (default: False)
     :param missing_value_marker: the string used as a marker for missing value
-    :return: [(stat_props, datetime object, par_code, par_value, flag), ...]
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
+    for i, row in rows_generator(filepath, parameters_map, metadata):
         parsed_row = parse_row(
             row, parameters_map, only_valid=only_valid,
-            missing_value_marker=missing_value_marker, stat_props=stat_props)
+            missing_value_marker=missing_value_marker, metadata=metadata)
         data.extend(parsed_row)
     return data
 
@@ -289,8 +285,8 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     if err_msg:
         return [(0, err_msg)]
     found_errors = []
-    code, start, end = parse_filename(filename)
-    stat_props = {'cod_utente': code}
+    metadata = extract_metadata(filepath, parameters_filepath)
+    start, end = metadata['start_date'], metadata['end_date']
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_row_date = None
@@ -303,7 +299,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             if err_msg:
                 found_errors.append((i, err_msg))
                 continue
-            row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+            row_measures = parse_row(row, parameters_map, metadata=metadata)
             if not row_measures:
                 continue
             current_row_date = row_measures[0][1]

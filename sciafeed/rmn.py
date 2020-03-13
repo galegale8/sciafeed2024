@@ -96,45 +96,47 @@ def guess_fieldnames(filepath, parameters_map):
                 break
         else:  # never gone on break: unknown header token
             raise ValueError('Unknown column on header: %r' % token)
+    if not station:
+        raise ValueError('not found station name')
     return fieldnames, station
 
 
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract station information and extra metadata from a file `filepath`
-    of format RMN.
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Extract generic metadata information from a file `filepath` of format RMN.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file is compliant against the format (see function
+    `guess_fieldnames`).
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
     parameters_map = load_parameter_file(parameters_filepath)
     fieldnames, station = guess_fieldnames(filepath, parameters_map)
-    stat_props = {'cod_utente': station}
-    extra_metadata = {'fieldnames': fieldnames}
-    return [stat_props, extra_metadata]
+    metadata = {'cod_utente': station, 'fieldnames': fieldnames}
+    return metadata
 
 
-def parse_row(row, parameters_map, stat_props=None):
+def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a arpa19 file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
 
     :param row: a row dictionary of the rmn file as parsed by csv.DictReader
     :param parameters_map: dictionary of information about stored parameters at each position
-    :param stat_props: default stat_props if not provided in the row
+    :param metadata: default metadata if not provided in the row
     :return: (datetime object, prop_dict)
     """
-    if stat_props is None:
-        stat_props = dict()
+    if metadata is None:
+        metadata = dict()
     else:
-        stat_props = stat_props.copy()
+        metadata = metadata.copy()
     time_str = "%s %s" % (row['DATA'], row['ORA'])
     date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M")
     data = []
@@ -147,7 +149,7 @@ def parse_row(row, parameters_map, stat_props=None):
             param_value = None
         else:
             param_value = float(param_value.replace(',', '.'))
-        measure = [stat_props, date_obj, param_code, param_value, True]
+        measure = [metadata, date_obj, param_code, param_value, True]
         data.append(measure)
     return data
 
@@ -181,10 +183,10 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_map, station_props, extra_metadata):
-    fieldnames = extra_metadata['fieldnames']
+def rows_generator(filepath, parameters_map, metadata):
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=metadata['fieldnames'])
+    i = 0
     for i, row in enumerate(csv_reader, 1):
         if (row['DATA'], row['ORA']) != ('DATA', 'ORA'):
             continue
@@ -195,24 +197,24 @@ def rows_generator(filepath, parameters_map, station_props, extra_metadata):
 
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Read an arpa19 file located at `filepath` and returns the data stored inside. 
+    Read a RMN file located at `filepath` and returns the data stored inside. 
     Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
       
     The function assumes the file as validated against the format (see function 
     `validate_format`). No checks on data are performed.
 
     :param filepath: path to the rmn file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: (station_code, data)
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """""
     parameters_map = load_parameter_file(parameters_filepath)
-    stat_props, extra_metadata = extract_metadata(filepath, parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    for i, row in rows_generator(filepath, parameters_map, stat_props, extra_metadata):
-        parsed_row = parse_row(row, parameters_map, stat_props)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        parsed_row = parse_row(row, parameters_map, metadata)
         data.extend(parsed_row)
     return data
 
@@ -229,14 +231,12 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     parameters_map = load_parameter_file(parameters_filepath)
     try:
-        fieldnames, station = guess_fieldnames(filepath, parameters_map)
-        if not station:
-            raise ValueError('not found station name')
+        guess_fieldnames(filepath, parameters_map)
     except ValueError as err:
         return [(0, str(err))]
-    stat_props = {'cod_utente': station}
+    metadata = extract_metadata(filepath, parameters_filepath)
     csv_file = open(filepath, 'r', encoding='unicode_escape')
-    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=fieldnames)
+    csv_reader = csv.DictReader(csv_file, delimiter=';', fieldnames=metadata['fieldnames'])
     j = 0
     for j, row in enumerate(csv_reader, 1):
         if (row['DATA'], row['ORA']) != ('DATA', 'ORA'):
@@ -250,7 +250,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
         if err_msg:
             found_errors.append((i, err_msg))
             continue
-        row_measures = parse_row(row, parameters_map, stat_props=stat_props)
+        row_measures = parse_row(row, parameters_map, metadata=metadata)
         if not row_measures:
             continue
         cur_time = row_measures[0][1]
@@ -279,8 +279,6 @@ def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     parameters_map = load_parameter_file(parameters_filepath)
     try:
         fieldnames, station = guess_fieldnames(filepath, parameters_map)
-        if not station:
-            return False
     except:
         return False
     return True

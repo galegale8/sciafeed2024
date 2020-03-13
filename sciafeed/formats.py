@@ -60,64 +60,41 @@ def validate_format(filepath, parameters_filepath, format_label=None):
 
 def folder2props(folder_name):
     """
-    Extract some station properties from a folder name, according to some
-    conventions.
+    Extract some station/network properties from a folder name,
+    according to agreed conventions.
 
-    :param folder_name:
+    :param folder_name: the name of the folder
     :return: a dictionary of properties extracted
     """
-    NORMALIZED_REGIONS = {
-        'EmiliaRomagna': 'EMILIA-ROMAGNA',
-        'FriuliVeneziaGiulia': 'FRIULI-VENEZIA GIULIA',
-        'Liguria': 'LIGURIA',
-        'ValleAosta': "VALLE D'AOSTA",
-        'Lombardia': 'LOMBARDIA',
-        'Veneto': 'VENETO',
-        'Piemonte': 'PIEMONTE',
-        'Sicilia': 'SICILIA',
-        'Calabria': 'CALABRIA',
-        'Trentino': 'ND',
-        'Marche': 'MARCHE',
-        'Campania': 'CAMPANIA',
-        'Bolzano': 'BOLZANO',
-        'Basilicata': 'BASILICATA',
-        'Lazio': 'LAZIO',
-        'Umbria': 'UMBRIA',
-        'Toscana': 'TOSCANA',
-        'Sardegna': 'SARDEGNA',
-        'Puglia': 'PUGLIA',
-        'Molise': 'MOLISE',
-        'Abruzzo': 'ABRUZZO',
-    }
     ret_value = dict()
-    for substring, reghiscentral in NORMALIZED_REGIONS.items():
-        if substring in folder_name:
-            ret_value['reghiscentral'] = reghiscentral
-    if '_' in folder_name:
-        try:
-            ret_value['cod_rete'] = int(folder_name.split('_')[0])
-        except ValueError:
-            pass
+    folder_name_tokens = folder_name.split('_')
+    cod_rete = folder_name_tokens[0]
+    if cod_rete.isdigit():
+        ret_value['cod_rete'] = cod_rete
+    # case HISCENTRAL
+    cod_utente_prefix = folder_name_tokens[-1]
+    if ret_value.get('cod_rete') == '15' and cod_utente_prefix.isdigit():
+        ret_value['cod_utente_prefix'] = cod_utente_prefix
     return ret_value
 
 
 def extract_metadata(filepath, parameters_filepath, format_label=None):
     """
-    Extract station information and extra metadata from a file located at `filepath`.
+    Extract generic metadata from a file located at `filepath`.
 
-    Return the list of dictionaries [stat_props, extra_metadata]
+    Return the dictionary of metadata extracted
 
     :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param format_label: the label string (according to `sciafeed.formats.FORMATS`)
-    :return: [stat_props, extra_metadata]
+    :return: dictionary of metadata extracted
     """
     if not format_label:
         _, format_module = guess_format(filepath)
     else:
         format_module = dict(FORMATS).get(format_label)
-    extractor = getattr(format_module, 'extract_metadata')
-    stat_props, extra_metadata = extractor(filepath, parameters_filepath)
+    extract_metadata_f = getattr(format_module, 'extract_metadata')
+    metadata = extract_metadata_f(filepath, parameters_filepath)
     folder_name = dirname(filepath)
-    stat_props.update(folder2props(folder_name))
-    return stat_props, extra_metadata
+    metadata.update(folder2props(folder_name))
+    return metadata

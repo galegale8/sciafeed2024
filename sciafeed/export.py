@@ -3,9 +3,9 @@ This module contains the functions and utilities to export data structure to fil
 `data` is a python structure, of kind:
 ::
 
-    [(stat_props, datetime object, par_code, par_value, flag), ...]
+    [(metadata, datetime object, par_code, par_value, flag), ...]
 
-- stat_props: a python dictionary containing information to identify a station
+- metadata: a python dictionary containing information to identify a station
 - datetime object: a datetime.datetime instance that is the time of measurement
 - par_code: the parameter code
 - par_value: the parameter value
@@ -25,23 +25,23 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     :param omit_parameters: list of the parameters to omit
     :param omit_missing: if False, include also values marked as missing
     """
-    fieldnames = ['cod_utente', 'cod_rete', 'reghiscentral', 'date', 'parameter', 'value', 'valid']
+    fieldnames = ['cod_utente', 'cod_rete', 'date', 'parameter', 'value', 'valid', 'source']
     with open(out_filepath, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
         for measure in sorted(data, key=operator.itemgetter(1)):
-            stat_props, current_date, par_code, par_value, par_flag = measure
+            metadata, current_date, par_code, par_value, par_flag = measure
             if par_code in omit_parameters:
                 continue
             if omit_missing and par_value is None:
                 continue
             row = {
-                'cod_utente': stat_props.get('cod_utente', ''),
-                'cod_rete': stat_props.get('cod_rete', ''),
-                'reghiscentral': stat_props.get('reghiscentral', 'ND'),
+                'cod_utente': metadata.get('cod_utente', ''),
+                'cod_rete': metadata.get('cod_rete', ''),
                 'date': current_date.isoformat(),
                 'parameter': par_code,
                 'value': par_value,
-                'valid': par_flag and '1' or '0'
+                'valid': par_flag and '1' or '0',
+                'source': metadata.get('source', ''),
             }
             writer.writerow(row)

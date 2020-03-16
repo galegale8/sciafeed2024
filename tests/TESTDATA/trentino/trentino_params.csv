@@ -1,4 +1,4 @@
-CSV_CODE;description;par_code;min;max;unit
-400.55;Temperatura minima dell’aria, in °C;Tmin;-40;40;°C
-400.56;Temperatura massima dell’aria, in °C;Tmax;-30;50;°C
-10.5;Precipitazione misurata nell’intervallo di un’ora, in decimi di mm;PREC;0;989;mm
+CSV_CODE;description;par_code;min;max;original_unit;convertion;final_unit
+400.55;Temperatura minima dell’aria, in °C;Tmin;-40;40;°C;X;°C
+400.56;Temperatura massima dell’aria, in °C;Tmax;-30;50;°C;X;°C
+10.5;Precipitazione misurata nell’intervallo di un’ora, in decimi di mm;PREC;0;989;mm;X;mm

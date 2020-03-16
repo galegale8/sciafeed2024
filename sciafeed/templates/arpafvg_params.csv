@@ -1,4 +1,4 @@
-position;description;par_code;min;max;min_max_unit;convertion;final_unit
+position;description;par_code;min;max;original_unit;convertion;final_unit
 1;Precipitazione (mm);PREC;0;989;mm;X;mm
 2;Temperatura media dell’aria (°C);Tmedia;-35;45;°C;X;°C
 3;Umidita relativa media dell’aria (%);UR media;20;100;%;X;%
@@ -6,5 +6,5 @@ position;description;par_code;min;max;min_max_unit;convertion;final_unit
 5;Direzione media di provenienza del vento (gradi);DD;0;360;gradi;X;gradi
 6;Velocità media del vento (m/s);FF;0;102;m/s;X;m/s
 7;Pressione al livello della stazione (hPa);Pstaz;;;hPa;X;hPa
-8;Radiazione solare integrale misurata nell’ora precedente (kW*s)/m2;RADSOL;0;4186.8;(kW*s)/m2;X*0.023884;cal/cm2
+8;Radiazione solare integrale misurata nell’ora precedente (kW*s)/m2;RADSOL;0;100;(kW*s)/m2;X*0.023884;cal/cm2
 9;Insolazione misurata nell’ora precedente (minuti);INSOL;0;60;minuti;X;minuti

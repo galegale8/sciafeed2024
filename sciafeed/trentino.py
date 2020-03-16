@@ -7,6 +7,7 @@ from os.path import abspath, basename, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
+from sciafeed import utils
 
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'trentino_params.csv')
 LIMITING_PARAMETERS = {}
@@ -34,6 +35,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
         ret_value[csv_code] = dict()
         for prop in row.keys():
             ret_value[csv_code][prop] = row[prop].strip()
+        ret_value[csv_code]['convertion'] = utils.string2lambda(ret_value[csv_code]['convertion'])
     return ret_value
 
 
@@ -182,10 +184,11 @@ def parse_row(row, parameters_map, metadata=None):
     date_obj = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
+    props = [p for p in parameters_map.values() if p['par_code'] == param_code][0]
     if row['quality'].strip() in ('151', '255') or row[param_code].strip() == '':
         param_value = None
     else:
-        param_value = float(row[param_code].strip())
+        param_value = props['convertion'](float(row[param_code].strip()))
     is_valid = row['quality'].strip() in ('1', '76', '151', '255')
     measure = [metadata, date_obj, param_code, param_value, is_valid]
     data = [measure]

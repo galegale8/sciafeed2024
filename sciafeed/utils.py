@@ -104,7 +104,7 @@ def load_excel(filepath, sheet_index=0, sheet_name=None):
     return rows
 
 
-def string2lambda(thestring, variable_label='X'):
+def string2lambda(thestring, variable_label='X', round_precision=4):
     """
     Convert a string to a lambda function.
     For example, 'X+1' -> lambda X: X+1.
@@ -112,6 +112,7 @@ def string2lambda(thestring, variable_label='X'):
 
     :param thestring: the string defining the lambda function
     :param variable_label: the string used for the function variable
+    :param round_precision: precision from the decimal point
     :return: the lambda function
     """
     # some checks
@@ -120,6 +121,6 @@ def string2lambda(thestring, variable_label='X'):
     for c_ord in range(ord('a'), ord('z')+1):
         assert chr(c_ord) not in value
 
-    function_prefix = 'lambda %s: ' % variable_label
-    retvalue = eval(function_prefix + thestring)
+    function_txt = 'lambda %s: round(%s, %s)' % (variable_label, thestring, round_precision)
+    retvalue = eval(function_txt)
     return retvalue

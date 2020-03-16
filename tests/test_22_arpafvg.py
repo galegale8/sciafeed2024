@@ -25,7 +25,7 @@ def test_load_parameter_thresholds():
         'FF': [0.0, 102.0],
         'INSOL': [0.0, 60.0],
         'PREC': [0.0, 989.0],
-        'RADSOL': [0.0, 4186.8],
+        'RADSOL': [0.0, 100.0],
         'Tmedia': [-35.0, 45.0],
         'UR media': [20.0, 100.0]
     }
@@ -110,7 +110,7 @@ def test_parse_row():
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'DD', 357.0, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'FF', 0.5, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.023884, True],
+        [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0239, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True]
     ]
     effective = arpafvg.parse_row(row, parameters_map)

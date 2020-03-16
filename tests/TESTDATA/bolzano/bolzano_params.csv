@@ -1,4 +1,4 @@
-column;description;par_code;min;max;unit
-5;Temperatura minima dell’aria;Tmin;-40;40;°C
-4;Temperatura massima dell’aria;Tmax;-30;50;°C
-3;Precipitazione in mm;PREC;0;989;mm
+column;description;par_code;min;max;original_unit;convertion;final_unit
+5;Temperatura minima dell’aria;Tmin;-40;40;°C;X;°C
+4;Temperatura massima dell’aria;Tmax;-30;50;°C;X;°C
+3;Precipitazione in mm;PREC;0;989;mm;X;mm

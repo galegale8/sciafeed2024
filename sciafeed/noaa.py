@@ -7,6 +7,7 @@ from os.path import abspath, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
+from sciafeed import utils
 
 MISSING_VALUE_MARKERS = dict((
     ('TEMP', '9999.9'),
@@ -51,6 +52,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
         ret_value[code] = dict()
         for prop in row.keys():
             ret_value[code][prop] = row[prop].strip()
+        ret_value[code]['convertion'] = utils.string2lambda(ret_value[code]['convertion'])
     return ret_value
 
 
@@ -138,7 +140,7 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
         if par_value_str in (missing_value_markers.get(noaa_code), ''):
             par_value = None
         else:
-            par_value = float(par_value_str.replace('*', ''))
+            par_value = par_props['convertion'](float(par_value_str.replace('*', '')))
         measure = [metadata, date_obj, par_code, par_value, True]
         data.append(measure)
     return data

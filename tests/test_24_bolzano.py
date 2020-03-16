@@ -34,8 +34,11 @@ def test_load_parameter_file():
             'unit': '°C'}
     }
     parameter_map = bolzano.load_parameter_file(test_filepath)
-    assert parameter_map == expected_map
-    
+    for i in range(3, 6):
+        assert str(i) in parameter_map
+        assert 'par_code' in parameter_map[str(i)]
+        assert 'description' in parameter_map[str(i)]
+
 
 def test_load_parameter_thresholds():
     test_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')

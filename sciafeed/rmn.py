@@ -7,6 +7,7 @@ from datetime import datetime
 from os.path import join
 
 from sciafeed import TEMPLATES_PATH
+from sciafeed import utils
 
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'rmn_params.csv')
 LIMITING_PARAMETERS = {}
@@ -35,6 +36,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
         ret_value[position] = dict()
         for prop in row.keys():
             ret_value[position][prop] = row[prop].strip()
+        ret_value[position]['convertion'] = utils.string2lambda(ret_value[position]['convertion'])
     return ret_value
 
 
@@ -141,14 +143,15 @@ def parse_row(row, parameters_map, metadata=None):
     date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M")
     data = []
     for par_indx in parameters_map:
-        param_code = parameters_map[par_indx]['par_code']
+        props = parameters_map[par_indx]
+        param_code = props['par_code']
         if param_code not in row:
             continue
         param_value = row[param_code].strip()
         if param_value in ('-', ''):
             param_value = None
         else:
-            param_value = float(param_value.replace(',', '.'))
+            param_value = props['convertion'](float(param_value.replace(',', '.')))
         measure = [metadata, date_obj, param_code, param_value, True]
         data.append(measure)
     return data

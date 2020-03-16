@@ -1,20 +1,20 @@
-position;description;par_code;min;max;unit
-1;Valor medio della velocita del vento, riferito al periodo di 10 minuti precedente |’ora d’osservazione ed espresso in decimi di m/s.;FF;0;1020;(m/s)/10
-2;Direzione media di provenienza del vento, riferita al periodo di 10 minuti precedente l’ora d’osservazione ed espressa in gradi sessagesimali, calcolati a partire dal Nord geografico in senso orario;DD;0;360;gradi
-3;Temperatura media dell’aria, in decimi di °C;Tmedia;-350;450;°C/10
-4;Temperatura minima dell’aria, in decimi di °C;Tmin;-400;400;°C/10
-5;Temperatura massima dell’aria, in decimi di °C;Tmax;-300;500;°C/10
-6;Temperatura media del terreno a 10 cm di profondita, riferita all’ora precedente, in decimi di °C;6;;;°C/10
-7;Temperatura minima del terreno a 10 cm di profondita, in decimi di °C;7;;;°C/10
-8;Temperatura massima del terreno a 10 cm di profondita, in decimi di °C;8;;;°C/10
-9;Umidita relativa media dell’aria (capannina), in %;UR media;20;100;%
-10;Umidita relativa minima dell’ aria (capannina), in %;UR min;20;100;%
-11;Umidita relativa massima dell’aria (capannina), in %;UR max;20;100;%
-12;Pressione media livello della stazione, in decimi di mbar;12;;;hPa/10
-13;Pressione media livello del mare, in decimi di mbar;P;9600;10600;hPa/10
-14;Pressione minima a livello del mare, in decimi di mbar;Pmin;;;hPa/10
-15;Pressione massima a livello del mare, in decimi di mbar;Pmax;;;hPa/10
-16;Radiazione globale integrale misurata nell’ ora precedente, in cal/cm2;RADSOL;0;100;cal/cm2
-17;Insolazione misurata nell’ora precedente, in minuti;INSOL;0;60;minuti
-18;Precipitazione misurata nell’intervallo di un’ora, in decimi di mm;PREC;0;9890;mm/10
-19;Bagnatura fogliare misurata nell’ora precedente, in minuti;Bagnatura_f;0;60;mm
+position;description;par_code;min;max;min_max_unit;convertion;final_unit
+1;Valor medio della velocita del vento, riferito al periodo di 10 minuti precedente |’ora d’osservazione ed espresso in decimi di m/s.;FF;0;1020;(m/s)/10;X*10;m/s
+2;Direzione media di provenienza del vento, riferita al periodo di 10 minuti precedente l’ora d’osservazione ed espressa in gradi sessagesimali, calcolati a partire dal Nord geografico in senso orario;DD;0;360;gradi;X;gradi
+3;Temperatura media dell’aria, in decimi di °C;Tmedia;-350;450;°C/10;X*10;°C
+4;Temperatura minima dell’aria, in decimi di °C;Tmin;-400;400;°C/10;X*10;°C
+5;Temperatura massima dell’aria, in decimi di °C;Tmax;-300;500;°C/10;X*10;°C
+6;Temperatura media del terreno a 10 cm di profondita, riferita all’ora precedente, in decimi di °C;6;;;°C/10;X*10;°C
+7;Temperatura minima del terreno a 10 cm di profondita, in decimi di °C;7;;;°C/10;X*10;°C
+8;Temperatura massima del terreno a 10 cm di profondita, in decimi di °C;8;;;°C/10;X*10;°C
+9;Umidita relativa media dell’aria (capannina), in %;UR media;20;100;%;X;%
+10;Umidita relativa minima dell’ aria (capannina), in %;UR min;20;100;%;X;%
+11;Umidita relativa massima dell’aria (capannina), in %;UR max;20;100;%;X;%
+12;Pressione media livello della stazione, in decimi di mbar;12;;;hPa/10;X*10;hPa
+13;Pressione media livello del mare, in decimi di mbar;P;9600;10600;hPa/10;X*10;hPa
+14;Pressione minima a livello del mare, in decimi di mbar;Pmin;;;hPa/10;X*10;hPa
+15;Pressione massima a livello del mare, in decimi di mbar;Pmax;;;hPa/10;X*10;hPa
+16;Radiazione globale integrale misurata nell’ ora precedente, in cal/cm2;RADSOL;0;100;cal/cm2;X;cal/cm2
+17;Insolazione misurata nell’ora precedente, in minuti;INSOL;0;60;minuti;X;minuti
+18;Precipitazione misurata nell’intervallo di un’ora, in decimi di mm;PREC;0;9890;mm/10;X*10;mm
+19;Bagnatura fogliare misurata nell’ora precedente, in minuti;Bagnatura_f;0;60;mm;X;mm

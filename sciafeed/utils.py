@@ -102,3 +102,24 @@ def load_excel(filepath, sheet_index=0, sheet_name=None):
         row = [cell_str(sheet.cell(row_index, i), workbook.datemode) for i in range(sheet.ncols)]
         rows.append(row)
     return rows
+
+
+def string2lambda(thestring, variable_label='X'):
+    """
+    Convert a string to a lambda function.
+    For example, 'X+1' -> lambda X: X+1.
+    The string is checked: no chars [A-Z,a-z] allowed.
+
+    :param thestring: the string defining the lambda function
+    :param variable_label: the string used for the function variable
+    :return: the lambda function
+    """
+    # some checks
+    assert len(variable_label) == 1
+    value = thestring.lower().replace('x', '')
+    for c_ord in range(ord('a'), ord('z')+1):
+        assert chr(c_ord) not in value
+
+    function_prefix = 'lambda %s: ' % variable_label
+    retvalue = eval(function_prefix + thestring)
+    return retvalue

@@ -7,6 +7,8 @@ from os.path import abspath, basename, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
+from sciafeed import utils
+
 
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpafvg_params.csv')
 LIMITING_PARAMETERS = dict()
@@ -35,6 +37,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
         ret_value[position] = dict()
         for prop in row.keys():
             ret_value[position][prop] = row[prop].strip()
+        ret_value[position]['convertion'] = utils.string2lambda(ret_value[position]['convertion'])
     return ret_value
 
 
@@ -170,8 +173,9 @@ def parse_row(row, parameters_map, metadata=None):
     par_values = tokens[5:14]
     data = []
     for i, param_i_value_str in enumerate(par_values):
-        param_i_code = parameters_map[i + 1]['par_code']
-        param_i_value = float(param_i_value_str)
+        props = parameters_map[i + 1]
+        param_i_code = props['par_code']
+        param_i_value = props['convertion'](float(param_i_value_str))
         measure = [metadata, date_obj, param_i_code, param_i_value, True]
         data.append(measure)
     return data

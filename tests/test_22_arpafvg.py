@@ -97,7 +97,7 @@ def test_validate_filename():
 
 
 def test_parse_row():
-    row = " 18 01 01 01.00 01   0.0   2.8  86  58 357   0.5 1001     0   0 46.077222"
+    row = " 18 01 01 01.00 01   0.0   2.8  86  58 357   0.5 1001     1   0 46.077222"
     parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
     parameters_map = arpafvg.load_parameter_file(parameters_filepath=parameters_filepath)
 
@@ -110,7 +110,7 @@ def test_parse_row():
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'DD', 357.0, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'FF', 0.5, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
+        [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.023884, True],
         [{'lat': 46.077222}, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True]
     ]
     effective = arpafvg.parse_row(row, parameters_map)

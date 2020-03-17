@@ -17,6 +17,7 @@ FORMATS = (
     ('TRENTINO', trentino),
 )
 
+
 def guess_format(filepath):
     """
     Try to guess the format of a file located at `filepath`. It uses (if exists) the

@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from os.path import join, exists
+from os.path import join
 
 from sciafeed import rmn
 from . import TEST_DATA_PATH

@@ -165,7 +165,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     :param only_valid: parse only values flagged as valid (default: False)
     :param metadata: default metadata if not provided in the row
     :param missing_value_marker: the string used as a marker for missing value
-    :return: [(metadata, datetime object, par_code, par_value, flag, source), ...]
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """
     if metadata is None:
         metadata = dict()

@@ -20,6 +20,7 @@ development_require = [
 install_requires = [
     'click==7.0',
     'xlrd==1.2.0',
+    'zeep==3.4.0',
 ]
 
 setup(

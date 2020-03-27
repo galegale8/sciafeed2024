@@ -3,7 +3,7 @@ This module contains the functions and utilities common to all SCIA data formats
 """
 from os.path import dirname
 
-from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, noaa, rmn, trentino
+from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino
 
 
 FORMATS = (
@@ -12,6 +12,7 @@ FORMATS = (
     ('ARPA-FVG', arpafvg),
     # ('ARPA-ER', arpaer),
     ('BOLZANO', bolzano),
+    ('HISCENTRAL', hiscentral),
     ('NOAA', noaa),
     ('RMN', rmn),
     ('TRENTINO', trentino),

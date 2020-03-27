@@ -1,7 +1,7 @@
 
 from os.path import join
 
-from sciafeed import arpa19, arpa21, arpaer, arpafvg, rmn, trentino
+from sciafeed import arpa19, arpa21, arpaer, arpafvg, hiscentral, rmn, trentino
 from sciafeed import formats
 
 from . import TEST_DATA_PATH
@@ -28,6 +28,10 @@ def test_guess_format(tmpdir):
     test_filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
     label, module = formats.guess_format(test_filepath)
     assert label, module == ('RMN', rmn)
+    # hiscentral
+    test_filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_990-reg.abruzzoTmax.csv')
+    label, module = formats.guess_format(test_filepath)
+    assert label, module == ('HISCENTRAL', hiscentral)
     # unknown
     test_filepath = str(tmpdir.join('loc01_00001_2018010101_2019010101.dat'))
     with open(test_filepath, 'w') as fp:
@@ -53,6 +57,9 @@ def test_validate_format():
         'BOLZANO': [
             ('bolzano', 'MonteMaria.xls'),
             ('bolzano', 'wrong3.xls')],
+        'HISCENTRAL': [
+            ('hiscentral', 'serie_990-reg.abruzzoTmax.csv'),
+            ('hiscentral', 'serie_wrong2-reg.abruzzoTmax.csv')],
         'NOAA': [
             ('noaa', '160080-99999-2019.op'),
             ('noaa', 'wrong3_160080-99999-2019.op')],

@@ -1,0 +1,4 @@
+hiscentral_par_code;description;par_code;min;max;original_unit;convertion;final_unit
+Tmin;Temperatura minima, in °C;Tmin;-40;40;°C;X;°C
+Tmax;Temperatura massima in °C;Tmax;-30;50;°C;X;°C
+Precipitation;Precipitazione giorrnaliera in mm;PREC;0;989;mm;X;mm

@@ -3,28 +3,29 @@ This module contains the functions and utilities to parse an ARPA-Emilia Romagna
 """
 import csv
 from datetime import datetime
-import operator
-import os
-from os.path import join, splitext
 import json
+import os
+from os.path import abspath, join, splitext
+from pathlib import PurePath
 
 import requests
 
 from sciafeed import TEMPLATES_PATH
+from sciafeed import utils
 
-# the name of the 'resource' table, where to find data: it can be taken from the link of
-# of `dati recenti' from the URL
-# `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
-TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
+JSON_ANY_MARKER = '999999'
 
-# taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/master/tables/dballe.txt
-BTABLE_PATH = join(TEMPLATES_PATH, 'dballe.txt')
-
-# taken from https://github.com/ARPA-SIMC/dballe/blob/v8.2-1/doc/fapi_ltypes.md
-LTYPES_PATH = join(TEMPLATES_PATH, 'fapi_ltypes.md')
-
-# taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/v8.2-1/doc/fapi_tranges.md
-TRANGES_PATH = join(TEMPLATES_PATH, 'fapi_tranges.md')
+# # the name of the 'resource' table, where to find data: it can be taken from the link of
+# # of `dati recenti' from the URL
+# # `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
+# TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
+#
+# # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/master/tables/dballe.txt
+# BTABLE_PATH = join(TEMPLATES_PATH, 'dballe.txt')
+# # taken from https://github.com/ARPA-SIMC/dballe/blob/v8.2-1/doc/fapi_ltypes.md
+# LTYPES_PATH = join(TEMPLATES_PATH, 'fapi_ltypes.md')
+# # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/v8.2-1/doc/fapi_tranges.md
+# TRANGES_PATH = join(TEMPLATES_PATH, 'fapi_tranges.md')
 
 DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpaer_params.csv')
@@ -95,7 +96,7 @@ def sql2results(sql, timeout=None):
 
     :param sql: the sql string
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
-    :return: the JSON results
+    :return: the list of dictionaries of the results
     """
     payload = {'sql': sql}
     print(sql)
@@ -107,46 +108,92 @@ def sql2results(sql, timeout=None):
     return []
 
 
-def get_json_results(start=None, end=None, limit=None,
-                     only_bcodes=None, timeout=None, **kwargs):
+def is_same_list(list1, list2, any_marker=JSON_ANY_MARKER):
     """
-    Query the ARPAER database and return the JSON results.
+    Return True if each element of list1 is the same of list2.
+    The comparison of one element of the list return True if the element=`any_marker` for the
+    first list.
+    """
+    if len(list1) != len(list2):
+        return False
+    for i, elem in enumerate(list1):
+        if elem == list2[i] or str(elem) == any_marker:
+            continue
+        else:
+            return False
+    return True
 
-    For the json output format, see:
-    http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json
+
+def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_filters=None,
+                   timeout=None, **kwargs):
+    """
+    Query the ARPAER database and return the results as a list of dictionaries.
+    The dictionaries are loaded JSON (for the used json format, see
+    http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json )
+    The bcode_filters are a dictionary of BCODES to filter, of kind:
+    {bcode: {'trange': ..., 'level': ...}, ...}
+    The 'trange' and 'level' can be exact match, but you can use the 'any' value
+    using the marker arpaer.JSON_ANY_MARKER .
 
     :param start: the datetime of the start time
     :param end: the datetime of the end time
     :param limit: number to limit the number of results
-    :param only_bcodes: if not None, select only records containing this list of BCODES
+    :param only_bcodes: if not None, select only records containing this list of provided BCODES
+    :param bcodes_filters: properties 'level' and 'trange' for some BCODES to be matched
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
     :param kwargs: additional filters on the table's columns
-    :return: the JSON results
+    :return: list of dictionaries of results
     """
     sql = build_sql(TABLE_NAME, start, end, limit, only_bcodes, **kwargs)
     results = sql2results(sql, timeout=timeout)
-    return results
+    results_filtered = []
+    for result in results:
+        station_md = result['data'][0]
+        data_results = []
+        for data_item in result['data'][1:].copy():
+            data_level = data_item['level']
+            data_timerange = data_item['timerange']
+            for var in data_item['vars'].copy():
+                if only_bcodes is not None and var not in only_bcodes:
+                    del data_item['vars'][var]
+                    continue
+                if var in bcodes_filters:
+                    bcode_level = bcodes_filters[var]['level']
+                    bcode_trange = bcodes_filters[var]['trange']
+                    if not is_same_list(bcode_level, data_level) or not \
+                            is_same_list(bcode_trange, data_timerange):
+                        del data_item['vars'][var]
+            if data_item['vars']:
+                data_results.append(data_item)
+        if data_results:
+            data_results = [station_md] + data_results
+            result_filtered = result.copy()
+            result_filtered['data'] = data_results
+            results_filtered.append(result_filtered)
+    return results_filtered
 
 
-def save_json_results(filepath, json_results):
+def save_db_results(filepath, db_results):
     """
-    Save the json results from an ARPA-ER file located at `filepath` path.
+    Save the db results from an ARPA-ER file located at `filepath` path.
+    The file format is saved according to ARPA-ER conventions.
 
     :param filepath: path of the ARPA-ER file
-    :param json_results: list of JSON result objects to save
+    :param db_results: list of DB result objects to save
     """
     with open(filepath, 'w') as fp:
-        for json_result in json_results:
-            dumped = json.dumps(json_result)
+        for db_result in db_results:
+            dumped = json.dumps(db_result)
             fp.write(dumped + os.linesep)
 
 
-def load_json_results(filepath):
+def load_db_results(filepath):
     """
-    Load the json results from an ARPA-ER file located at `filepath` path.
+    Load the DB results from an ARPA-ER file located at `filepath` path.
+    The file is assumed to follow the ARPA-ER format conventions.
 
     :param filepath: path of the ARPA-ER file
-    :return: a list of JSON result objects
+    :return: a list of dictionaries of the DB results
     """
     results = []
     with open(filepath) as fp:
@@ -157,13 +204,14 @@ def load_json_results(filepath):
 
 
 # entry point candidate
-def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH,
+def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcodes=None,
                    start=None, end=None, timeout=None, limit=None, **kwargs):
     """
     Query the online datastore and save the results on `save_path`.
 
     :param save_path: path where to save the JSON results of the query
     :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param only_bcodes: if not None, select only records containing this list of provided BCODES
     :param start: the datetime of the start time to select
     :param end: the datetime of the end time to select
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
@@ -172,39 +220,40 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH,
     """
     # TODO: verify if there's a way to check if data is recent or not, so where to download
     parameters_map = load_parameter_file(parameters_filepath)
-    # FIXME: the effective parameters must be defined (computed?) not only by the code but
-    #  also by the trange and tlevel
-    only_bcodes = list(parameters_map.keys())
-    json_results = get_json_results(start, end, limit, only_bcodes, timeout, **kwargs)
-    save_json_results(save_path, json_results)
+    if not only_bcodes:
+        only_bcodes = list(parameters_map.keys())
+    bcodes_filters = {k: v for k, v in parameters_map.items() if k in only_bcodes}
+    db_results = get_db_results(start, end, limit=limit, timeout=timeout, only_bcodes=only_bcodes,
+                                bcodes_filters=bcodes_filters, **kwargs)
+    save_db_results(save_path, db_results)
 
 
 # ##### end of online interface utilities #####
 
 
-def load_btable(btable_path=BTABLE_PATH):
-    """
-    Load the BTABLE (codes of ARPAER parameters) in a python dictionary
-    of kind {code: dictionary of properties} where properties include
-    description, unit, scale, char_length.
-    Assuming header of BTABLE is:
-    [bcode, description, ?, ?, ?, ?, unit, scale, length]
-
-    :param btable_path: path of the BTABLE
-    :return: the dictionary of the BTABLE
-    """
-    ret_value = dict()
-    with open(btable_path) as fp:
-        for row in fp:
-            code = 'B' + row[2:7]
-            ret_value[code] = {
-                'par_code': code,  # for similitude with parameters file
-                'description': row[8:73].strip(),
-                'unit': row[119:143].strip(),
-                'format': row[143:146].strip(),
-                'length': row[146:157].strip()
-            }
-    return ret_value
+# def load_btable(btable_path=BTABLE_PATH):
+#     """
+#     Load the BTABLE (codes of ARPAER parameters) in a python dictionary
+#     of kind {code: dictionary of properties} where properties include
+#     description, unit, scale, char_length.
+#     Assuming header of BTABLE is:
+#     [bcode, description, ?, ?, ?, ?, unit, scale, length]
+#
+#     :param btable_path: path of the BTABLE
+#     :return: the dictionary of the BTABLE
+#     """
+#     ret_value = dict()
+#     with open(btable_path) as fp:
+#         for row in fp:
+#             code = 'B' + row[2:7]
+#             ret_value[code] = {
+#                 'par_code': code,  # for similitude with parameters file
+#                 'description': row[8:73].strip(),
+#                 'unit': row[119:143].strip(),
+#                 'format': row[143:146].strip(),
+#                 'length': row[146:157].strip()
+#             }
+#     return ret_value
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
@@ -225,16 +274,19 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     csv_reader = csv.DictReader(csv_file, delimiter=delimiter)
     ret_value = dict()
     for row in csv_reader:
-        bcode = row['BCODE']
+        bcode, level, trange = row['BCODE-LEVEL-TRANGE'].split('-')
         ret_value[bcode] = dict()
         for prop in row.keys():
             ret_value[bcode][prop] = row[prop].strip()
+        ret_value[bcode]['level'] = json.loads(level.replace('x', JSON_ANY_MARKER))
+        ret_value[bcode]['trange'] = json.loads(trange.replace('x', JSON_ANY_MARKER))
+        ret_value[bcode]['convertion'] = utils.string2lambda(ret_value[bcode]['convertion'])
     return ret_value
 
 
 def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing thresholds of the arpa21 stored parameters.
+    Load a CSV file containing thresholds of the arpaer stored parameters.
     Return a dictionary of type:
     ::
 
@@ -255,6 +307,22 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
             ret_value[par_code] = [min_threshold, max_threshold]
         except (KeyError, TypeError, ValueError):
             continue
+    return ret_value
+
+
+def extract_metadata(filepath, parameters_filepath):
+    """
+    Extract generic metadata information from a file `filepath` of format ARPA-ER.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file name is validated against the format (see function
+    `validate_filename`).
+
+    :param filepath: path to the file to validate
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: dictionary of metadata extracted
+    """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
+    ret_value = {'source': source}
     return ret_value
 
 
@@ -296,58 +364,68 @@ def validate_row_format(row):
         return err_msg
     # extracting measures
     try:
-        measurement_groups = json_result['data'][1:]
-        for measurement_group in measurement_groups:
-            measurement_group['level'][0]
-            measurement_group['timerange'][0]
-            current_vars = measurement_group['vars']
-            for bcode in current_vars:
-                current_vars[bcode]['v']
-    except KeyError:
+        for measurement_group in json_result['data'][1:]:
+            for key in ['level', 'timerange', 'vars']:
+                assert key in measurement_group
+    except AssertionError:
         err_msg = 'information of the measurements is not parsable'
         return err_msg
     return err_msg
 
 
-def parse_row(row, parameters_map):
+def parse_row(row, parameters_map, metadata=None):
     """
-    Return a tuple of the data parsed from an input row of an ARPA-ER file.
-    It assume that the row is validated with `validate_row_format`.
-    The output is the tuple (stat_props, date, measures), where:
-    - stat_props is a dictionary of properties of the station
-    - date is the reference date for the measures
-    - measures is a list of kind:
-    [(parameter, level, trange, value, is_valid), ...]
-    Only measures with parameters in the parameters_map are stored.
+    Parse a row of a ARPA-ER file, and return the parsed data. Data structure is as a list:
+    ::
 
-    :param row: a dumped JSON
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+
+    The function assumes the row as validated (see function `validate_row_format`).
+
+    :param row: a dictionary of a DB result according to the format (loaded JSON)
     :param parameters_map: dictionary of information about stored parameters
-    :return: the tuple (stat_props, date, measures)
+    :param metadata: default metadata if not provided in the row
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """
-    json_result = json.loads(row)
-    station_data = json_result['data'][0]['vars']
-    measurement_groups = json_result['data'][1:]
-    stat_props = dict()
-    stat_props['station'] = station_data['B01019']['v']
-    stat_props['lat'] = json_result['lat']
-    stat_props['lon'] = json_result['lon']
-    stat_props['network'] = json_result['network']
-    stat_props['is_fixed'] = json_result['ident'] is None
-    date = datetime.strptime(json_result['date'], '%Y-%m-%dT%H:%M:%S')
     measures = []
-    for measurement_group in measurement_groups:
-        group_level = measurement_group['level'][0]
-        group_trange = measurement_group['timerange'][0]
+    if metadata is None:
+        metadata = dict()
+    else:
+        metadata = metadata.copy()
+    station_data = row['data'][0]['vars']
+    metadata['cod_utente'] = station_data['B01019']['v']
+    metadata['lat'] = row['lat']
+    metadata['lon'] = row['lon']
+    metadata['network'] = row['network']
+    metadata['is_fixed'] = row['ident'] is None
+    thedate = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S')
+    for measurement_group in row['data'][1:]:
+        group_level = measurement_group['level']
+        group_trange = measurement_group['timerange']
         current_vars = measurement_group['vars']
         for bcode in current_vars:
             if bcode not in parameters_map:
                 continue
-            par_desc = parameters_map[bcode]['par_code']
+            par_code = parameters_map[bcode]['par_code']
+            par_level = parameters_map[bcode]['level']
+            par_trange = parameters_map[bcode]['trange']
+            if not is_same_list(par_level, group_level) or not \
+                    is_same_list(par_trange, group_trange):
+                continue
             par_value = current_vars[bcode]['v']
-            is_valid = 'B33196' not in current_vars[bcode].get('a', {})
-            measure = (par_desc, group_level, group_trange, par_value, is_valid)
+            flag = 'B33196' not in current_vars[bcode].get('a', {})
+            measure = (metadata, thedate, par_code, par_value, flag)
             measures.append(measure)
-    return stat_props, date, measures
+    return measures
+
+
+def rows_generator(filepath, parameters_map, metadata):
+    with open(filepath) as fp:
+        for i, dumped_json in enumerate(fp, 1):
+            if not dumped_json.strip():
+                continue
+            row = json.loads(dumped_json)
+            yield i, row
 
 
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, include_empty=False):
@@ -368,48 +446,12 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, include_empty=False
     :return: [(stat_props, date, measures), ...]
     """
     parameters_map = load_parameter_file(parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
     data = []
-    with open(filepath) as fp:
-        for row in fp:
-            parsed_row = parse_row(row, parameters_map)
-            if parsed_row[2] or include_empty:
-                data.append(parsed_row)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        parsed_row = parse_row(row, parameters_map, metadata)
+        data.extend(parsed_row)
     return data
-
-
-def export(data, out_filepath, omit_parameters=()):
-    """
-    Write a CSV file with a representation of the downloaded data.
-    Input `data` has the format as returned by the function `parse`.
-
-    :param data: input data
-    :param omit_parameters: list of the parameters to omit
-    :param out_filepath: the output file path
-    """
-    fieldnames = ['station', 'latitude', 'longitude', 'network', 'date',
-                  'parameter', 'level', 'trange', 'value', 'valid']
-    with open(out_filepath, 'w') as csv_out_file:
-        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
-        writer.writeheader()
-        data.sort(key=operator.itemgetter(1))  # sort by dates
-        for stat_props, current_date, measures in data:
-            base_row = {
-                'station': stat_props['station'],
-                'latitude': stat_props['lat'],
-                'longitude': stat_props['lon'],
-                'network': stat_props['network'],
-            }
-            for parameter, level, trange, value, is_valid in measures:
-                if parameter in omit_parameters:
-                    continue
-                row = base_row.copy()
-                row['date'] = current_date
-                row['parameter'] = parameter
-                row['level'] = level
-                row['trange'] = trange
-                row['value'] = value
-                row['valid'] = is_valid and '1' or '0'
-                writer.writerow(row)
 
 
 def validate_format(filepath, parameters_filepath=None):
@@ -428,186 +470,6 @@ def validate_format(filepath, parameters_filepath=None):
             err_msg = validate_row_format(row)
             if err_msg:
                 ret_value.append((i, err_msg))
-    return ret_value
-
-
-def row_weak_climatologic_check(parsed_row, parameters_thresholds=None):
-    """
-    Get the weak climatologic check for a parsed row of an arpa-er file, i.e. it flags
-    as invalid a value if it is out of a defined range.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the resulting data with flags updated.
-    `parameters_thresholds` is a dict {code: (min, max), ...}.
-
-    :param parsed_row: the parsed row of an arpa-er file
-    :param parameters_thresholds: dictionary of thresholds for each parameter code
-    :return: (err_msgs, parsed_row_updated)
-    """
-    if not parameters_thresholds:
-        parameters_thresholds = dict()
-    err_msgs = []
-    measures = parsed_row[2]
-    measures_updated = measures.copy()
-    for i, measure in enumerate(measures):
-        # FIXME: the par_code must be identied not only by the code, but also by trange and level,
-        #  so this check includes too many results
-        par_code, level, trange, par_value, par_flag = measure
-        if par_code not in parameters_thresholds or not par_flag or par_value is None:
-            # no check if limiting parameters are flagged invalid or the value is None
-            # NOTE: putting 'no cover' because coverage wrongly doesn't report it as covered
-            continue   # pragma: no cover
-        min_threshold, max_threshold = map(float, parameters_thresholds[par_code])
-        if not (min_threshold <= par_value <= max_threshold):
-            measures_updated[i] = (measure[0], measure[1], measure[2], measure[3], False)
-            err_msg = "The value of %r is out of range [%s, %s]" \
-                      % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
-    parsed_row_updated = (parsed_row[0], parsed_row[1], measures_updated)
-    return err_msgs, parsed_row_updated
-
-
-# entry point candidate
-def do_weak_climatologic_check(filepath, parameters_filepath=PARAMETERS_FILEPATH):
-    """
-    Get the weak climatologic check for arpa-er file located at `filepath`,
-    i.e. it flags as invalid a value is out of a defined range.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the arpa-er file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: ([..., (row index info, err_msg), ...], data_updated)
-    """
-    fmt_errors = validate_format(filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-    err_msgs = []
-    data_updated = []
-    parameters_map = load_parameter_file(parameters_filepath)
-    parameters_thresholds = load_parameter_thresholds(parameters_filepath)
-    # assuming in a row (i.e. date) we have all the station's measurements for that date
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map=parameters_map)
-            err_msgs_row, parsed_row = row_weak_climatologic_check(
-                parsed_row, parameters_thresholds)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            data_updated.append(parsed_row)
-    return err_msgs, data_updated
-
-
-def row_internal_consistence_check(parsed_row, limiting_params=None):
-    """
-    Get the internal consistent check for a parsed row of a ARPA-ER file.
-    It assumes that the parsed row is written as result of the function `parse_row`.
-    Return the list of error messages, and the parsed_row modified.
-    `limiting_params` is a dict {code: (code_min, code_max), ...}.
-
-    :param parsed_row: the row of a ARPA-ER file
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    # Not implementable at the current status. The measure of the parameter must be identified
-    # not only by its code, but also by the right level and trange.
-
-    # Currently we have more measures:
-    # stat_props, date, measures = parsed_row
-    # measures ->
-    # [('PREC', 1, 1, 0.0, True),
-    # ('PREC', 1, 1, 0.0, True),
-    # ('PREC', 1, 1, 0.0, True),
-    # ('UR media', 103, 0, 56, True),
-    # ('UR media', 103, 0, 38, True),
-    # ('UR media', 103, 2, 65, True),
-    # ('UR media', 103, 2, 70, True),
-    # ('UR media', 103, 3, 44, True),
-    # ('UR media', 103, 3, 14, True),
-    # ('UR media', 103, 254, 55, True)])
-    #
-    raise NotImplementedError()
-
-
-# entry point candidate
-def do_internal_consistence_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                                  limiting_params=None):
-    """
-    Get the internal consistent check for arpaer CSV data written using the function `write_data`.
-    Only rightly formatted rows are considered (see function `validate_format`).
-    Return the list of tuples (row index, error message), and the resulting data with flags
-    updated.
-
-    :param filepath: path to the arpaer CSV file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: ([..., (row index, err_msg), ...], data_updated)
-    """
-    fmt_errors = validate_format(filepath)
-    fmt_errors_dict = dict(fmt_errors)
-    if 0 in fmt_errors_dict:
-        # global formatting error: no parsing
-        return fmt_errors, None
-
-    data_updated = []
-    parameters_map = load_parameter_file(parameters_filepath)
-    err_msgs = []
-
-    # assuming in a row (i.e. date) we have all the station's measurements for that date
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_errors_dict:
-                continue
-            parsed_row = parse_row(row, parameters_map=parameters_map)
-            err_msgs_row, parsed_row = row_internal_consistence_check(parsed_row, limiting_params)
-            for err_msg_row in err_msgs_row:
-                err_msgs.append((i, err_msg_row))
-            data_updated.append(parsed_row)
-    return err_msgs, data_updated
-
-
-def parse_and_check(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-                    limiting_params=LIMITING_PARAMETERS):
-    """
-    Read an for arpaer file located at `filepath`, and parse data inside it, doing
-    - format validation
-    #- weak climatologic check (currently implemented but to be verified)
-    #- internal consistence check (currently not implemented)
-    Return the tuple (err_msgs, parsed data) where `err_msgs` is the list of tuples
-    (row index, error message) of the errors found.
-
-    :param filepath: path to the arpaer file
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param limiting_params: dictionary of limiting parameters for each parameter code
-    :return: (err_msgs, data_parsed)
-    """
-    par_map = load_parameter_file(parameters_filepath)
-    par_thresholds = load_parameter_thresholds(parameters_filepath)
-    err_msgs = []
-    data_parsed = []
-    fmt_err_msgs = validate_format(filepath)
-    err_msgs.extend(fmt_err_msgs)
-    fmt_err_indexes_dict = dict(fmt_err_msgs)
-    if 0 in fmt_err_indexes_dict:
-        # global error, no parsing
-        return err_msgs, []
-
-    with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
-            if not row.strip() or i in fmt_err_indexes_dict:
-                continue
-            parsed_row = parse_row(row, par_map)
-            err_msgs1_row, parsed_row = row_weak_climatologic_check(parsed_row, par_thresholds)
-            # err_msgs2_row, parsed_row = row_internal_consistence_check(
-            # parsed_row, limiting_params)
-            data_parsed.append(parsed_row)
-            err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-            # err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
-    ret_value = err_msgs, data_parsed
     return ret_value
 
 

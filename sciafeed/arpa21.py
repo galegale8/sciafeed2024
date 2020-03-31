@@ -158,7 +158,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     Parse a row of a arpa21 file, and return the parsed data. Data structure is as a list:
     ::
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
+      [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
@@ -166,9 +166,9 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
     :param row: a row of the arpa21 file
     :param parameters_map: dictionary of information about stored parameters at each position
     :param only_valid: parse only values flagged as valid (default: False)
-    :param stat_props: default stat_props if not provided in the row
     :param missing_value_marker: the string used as a marker for missing value
-    :return: (datetime object, latitude, prop_dict)
+    :param metadata: default metadata if not provided in the row
+    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """
     if metadata is None:
         metadata = dict()

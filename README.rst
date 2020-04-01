@@ -3,7 +3,7 @@ SCIA-FEED
 Python tool for feeding the SCIA database.
 
 :Author:  B-Open Solutions s.r.l.
-:Version: 0.1
+:Version: 1.0
 
 .. contents::
 

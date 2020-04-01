@@ -17,6 +17,7 @@ SCIA PostgreSQL database.
    entry_points
    export
    formats
+   hiscentral
    noaa
    process
    rmn

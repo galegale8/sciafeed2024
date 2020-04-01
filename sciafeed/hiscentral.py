@@ -41,30 +41,30 @@ WSDL_URLS = {
     '21': "http://hydrolite.ddns.net/italia/hsl-bol/index.php/default/services/cuahsi_1_1.asmx?WSDL",
 }
 # # from sciapgm.geo_entihiscentral
-# REGION_IDS = {
-#     '01': "PIEMONTE",
-#     '02': "VALLE D'AOSTA",
-#     '03': "LOMBARDIA",
-#     '04': "TRENTINO-ALTO ADIGE",
-#     '05': "VENETO",
-#     '06': "FRIULI-VENEZIA GIULIA",
-#     '07': "LIGURIA",
-#     '08': "EMILIA-ROMAGNA",
-#     '09': "TOSCANA",
-#     '10': "UMBRIA",
-#     '11': "MARCHE",
-#     '12': "LAZIO",
-#     '13': "ABRUZZO",
-#     '14': "MOLISE",
-#     '15': "CAMPANIA",
-#     '16': "PUGLIA",
-#     '17': "BASILICATA",
-#     '18': "CALABRIA",
-#     '19': "SICILIA",
-#     '20': "SARDEGNA",
-#     '21': "BOLZANO",
-#     '22': "TRENTO",
-# }
+REGION_IDS_MAP = {
+    '01': "PIEMONTE",
+    '02': "VALLE D'AOSTA",
+    '03': "LOMBARDIA",
+    '04': "TRENTINO-ALTO ADIGE",
+    '05': "VENETO",
+    '06': "FRIULI-VENEZIA GIULIA",
+    '07': "LIGURIA",
+    '08': "EMILIA-ROMAGNA",
+    '09': "TOSCANA",
+    '10': "UMBRIA",
+    '11': "MARCHE",
+    '12': "LAZIO",
+    '13': "ABRUZZO",
+    '14': "MOLISE",
+    '15': "CAMPANIA",
+    '16': "PUGLIA",
+    '17': "BASILICATA",
+    '18': "CALABRIA",
+    '19': "SICILIA",
+    '20': "SARDEGNA",
+    '21': "BOLZANO",
+    '22': "TRENTO",
+}
 
 
 def get_wsdl_service_response(wsdl_url, method_name, **kwargs):  # pragma: no cover
@@ -85,6 +85,8 @@ def get_region_variables(region_id):
     """
     Connect to the service to get the variables managed by a region.
     Return a dictionary of kind:
+    ::
+
         {variable_code: dictionary of variable properties, ...}
 
     :param region_id: the id of a region
@@ -113,6 +115,8 @@ def get_region_locations(region_id):
     """
     Connect to the service to get the stations managed by a region.
     Return a dictionary of kind:
+    ::
+
         {station_code: dictionary of station properties, ...}
 
     :param region_id: the id of the region
@@ -148,9 +152,12 @@ def download_series(region_id, variable, location, out_csv_path):
     :param location: the code of the station
     :param out_csv_path: the file path of the CSV to create
     """
+    print('- asking series for region_id:%s location:%s variable:%s'
+          % (region_id, location, variable))
     wsdl_url = WSDL_URLS[region_id]
     series_xml = get_wsdl_service_response(wsdl_url, 'GetValues',
                                            location=location, variable=variable)
+    print('  ...and writing CSV on path % out_csv_path')
     doc = xml.dom.minidom.parseString(series_xml)
     key_tag_map = {
         'time': 'dateTime',
@@ -176,6 +183,24 @@ def download_series(region_id, variable, location, out_csv_path):
             row['DateTimeUTC'] = row['DateTimeUTC'].replace('T', ' ')
             row['DataValue'] = value_elem.firstChild.nodeValue
             csv_writer.writerow(row)
+
+
+# download entry point
+def download_hiscentral(region_id, out_csv_folder, variables=None, locations=None):
+    if locations is None:
+        locations = get_region_locations(region_id)
+    if variables is None:
+        variables = get_region_variables(region_id)
+    file_number = len(locations) * len(variables)
+    i = 1
+    for location in locations:
+        for variable in variables:
+            out_csv_name = "serie_%s-reg.%s%s" \
+                           % (location, REGION_IDS_MAP[region_id].lower(), variable.capitalize())
+            out_csv_path = join(out_csv_folder, out_csv_name)
+            print("processing %s/%s ..." % (i, file_number))
+            download_series(region_id, variable, location, out_csv_path)
+            i += 1
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):

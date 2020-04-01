@@ -44,6 +44,7 @@ setup(
         'console_scripts': [
             'make_report = sciafeed.entry_points:make_report',
             'make_reports = sciafeed.entry_points:make_reports',
+            'download_hiscentral = sciafeed.entry_points:download_hiscentral'
         ],
     },
 )

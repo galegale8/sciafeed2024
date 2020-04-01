@@ -7,3 +7,6 @@ entry_points
 
 .. click:: sciafeed.entry_points:make_reports
    :prog: make_reports
+
+.. click:: sciafeed.entry_points:download_hiscentral
+   :prog: download_hiscentral

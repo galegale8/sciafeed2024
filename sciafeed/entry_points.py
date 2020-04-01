@@ -7,6 +7,7 @@ import sys
 
 import click
 
+from sciafeed import hiscentral
 from sciafeed import process
 
 
@@ -68,3 +69,35 @@ def make_reports(**kwargs):
         if not kwargs['out_filepath']:
             for msg in current_msgs:
                 print(msg)
+
+
+@click.command()
+@click.option('--region_id', '-r', help="code of the region to download (for example '01')")
+@click.option('--variables', '-v', multiple=True,
+              help="list of the variables to download. Default is 'Precipitation', 'Tmax', 'Tmin'",
+              default=['Precipitation', 'Tmax', 'Tmin'])
+@click.option('--locations', '-l', multiple=True,
+              help="list of the locations to download. Default is all the locations of the region")
+@click.option('--out_csv_folder', '-o', type=click.Path(exists=False, dir_okay=True),
+              help="folder path where to put the downloaded CSV data files")
+def download_hiscentral(region_id, variables, locations, out_csv_folder):
+    """
+    Download CSV of the HISCENTRAL for region, locations and variables selected into an
+    output folder.
+    """
+    if not region_id:
+        print('region_id is required')
+        return
+    if region_id not in hiscentral.REGION_IDS_MAP:
+        print("region_id %r is not recognized as a valid code" % region_id)
+        return
+    if not out_csv_folder:
+        print("out_csv_folder is required")
+        return
+    if not locations:
+        locations = None
+    if not exists(out_csv_folder):
+        mkdir(out_csv_folder)
+    ret_value = hiscentral.download_hiscentral(region_id, out_csv_folder, variables, locations)
+    print('done')
+    return ret_value

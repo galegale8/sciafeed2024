@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 with open('README.rst') as fh:
     long_description = fh.read()
 
-version = '0.3'
+version = '1.0'
 
 tests_require = [
         'pytest',

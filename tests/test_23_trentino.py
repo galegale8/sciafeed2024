@@ -81,7 +81,7 @@ def test_extract_metadata():
     assert metadata == {'cod_utente': '0001', 'lat': 46.06227631, 'lon': 11.23670156,
                         'height': 475.0, 'desc': 'Pergine Valsugana (Convento)',
                         'fieldnames': ['date', 'Tmin', 'quality'],
-                        'source': 'trentino/T0001.csv'}
+                        'source': 'trentino/T0001.csv', 'format': 'TRENTINO'}
 
 
 def test_parse_row():
@@ -157,7 +157,7 @@ def test_parse():
     metadata = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
                 'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156,
                 'fieldnames': ['date', 'Tmin', 'quality'],
-                'source': 'trentino/T0001.csv'}
+                'source': 'trentino/T0001.csv', 'format': 'TRENTINO'}
     expected_data = [
         [metadata, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],
         [metadata, datetime(1930, 5, 2, 9, 0), 'Tmin', 11.0, True],

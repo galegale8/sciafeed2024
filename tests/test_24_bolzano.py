@@ -73,7 +73,9 @@ def test_extract_metadata():
         'desc': 'Marienberg - Monte Maria',
         'height': '1310',
         'utmx': '616288',
-        'utmy': '5173583', 'source': 'bolzano/MonteMaria.xls'}
+        'utmy': '5173583', 'source': 'bolzano/MonteMaria.xls',
+        'format': 'BOLZANO',
+    }
     effective = bolzano.extract_metadata(filepath, parameters_filepath)
     assert effective == expected
 
@@ -121,7 +123,8 @@ def test_parse():
                              'desc': 'Marienberg - Monte Maria',
                              'height': '1310', 'utmx': '616288',
                              'utmy': '5173583',
-                             'source': 'bolzano/MonteMaria.xls'}
+                             'source': 'bolzano/MonteMaria.xls',
+                             'format': 'BOLZANO'}
     data_info_expected = [
         [datetime(1981, 1, 1, 0, 0), 'Tmin', 3.0, True],
         [datetime(1981, 1, 1, 0, 0), 'Tmax', 9.0, True],

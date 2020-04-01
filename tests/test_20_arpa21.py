@@ -238,7 +238,7 @@ def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa21', 'arpa21_params.csv')
     metadata = {'cod_utente': '00201', 'start_date': datetime(2012, 1, 1, 0, 0), 
-                'end_date': datetime(2013, 1, 1, 1, 0), 'lat': 37.33913,
+                'end_date': datetime(2013, 1, 1, 1, 0), 'lat': 37.33913, 'format': 'ARPA-21',
                 'source': 'arpa21/loc01_00201_201201010000_201301010100.dat'}
     expected_data = [
         [metadata, datetime(2012, 1, 1, 0, 0), 'FF', None, False],

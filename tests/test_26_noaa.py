@@ -34,7 +34,7 @@ def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
     parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
     metadata = noaa.extract_metadata(filepath, parameters_filepath)
-    assert metadata == {'source': 'noaa/160080-99999-2019.op'}
+    assert metadata == {'source': 'noaa/160080-99999-2019.op', 'format': 'NOAA'}
 
 
 def test_parse_row():
@@ -122,7 +122,8 @@ def test_validate_format():
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
     parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
-    metadata = {'cod_utente': '160080', 'wban': '99999', 'source': 'noaa/160080-99999-2019.op'}
+    metadata = {'cod_utente': '160080', 'wban': '99999', 'source': 'noaa/160080-99999-2019.op',
+                'format': 'NOAA'}
     expected_data = [
         [metadata, datetime(2019, 1, 1, 0, 0), 'Tmedia', 1.0556, True],
         [metadata, datetime(2019, 1, 1, 0, 0), 'DEWP', -4.6111, True],

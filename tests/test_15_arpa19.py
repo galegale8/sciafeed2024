@@ -89,7 +89,8 @@ def test_extract_metadata(tmpdir):
         'start_date': datetime(2013, 1, 1, 0, 0),
         'end_date': datetime(2014, 1, 1, 1, 0),
         'source': 'arpa19/loc01_70001_201301010000_201401010100.dat',
-        'cod_utente': '70001'
+        'cod_utente': '70001',
+        'format': 'ARPA-19',
     }
 
 
@@ -217,7 +218,7 @@ def test_validate_format(tmpdir):
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
-    metadata = {'cod_utente': '70001', 'lat': 43.876999,
+    metadata = {'cod_utente': '70001', 'lat': 43.876999, 'format': 'ARPA-19',
                 'start_date': datetime(2013, 1, 1, 0, 0), 'end_date': datetime(2014, 1, 1, 1, 0),
                 'source': 'arpa19/loc01_70001_201301010000_201401010100.dat'}
     expected_data = [

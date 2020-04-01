@@ -27,6 +27,7 @@ PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'noaa_params.csv')
 LIMITING_PARAMETERS = {
     'Tmedia': ('Tmin', 'Tmax'),
 }
+FORMAT_LABEL = 'NOAA'
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
@@ -91,7 +92,8 @@ def extract_metadata(filepath, parameters_filepath):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: dictionary of metadata extracted
     """
-    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:])}
+    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:]),
+                'format': FORMAT_LABEL}
     return metadata
 
 

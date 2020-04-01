@@ -25,7 +25,8 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     :param omit_parameters: list of the parameters to omit
     :param omit_missing: if False, include also values marked as missing
     """
-    fieldnames = ['cod_utente', 'cod_rete', 'date', 'parameter', 'value', 'valid', 'source']
+    fieldnames = ['cod_utente', 'cod_rete', 'date', 'parameter', 'value', 'valid',
+                  'source', 'format']
     with open(out_filepath, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
@@ -43,5 +44,6 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
                 'value': par_value,
                 'valid': par_flag and '1' or '0',
                 'source': metadata.get('source', ''),
+                'format': metadata.get('format', ''),
             }
             writer.writerow(row)

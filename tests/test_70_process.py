@@ -25,7 +25,9 @@ def test_parse_and_check(tmpdir):
     ]
     metadata = {'cod_utente': '70002', 'start_date': datetime(2013, 1, 1, 0, 0),
                 'end_date': datetime(2014, 1, 1, 1, 0), 'lat': 43.876999,
-                'source': 'arpa19/wrong_70002_201301010000_201401010100.dat'}
+                'source': 'arpa19/wrong_70002_201301010000_201401010100.dat',
+                'format': 'ARPA-19'
+                }
     assert data_parsed == [
         [metadata, datetime(2013, 1, 1, 0, 0), 'FF', 200.0, False],
         [metadata, datetime(2013, 1, 1, 0, 0), 'DD', 355.0, True],
@@ -445,7 +447,7 @@ def test_parse_and_check(tmpdir):
         (20, "The values of 'UR media' and 'Tmin' are not consistent")
     ]
     metadata = {'cod_utente': '00202', 'start_date': datetime(2012, 1, 1, 0, 0),
-                'end_date': datetime(2013, 1, 1, 1, 0), 'lat': 37.33913,
+                'end_date': datetime(2013, 1, 1, 1, 0), 'lat': 37.33913, 'format': 'ARPA-21',
                 'source': 'arpa21/wrong_00202_201201010000_201301010100.dat'}
     assert data_parsed == [
         [metadata, datetime(2012, 1, 1, 0, 0), 'FF', None, False],
@@ -882,7 +884,7 @@ def test_parse_and_check(tmpdir):
     err_msgs, data_parsed = process.parse_and_check(
         filepath, parameters_filepath, limiting_params)
     metadata = {'cod_utente': '00001', 'start_date': datetime(2018, 1, 1, 1, 0),
-                'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222,
+                'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222, 'format': 'ARPA-FVG',
                 'source': 'arpafvg/wrong_00001_2018010101_2019010101.dat'}
     assert err_msgs == [
         (1, 'The number of components in the row is wrong'),
@@ -914,7 +916,7 @@ def test_parse_and_check(tmpdir):
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
     metadata = {'desc': 'Marienberg - Monte Maria', 'cod_utente': '02500MS',
                 'utmx': '616288', 'utmy': '5173583', 'height': '1310',
-                'source': 'bolzano/MonteMaria.xls'}
+                'source': 'bolzano/MonteMaria.xls', 'format': 'BOLZANO'}
     expected_data = [
         [metadata, datetime(1981, 1, 1, 0, 0), 'Tmin', 3.0, True],
         [metadata, datetime(1981, 1, 1, 0, 0), 'Tmax', 9.0, True],
@@ -1013,7 +1015,7 @@ def test_parse_and_check(tmpdir):
         (12, 'it is not strictly after the previous')
     ]
     metadata = {'source': 'noaa/wrong2_160080-99999-2019.op',
-                'cod_utente': '160080', 'wban': '99999'}
+                'cod_utente': '160080', 'wban': '99999', 'format': 'NOAA'}
     expected_data_parsed = [
         [metadata, datetime(2019, 1, 6, 0, 0), 'Tmedia', -1.5, True],
         [metadata, datetime(2019, 1, 6, 0, 0), 'DEWP', -4.8333, True],
@@ -1078,7 +1080,7 @@ def test_parse_and_check(tmpdir):
     err_msgs, data_parsed = process.parse_and_check(
         filepath, parameters_filepath, limiting_params)
     assert not err_msgs
-    metadata = {'cod_utente': 'ANCONA',
+    metadata = {'cod_utente': 'ANCONA', 'format': 'RMN',
                 'fieldnames': ['DATA', 'ORA', 'DD', 'FF', 'Tmedia', 'P', 'UR media']}
     expected_data_parsed = [
         [metadata, datetime(2018, 1, 1, 0, 0), 'DD', 180.0, True],
@@ -1480,7 +1482,7 @@ def test_parse_and_check(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
     filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
     metadata = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
-                'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156,
+                'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156, 'format': 'TRENTINO',
                 'source': 'trentino/T0001.csv', 'fieldnames': ['date', 'Tmin', 'quality']}
     expected_data = [
         [metadata, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],

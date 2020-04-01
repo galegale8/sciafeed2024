@@ -31,6 +31,7 @@ TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
 DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpaer_params.csv')
 LIMITING_PARAMETERS = {}
+FORMAT_LABEL = 'ARPA-ER'
 
 # ##### start of online interface utilities #####
 
@@ -329,7 +330,7 @@ def extract_metadata(filepath, parameters_filepath):
     :return: dictionary of metadata extracted
     """
     source = join(*PurePath(abspath(filepath)).parts[-2:])
-    ret_value = {'source': source}
+    ret_value = {'source': source, 'format': FORMAT_LABEL}
     return ret_value
 
 

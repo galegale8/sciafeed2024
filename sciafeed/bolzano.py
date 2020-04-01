@@ -11,6 +11,7 @@ from sciafeed import utils
 
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'bolzano_params.csv')
 LIMITING_PARAMETERS = {}
+FORMAT_LABEL = 'BOLZANO'
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
@@ -105,6 +106,7 @@ def extract_metadata(filepath, parameters_filepath):
     """
     metadata = get_station_props(filepath)
     metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    metadata['format'] = FORMAT_LABEL
     return metadata
 
 

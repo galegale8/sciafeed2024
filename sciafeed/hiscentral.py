@@ -12,6 +12,7 @@ from sciafeed import TEMPLATES_PATH
 from sciafeed import utils
 
 
+FORMAT_LABEL = 'HISCENTRAL'
 ALLOWED_PARAMETERS = ('Precipitation', 'Tmax', 'Tmin')
 FIELDNAMES = ['time', 'DataValue', 'UTCOffset', 'Qualifier', 'CensorCode', 'DateTimeUTC',
               'MethodCode', 'SourceCode', 'QualityControlLevelCode']
@@ -293,7 +294,8 @@ def extract_metadata(filepath, parameters_filepath):
         par_code = par_name
     else:
         par_code = parameters_map[par_name]['par_code']
-    ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source}
+    ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source,
+                 'format': FORMAT_LABEL}
     return ret_value
 
 

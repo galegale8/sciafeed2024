@@ -455,7 +455,7 @@ def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
     metadata = arpaer.extract_metadata(filepath, parameters_filepath)
-    assert metadata == {'source': 'arpaer/results.json'}
+    assert metadata == {'source': 'arpaer/results.json', 'format': 'ARPA-ER'}
 
 
 def test_validate_row_format():
@@ -519,7 +519,7 @@ def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
     metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 4504139, 'lon': 958959,
-                'network': 'agrmet', 'source': 'arpaer/results.json'}
+                'network': 'agrmet', 'source': 'arpaer/results.json', 'format': 'ARPA-ER'}
     expected_data = [
         (metadata, datetime(2020, 2, 6, 0, 0), 'PREC', 0.0, True),
         (metadata, datetime(2020, 2, 6, 0, 0), 'Tmedia', 1.29, True),

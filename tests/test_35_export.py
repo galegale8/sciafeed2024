@@ -6,7 +6,7 @@ from sciafeed import export
 
 
 def test_export2csv(tmpdir):
-    metadata = {'cod_utente': '70001', 'lat': 43.876999, 'source': 'afile/path'}
+    metadata = {'cod_utente': '70001', 'lat': 43.876999, 'source': 'afile/path', 'format':'arpa19'}
     data = [
         [metadata, datetime(2013, 1, 1, 0, 0), '1', 9.0, True],
         [metadata, datetime(2014, 1, 1, 0, 0), '2', 355.0, False],
@@ -18,10 +18,10 @@ def test_export2csv(tmpdir):
     out_filepath = str(tmpdir.join('datafile.csv'))
 
     expected_rows = [
-        'cod_utente;cod_rete;date;parameter;value;valid;source\n',
-        '70001;;2013-01-01T00:00:00;1;9.0;1;afile/path\n',
-        '70001;;2013-02-01T00:00:00;3;68.0;1;afile/path\n',
-        '70001;;2014-01-01T00:00:00;2;355.0;0;afile/path\n'
+        'cod_utente;cod_rete;date;parameter;value;valid;source;format\n',
+        '70001;;2013-01-01T00:00:00;1;9.0;1;afile/path;arpa19\n',
+        '70001;;2013-02-01T00:00:00;3;68.0;1;afile/path;arpa19\n',
+        '70001;;2014-01-01T00:00:00;2;355.0;0;afile/path;arpa19\n'
     ]
     assert not exists(out_filepath)
     export.export2csv(data, out_filepath, omit_parameters=('5', '6', '12'))
@@ -31,13 +31,13 @@ def test_export2csv(tmpdir):
         assert rows == expected_rows
 
     expected_rows = [
-        'cod_utente;cod_rete;date;parameter;value;valid;source\n',
-        '70001;;2013-01-01T00:00:00;1;9.0;1;afile/path\n',
-        '70001;;2013-01-01T00:04:00;6;22;0;afile/path\n',
-        '70001;;2013-01-01T03:00:00;5;;0;afile/path\n',
-        '70001;;2013-01-02T00:00:00;4;;1;afile/path\n',
-        '70001;;2013-02-01T00:00:00;3;68.0;1;afile/path\n',
-        '70001;;2014-01-01T00:00:00;2;355.0;0;afile/path\n'
+        'cod_utente;cod_rete;date;parameter;value;valid;source;format\n',
+        '70001;;2013-01-01T00:00:00;1;9.0;1;afile/path;arpa19\n',
+        '70001;;2013-01-01T00:04:00;6;22;0;afile/path;arpa19\n',
+        '70001;;2013-01-01T03:00:00;5;;0;afile/path;arpa19\n',
+        '70001;;2013-01-02T00:00:00;4;;1;afile/path;arpa19\n',
+        '70001;;2013-02-01T00:00:00;3;68.0;1;afile/path;arpa19\n',
+        '70001;;2014-01-01T00:00:00;2;355.0;0;afile/path;arpa19\n'
     ]
     export.export2csv(data, out_filepath, omit_missing=False)
     with open(out_filepath) as fp:

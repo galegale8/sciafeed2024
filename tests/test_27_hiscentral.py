@@ -121,7 +121,8 @@ def test_extract_metadata():
     parameters_filepath = join(TEST_DATA_PATH, 'hiscentral', 'hiscentral_params.csv')
     metadata = hiscentral.extract_metadata(filepath, parameters_filepath)
     assert metadata == {'cod_utente': '990', 'par_code': 'Tmax',
-                        'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv'}
+                        'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv',
+                        'format': 'HISCENTRAL'}
 
 
 def test_parse_row():
@@ -223,7 +224,7 @@ def test_validate_format(tmpdir):
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_990-reg.abruzzoTmax.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'hiscentral', 'hiscentral_params.csv')
-    metadata = {'cod_utente': '990', 'par_code': 'Tmax',
+    metadata = {'cod_utente': '990', 'par_code': 'Tmax', 'format': 'HISCENTRAL',
                 'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv'}
     expected_data = [
         [metadata, datetime(2000, 7, 1, 0, 0), 'Tmax', 28.0, True],

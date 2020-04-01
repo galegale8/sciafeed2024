@@ -192,7 +192,7 @@ def test_validate_format(tmpdir):
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'rmn', 'rmn_params.csv')
-    metadata = {'cod_utente': 'ANCONA', 
+    metadata = {'cod_utente': 'ANCONA', 'format': 'RMN',
                 'fieldnames': ['DATA', 'ORA', 'DD', 'FF', 'Tmedia', 'P', 'UR media']}
     expected_data = [
         [metadata, datetime(2018, 1, 1, 0, 0), 'DD', 180.0, True],

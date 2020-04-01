@@ -6,17 +6,8 @@ from os.path import dirname
 from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino
 
 
-FORMATS = (
-    ('ARPA-19', arpa19),
-    ('ARPA-21', arpa21),
-    ('ARPA-FVG', arpafvg),
-    ('ARPA-ER', arpaer),
-    ('BOLZANO', bolzano),
-    ('HISCENTRAL', hiscentral),
-    ('NOAA', noaa),
-    ('RMN', rmn),
-    ('TRENTINO', trentino),
-)
+FORMATS = [(getattr(mod, 'FORMAT_LABEL'), mod) for mod in (
+        arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino)]
 
 
 def guess_format(filepath):

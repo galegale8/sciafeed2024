@@ -11,6 +11,7 @@ from sciafeed import utils
 
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'rmn_params.csv')
 LIMITING_PARAMETERS = {}
+FORMAT_LABEL = 'RMN'
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
@@ -116,7 +117,7 @@ def extract_metadata(filepath, parameters_filepath):
     """
     parameters_map = load_parameter_file(parameters_filepath)
     fieldnames, station = guess_fieldnames(filepath, parameters_map)
-    metadata = {'cod_utente': station, 'fieldnames': fieldnames}
+    metadata = {'cod_utente': station, 'fieldnames': fieldnames, 'format': FORMAT_LABEL}
     return metadata
 
 

@@ -17,6 +17,7 @@ LIMITING_PARAMETERS = {
     'UR media': ('UR min', 'UR max'),
     'P': ('Pmin', 'Pmax'),
 }
+FORMAT_LABEL = 'ARPA-19'
 
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
@@ -145,7 +146,7 @@ def extract_metadata(filepath, parameters_filepath):
     filename = basename(filepath)
     code, start_obj, end_obj = parse_filename(filename)
     ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
-                 'source': source}
+                 'source': source, 'format': FORMAT_LABEL}
     return ret_value
 
 

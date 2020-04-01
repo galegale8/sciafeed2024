@@ -167,8 +167,8 @@ def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpafvg', 'arpafvg_params.csv')
     metadata = {'cod_utente': '00001', 'start_date': datetime(2018, 1, 1, 1, 0),
-                  'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222,
-                  'source': 'arpafvg/loc01_00001_2018010101_2019010101.dat'}
+                'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222, 'format': 'ARPA-FVG',
+                'source': 'arpafvg/loc01_00001_2018010101_2019010101.dat'}
     expected_data = [
         [metadata, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 2.8, True],

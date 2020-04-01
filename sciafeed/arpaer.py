@@ -1,11 +1,12 @@
 """
 This module contains the functions and utilities to parse an ARPA-Emilia Romagna file
 """
+import copy
 import csv
 from datetime import datetime
 import json
 import os
-from os.path import abspath, join, splitext
+from os.path import abspath, basename, join, splitext
 from pathlib import PurePath
 
 import requests
@@ -15,11 +16,11 @@ from sciafeed import utils
 
 JSON_ANY_MARKER = '999999'
 
-# # the name of the 'resource' table, where to find data: it can be taken from the link of
-# # of `dati recenti' from the URL
-# # `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
-# TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
-#
+# the name of the 'resource' table, where to find data: it can be taken from the link of
+# of `dati recenti' from the URL
+# `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
+TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
+
 # # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/master/tables/dballe.txt
 # BTABLE_PATH = join(TEMPLATES_PATH, 'dballe.txt')
 # # taken from https://github.com/ARPA-SIMC/dballe/blob/v8.2-1/doc/fapi_ltypes.md
@@ -30,7 +31,6 @@ JSON_ANY_MARKER = '999999'
 DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpaer_params.csv')
 LIMITING_PARAMETERS = {}
-
 
 # ##### start of online interface utilities #####
 
@@ -108,22 +108,6 @@ def sql2results(sql, timeout=None):
     return []
 
 
-def is_same_list(list1, list2, any_marker=JSON_ANY_MARKER):
-    """
-    Return True if each element of list1 is the same of list2.
-    The comparison of one element of the list return True if the element=`any_marker` for the
-    first list.
-    """
-    if len(list1) != len(list2):
-        return False
-    for i, elem in enumerate(list1):
-        if elem == list2[i] or str(elem) == any_marker:
-            continue
-        else:
-            return False
-    return True
-
-
 def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_filters=None,
                    timeout=None, **kwargs):
     """
@@ -147,21 +131,27 @@ def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_fi
     sql = build_sql(TABLE_NAME, start, end, limit, only_bcodes, **kwargs)
     results = sql2results(sql, timeout=timeout)
     results_filtered = []
+    # follow removing the results not including right BCODES, level, and trange
     for result in results:
         station_md = result['data'][0]
         data_results = []
-        for data_item in result['data'][1:].copy():
+        for data_item_original in result['data'][1:]:
+            data_item = copy.deepcopy(data_item_original)
             data_level = data_item['level']
             data_timerange = data_item['timerange']
             for var in data_item['vars'].copy():
                 if only_bcodes is not None and var not in only_bcodes:
                     del data_item['vars'][var]
                     continue
-                if var in bcodes_filters:
-                    bcode_level = bcodes_filters[var]['level']
-                    bcode_trange = bcodes_filters[var]['trange']
-                    if not is_same_list(bcode_level, data_level) or not \
-                            is_same_list(bcode_trange, data_timerange):
+                if bcodes_filters and var in bcodes_filters:
+                    props = bcodes_filters[var]
+                    for prop in props:
+                        bcode_level = prop['level']
+                        bcode_trange = prop['trange']
+                        if utils.is_same_list(bcode_level, data_level, JSON_ANY_MARKER) and \
+                                utils.is_same_list(bcode_trange, data_timerange, JSON_ANY_MARKER):
+                            break
+                    else:  # never gone on break: not found the bcode in the properties
                         del data_item['vars'][var]
             if data_item['vars']:
                 data_results.append(data_item)
@@ -256,13 +246,28 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcod
 #     return ret_value
 
 
+def validate_filename(filename: str):
+    """
+    Check the name of the input arpa-er file named `filename`
+    and returns the description string of the error (if found).
+
+    :param filename: the name of the arpa-er file
+    :return: the string describing the error
+    """
+    err_msg = ''
+    name, ext = splitext(filename)
+    if ext.lower() != '.json':
+        err_msg = 'Extension expected must be .json, found %s' % ext
+    return err_msg
+
+
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
     Load a CSV file containing details on the arpaer stored parameters.
     Return a dictionary of type:
     ::
 
-        {   BCODE: dictionary of properties of parameter stored with the BCODE specified,
+        {   BCODE: [list of dictionary of properties of parameter stored with the BCODE specified]
             ...
         }
 
@@ -275,12 +280,14 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     ret_value = dict()
     for row in csv_reader:
         bcode, level, trange = row['BCODE-LEVEL-TRANGE'].split('-')
-        ret_value[bcode] = dict()
+        ret_value[bcode] = ret_value.get(bcode, [])
+        prop_item = dict()
         for prop in row.keys():
-            ret_value[bcode][prop] = row[prop].strip()
-        ret_value[bcode]['level'] = json.loads(level.replace('x', JSON_ANY_MARKER))
-        ret_value[bcode]['trange'] = json.loads(trange.replace('x', JSON_ANY_MARKER))
-        ret_value[bcode]['convertion'] = utils.string2lambda(ret_value[bcode]['convertion'])
+            prop_item[prop] = row[prop].strip()
+        prop_item['level'] = json.loads(level.replace('x', JSON_ANY_MARKER))
+        prop_item['trange'] = json.loads(trange.replace('x', JSON_ANY_MARKER))
+        prop_item['convertion'] = utils.string2lambda(prop_item['convertion'])
+        ret_value[bcode].append(prop_item)
     return ret_value
 
 
@@ -330,7 +337,7 @@ def validate_row_format(row):
     """
     It checks a row of an ARPA-ER file for validation against the format,
     and returns the description of the error (if found).
-    Input row is a dumped JSON, the JSON format is described here:
+    Input row is a loaded JSON, the JSON format is described here:
     http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json
     This validation is needed to be able to parse the row by the function `parse_row`.
 
@@ -338,33 +345,29 @@ def validate_row_format(row):
     :return: the string describing the error
     """
     err_msg = ''
-    if not row.strip():  # no errors on empty rows
-        return err_msg
-    try:
-        json_result = json.loads(row)
-    except:
-        err_msg = 'it does not seem a valid JSON'
+    if row.__class__ != dict:
+        err_msg = 'the row does not follow the standard'
         return err_msg
     # extracting station data
     try:
-        station_data = json_result['data'][0]['vars']
+        station_data = row['data'][0]['vars']
         station_data['B01019']['v']
-        json_result['lat']
-        json_result['lon']
-        json_result['network']
-        json_result['ident']
+        row['lat']
+        row['lon']
+        row['network']
+        row['ident']
     except KeyError:
         err_msg = 'information of the station is not parsable'
         return err_msg
     # date format
     try:
-        datetime.strptime(json_result['date'], '%Y-%m-%dT%H:%M:%S')
+        datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S')
     except ValueError:
         err_msg = 'information of the date is wrong'
         return err_msg
     # extracting measures
     try:
-        for measurement_group in json_result['data'][1:]:
+        for measurement_group in row['data'][1:]:
             for key in ['level', 'timerange', 'vars']:
                 assert key in measurement_group
     except AssertionError:
@@ -406,16 +409,17 @@ def parse_row(row, parameters_map, metadata=None):
         for bcode in current_vars:
             if bcode not in parameters_map:
                 continue
-            par_code = parameters_map[bcode]['par_code']
-            par_level = parameters_map[bcode]['level']
-            par_trange = parameters_map[bcode]['trange']
-            if not is_same_list(par_level, group_level) or not \
-                    is_same_list(par_trange, group_trange):
-                continue
-            par_value = current_vars[bcode]['v']
-            flag = 'B33196' not in current_vars[bcode].get('a', {})
-            measure = (metadata, thedate, par_code, par_value, flag)
-            measures.append(measure)
+            for props in parameters_map[bcode]:
+                par_code = props['par_code']
+                par_level = props['level']
+                par_trange = props['trange']
+                if not utils.is_same_list(par_level, group_level, JSON_ANY_MARKER) or not \
+                        utils.is_same_list(par_trange, group_trange, JSON_ANY_MARKER):
+                    continue
+                par_value = props['convertion'](float(current_vars[bcode]['v']))
+                flag = 'B33196' not in current_vars[bcode].get('a', {})
+                measure = (metadata, thedate, par_code, par_value, flag)
+                measures.append(measure)
     return measures
 
 
@@ -428,21 +432,19 @@ def rows_generator(filepath, parameters_map, metadata):
             yield i, row
 
 
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, include_empty=False):
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Load an input ARPA-ER file located at `filepath` and return the data stored inside.
+    Read an ARPA-ER file located at `filepath` and returns the data stored inside.
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+
     The function assumes the file as validated against the format (see function
     `validate_format`). No checks on data are performed.
-    Data returned is a list of results of the function `parse_row`, i.e. a list of
-    kind [(stat_props, date, measures), ...], where:
-    - stat_props is a dictionary of properties of the station
-    - date is the reference date for the measures
-    - measures is a list of kind:
-    [(parameter, level, trange, value, is_valid), ...]
 
     :param filepath: the input ARPA-ER file path
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param include_empty: if True, include empty measures (default False)
     :return: [(stat_props, date, measures), ...]
     """
     parameters_map = load_parameter_file(parameters_filepath)
@@ -464,9 +466,20 @@ def validate_format(filepath, parameters_filepath=None):
     :param parameters_filepath: not used at the moment (maintained for API compliance)
     :return: [..., (row index, error message), ...]
     """
+    err_msg = validate_filename(basename(filepath))
+    if err_msg:
+        return [(0, err_msg)]
     ret_value = []
     with open(filepath) as fp:
-        for i, row in enumerate(fp, 1):
+        for i, dumped_json in enumerate(fp, 1):
+            if not dumped_json.strip():
+                continue
+            try:
+                row = json.loads(dumped_json)
+            except:
+                err_msg = 'the row is not a parsable JSON'
+                ret_value.append((i, err_msg))
+                continue
             err_msg = validate_row_format(row)
             if err_msg:
                 ret_value.append((i, err_msg))
@@ -480,7 +493,7 @@ def is_format_compliant(filepath):
     :param filepath: path to file to be checked
     :return: True if the file is compliant, False otherwise
     """
-    if splitext(filepath)[1].lower() != '.json':
+    if validate_filename(basename(filepath)):
         return False
     # read first line
     with open(filepath) as fp:

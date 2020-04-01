@@ -1,9 +1,9 @@
 BCODE-LEVEL-TRANGE;description;par_code;min;max;original_unit;convertion;final_unit
 B11002-[103, x, null, null]-[0, 0, 3600];WIND SPEED (media oraria);FF;0;102;m/s;X;m/s
 B11001-[103, x, null, null]-[200, 0, 3600];WIND DIRECTION (media vettoriale oraria);DD;0;360;gradi;X;gradi
-B12101-[103, 2000, null, null]-[2,0,86400];Temperatura (dry bulb) massima giornaliera a 2mt. dal suolo;Tmax;-30;50;°K;X- 273.15;°C
-B12101-[103, 2000, null, null]-[3,0,86400];Temperatura (dry bulb) minima giornaliera a 2mt. dal suolo;Tmin;-40;40;°K;X- 273.16;°C
-B12101-[103, 2000, null, null]-[0,0,86400];Temperatura (dry bulb) media giornaliera a 2mt. dal suolo;Tmedia;-35;45;°K;X- 273.16;°C
-B13003-[103, 2000, null, null]-[1, null,3600];Umidità relativa a 2 mt. dal suolo sull’ora;UR media;20;100;%;X;%
+B12101-[103, 2000, null, null]-[2,0,3600];Temperatura (dry bulb) massima oraria a 2mt. dal suolo;Tmax;-30;50;°K;X- 273.15;°C
+B12101-[103, 2000, null, null]-[3,0,3600];Temperatura (dry bulb) minima oraria a 2mt. dal suolo;Tmin;-40;40;°K;X- 273.16;°C
+B12101-[103, 2000, null, null]-[0,0,3600];Temperatura (dry bulb) media oraria a 2mt. dal suolo;Tmedia;-35;45;°K;X- 273.16;°C
+B13003-[103, 2000, null, null]-[0, 0,3600];Umidità relativa a 2 mt. dal suolo (media sull’ora);UR media;20;100;%;X;%
 B10004-[x, x, x, x]-[x, x,x];PRESSURE REDUCED TO MEAN SEA LEVEL;P;960;1060;Pa;X/100;hPa
-B13011-[1, null, null, null]-[1, null, 3600];Precipitazione cumulata al suolo sull’ora;PREC;0;989;kg/m**2;X;mm
+B13011-[1, null, null, null]-[1, x, 3600];Precipitazione cumulata al suolo sull’ora;PREC;0;989;kg/m**2;X;mm

@@ -124,3 +124,19 @@ def string2lambda(thestring, variable_label='X', round_precision=4):
     function_txt = 'lambda %s: round(%s, %s)' % (variable_label, thestring, round_precision)
     retvalue = eval(function_txt)
     return retvalue
+
+
+def is_same_list(list1, list2, any_marker):
+    """
+    Return True if each element of list1 is the same of list2.
+    The comparison of one element of the list return True if the element=`any_marker` for the
+    first list.
+    """
+    if len(list1) != len(list2):
+        return False
+    for i, elem in enumerate(list1):
+        if elem == list2[i] or str(elem) == any_marker:
+            continue
+        else:
+            return False
+    return True

@@ -10,7 +10,7 @@ FORMATS = (
     ('ARPA-19', arpa19),
     ('ARPA-21', arpa21),
     ('ARPA-FVG', arpafvg),
-    # ('ARPA-ER', arpaer),
+    ('ARPA-ER', arpaer),
     ('BOLZANO', bolzano),
     ('HISCENTRAL', hiscentral),
     ('NOAA', noaa),

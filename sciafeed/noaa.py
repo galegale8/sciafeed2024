@@ -134,7 +134,7 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
         'PRCP': row[118:123],
         'SNDP': row[125:130],
     }
-    date_obj = datetime.strptime(date_str, '%Y%m%d')
+    date_obj = datetime.strptime(date_str, '%Y%m%d').date()
     data = []
     for noaa_code, par_props in parameters_map.items():
         par_code = par_props['par_code']

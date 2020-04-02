@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import date
 from os.path import join
 
 from sciafeed import trentino
@@ -95,7 +95,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True]]
+        expected = [[{}, date(1930, 5, 1), 'Tmin', 10.0, True]]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -106,7 +106,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, datetime(1930, 5, 1, 9, 0), 'Tmin', None, True]]
+        expected = [[{}, date(1930, 5, 1), 'Tmin', None, True]]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -117,7 +117,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, False]]
+        expected = [[{}, date(1930, 5, 1), 'Tmin', 10.0, False]]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -159,20 +159,20 @@ def test_parse():
                 'fieldnames': ['date', 'Tmin', 'quality'],
                 'source': 'trentino/T0001.csv', 'format': 'TRENTINO'}
     expected_data = [
-        [metadata, datetime(1930, 5, 1, 9, 0), 'Tmin', 10.0, True],
-        [metadata, datetime(1930, 5, 2, 9, 0), 'Tmin', 11.0, True],
-        [metadata, datetime(1930, 5, 3, 9, 0), 'Tmin', 10.0, True],
-        [metadata, datetime(1930, 5, 4, 9, 0), 'Tmin', 8.0, True],
-        [metadata, datetime(1930, 5, 5, 9, 0), 'Tmin', 12.0, True],
-        [metadata, datetime(1930, 5, 6, 9, 0), 'Tmin', 8.0, True],
-        [metadata, datetime(1930, 5, 7, 9, 0), 'Tmin', 10.0, True],
-        [metadata, datetime(1930, 5, 8, 9, 0), 'Tmin', 7.0, True],
-        [metadata, datetime(1930, 5, 9, 9, 0), 'Tmin', 8.0, True],
-        [metadata, datetime(1930, 5, 10, 9, 0), 'Tmin', 7.0, True],
-        [metadata, datetime(1930, 5, 11, 9, 0), 'Tmin', 5.0, True],
-        [metadata, datetime(1930, 5, 12, 9, 0), 'Tmin', 7.0, True],
-        [metadata, datetime(1930, 5, 13, 9, 0), 'Tmin', None, True],
-        [metadata, datetime(1930, 5, 14, 9, 0), 'Tmin', 9.0, True]
+        [metadata, date(1930, 5, 1), 'Tmin', 10.0, True],
+        [metadata, date(1930, 5, 2), 'Tmin', 11.0, True],
+        [metadata, date(1930, 5, 3), 'Tmin', 10.0, True],
+        [metadata, date(1930, 5, 4), 'Tmin', 8.0, True],
+        [metadata, date(1930, 5, 5), 'Tmin', 12.0, True],
+        [metadata, date(1930, 5, 6), 'Tmin', 8.0, True],
+        [metadata, date(1930, 5, 7), 'Tmin', 10.0, True],
+        [metadata, date(1930, 5, 8), 'Tmin', 7.0, True],
+        [metadata, date(1930, 5, 9), 'Tmin', 8.0, True],
+        [metadata, date(1930, 5, 10), 'Tmin', 7.0, True],
+        [metadata, date(1930, 5, 11), 'Tmin', 5.0, True],
+        [metadata, date(1930, 5, 12), 'Tmin', 7.0, True],
+        [metadata, date(1930, 5, 13), 'Tmin', None, True],
+        [metadata, date(1930, 5, 14), 'Tmin', 9.0, True]
     ]
     effective = trentino.parse(filepath, parameters_filepath)
     assert effective == expected_data

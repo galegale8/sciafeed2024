@@ -1,6 +1,6 @@
 
-from datetime import datetime
-from os.path import join, exists
+from datetime import date
+from os.path import join
 
 from sciafeed import bolzano
 from . import TEST_DATA_PATH
@@ -10,29 +10,6 @@ import pytest
 
 def test_load_parameter_file():
     test_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
-    expected_map = {
-        '3': {
-            'column': '3',
-            'description': 'Precipitazione in mm',
-            'max': '989',
-            'min': '0',
-            'par_code': 'PREC',
-            'unit': 'mm'},
-        '4': {
-            'column': '4',
-            'description': 'Temperatura massima dell’aria',
-            'max': '50',
-            'min': '-30',
-            'par_code': 'Tmax',
-            'unit': '°C'},
-        '5': {
-            'column': '5',
-            'description': 'Temperatura minima dell’aria',
-            'max': '40',
-            'min': '-40',
-            'par_code': 'Tmin',
-            'unit': '°C'}
-    }
     parameter_map = bolzano.load_parameter_file(test_filepath)
     for i in range(3, 6):
         assert str(i) in parameter_map
@@ -90,9 +67,9 @@ def test_parse_row():
 
     row = ['', '01.01.1981', '0,0', '9,0', '3,0']
     expected = [
-        [{}, datetime(1981, 1, 1, 0, 0), 'Tmin', 3.0, True],
-        [{}, datetime(1981, 1, 1, 0, 0), 'Tmax', 9.0, True],
-        [{}, datetime(1981, 1, 1, 0, 0), 'PREC', 0.0, True]
+        [{}, date(1981, 1, 1), 'Tmin', 3.0, True],
+        [{}, date(1981, 1, 1), 'Tmax', 9.0, True],
+        [{}, date(1981, 1, 1), 'PREC', 0.0, True]
     ]
 
     effective = bolzano.parse_row(row, parameters_map)
@@ -126,30 +103,30 @@ def test_parse():
                              'source': 'bolzano/MonteMaria.xls',
                              'format': 'BOLZANO'}
     data_info_expected = [
-        [datetime(1981, 1, 1, 0, 0), 'Tmin', 3.0, True],
-        [datetime(1981, 1, 1, 0, 0), 'Tmax', 9.0, True],
-        [datetime(1981, 1, 1, 0, 0), 'PREC', 0.0, True],
-        [datetime(1981, 1, 2, 0, 0), 'Tmin', -4.0, True],
-        [datetime(1981, 1, 2, 0, 0), 'Tmax', 5.0, True],
-        [datetime(1981, 1, 2, 0, 0), 'PREC', 0.4, True],
-        [datetime(1981, 1, 3, 0, 0), 'Tmin', -4.0, True],
-        [datetime(1981, 1, 3, 0, 0), 'Tmax', 5.0, True],
-        [datetime(1981, 1, 3, 0, 0), 'PREC', 0.0, True],
-        [datetime(1981, 1, 4, 0, 0), 'Tmin', 1.0, True],
-        [datetime(1981, 1, 4, 0, 0), 'Tmax', 9.0, True],
-        [datetime(1981, 1, 4, 0, 0), 'PREC', 14.5, True],
-        [datetime(1981, 1, 5, 0, 0), 'Tmin', -8.0, True],
-        [datetime(1981, 1, 5, 0, 0), 'Tmax', 3.0, True],
-        [datetime(1981, 1, 5, 0, 0), 'PREC', 5.1, True],
-        [datetime(1981, 1, 6, 0, 0), 'Tmin', -8.0, True],
-        [datetime(1981, 1, 6, 0, 0), 'Tmax', -5.0, True],
-        [datetime(1981, 1, 6, 0, 0), 'PREC', 1.0, True],
-        [datetime(1981, 1, 7, 0, 0), 'Tmin', -9.0, True],
-        [datetime(1981, 1, 7, 0, 0), 'Tmax', -5.0, True],
-        [datetime(1981, 1, 7, 0, 0), 'PREC', 6.1, True],
-        [datetime(1981, 1, 8, 0, 0), 'Tmin', -13.0, True],
-        [datetime(1981, 1, 8, 0, 0), 'Tmax', -7.0, True],
-        [datetime(1981, 1, 8, 0, 0), 'PREC', 0.0, True]
+        [date(1981, 1, 1), 'Tmin', 3.0, True],
+        [date(1981, 1, 1), 'Tmax', 9.0, True],
+        [date(1981, 1, 1), 'PREC', 0.0, True],
+        [date(1981, 1, 2), 'Tmin', -4.0, True],
+        [date(1981, 1, 2), 'Tmax', 5.0, True],
+        [date(1981, 1, 2), 'PREC', 0.4, True],
+        [date(1981, 1, 3), 'Tmin', -4.0, True],
+        [date(1981, 1, 3), 'Tmax', 5.0, True],
+        [date(1981, 1, 3), 'PREC', 0.0, True],
+        [date(1981, 1, 4), 'Tmin', 1.0, True],
+        [date(1981, 1, 4), 'Tmax', 9.0, True],
+        [date(1981, 1, 4), 'PREC', 14.5, True],
+        [date(1981, 1, 5), 'Tmin', -8.0, True],
+        [date(1981, 1, 5), 'Tmax', 3.0, True],
+        [date(1981, 1, 5), 'PREC', 5.1, True],
+        [date(1981, 1, 6), 'Tmin', -8.0, True],
+        [date(1981, 1, 6), 'Tmax', -5.0, True],
+        [date(1981, 1, 6), 'PREC', 1.0, True],
+        [date(1981, 1, 7), 'Tmin', -9.0, True],
+        [date(1981, 1, 7), 'Tmax', -5.0, True],
+        [date(1981, 1, 7), 'PREC', 6.1, True],
+        [date(1981, 1, 8), 'Tmin', -13.0, True],
+        [date(1981, 1, 8), 'Tmax', -7.0, True],
+        [date(1981, 1, 8), 'PREC', 0.0, True]
     ]
     effective_data = bolzano.parse(filepath, parameters_filepath)
     for i, data_item in enumerate(effective_data):

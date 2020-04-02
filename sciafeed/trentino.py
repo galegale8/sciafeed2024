@@ -183,7 +183,7 @@ def parse_row(row, parameters_map, metadata=None):
         metadata = dict()
     else:
         metadata = metadata.copy()
-    date_obj = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y")
+    date_obj = datetime.strptime(row['date'].strip(), "%H:%M:%S %d/%m/%Y").date()
     all_parameters = [p['par_code'] for p in parameters_map.values()]
     param_code = list(set(row.keys()).intersection(all_parameters))[0]
     props = [p for p in parameters_map.values() if p['par_code'] == param_code][0]

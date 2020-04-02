@@ -130,7 +130,7 @@ def parse_row(row, parameters_map, metadata=None):
     else:
         metadata = metadata.copy()
     # NOTE: assuming the column with the date is the second one
-    date_obj = datetime.strptime(row[1].strip(), "%d.%m.%Y")
+    date_obj = datetime.strptime(row[1].strip(), "%d.%m.%Y").date()
     data = []
     for col_indx, par_props in parameters_map.items():
         par_code = par_props['par_code']

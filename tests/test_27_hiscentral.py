@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import date
 from os.path import exists, join
 
 from sciafeed import hiscentral
@@ -141,7 +141,7 @@ def test_parse_row():
     metadata = {'par_code': 'Tmax'}
     parameters_map = hiscentral.load_parameter_file(parameters_filepath=parameters_filepath)
     expected = [
-        [metadata, datetime(2000, 7, 1, 0, 0), 'Tmax', 28.0, True]
+        [metadata, date(2000, 7, 1), 'Tmax', 28.0, True]
     ]
     effective = hiscentral.parse_row(row, parameters_map, metadata=metadata)
     assert effective == expected
@@ -227,15 +227,15 @@ def test_parse():
     metadata = {'cod_utente': '990', 'par_code': 'Tmax', 'format': 'HISCENTRAL',
                 'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv'}
     expected_data = [
-        [metadata, datetime(2000, 7, 1, 0, 0), 'Tmax', 28.0, True],
-        [metadata, datetime(2000, 7, 2, 0, 0), 'Tmax', 31.0, True],
-        [metadata, datetime(2000, 7, 3, 0, 0), 'Tmax', 33.0, True],
-        [metadata, datetime(2000, 7, 4, 0, 0), 'Tmax', 37.0, True],
-        [metadata, datetime(2000, 7, 5, 0, 0), 'Tmax', 36.0, True],
-        [metadata, datetime(2000, 7, 6, 0, 0), 'Tmax', 34.0, True],
-        [metadata, datetime(2000, 7, 7, 0, 0), 'Tmax', 33.0, True],
-        [metadata, datetime(2000, 7, 8, 0, 0), 'Tmax', 38.0, True],
-        [metadata, datetime(2000, 7, 9, 0, 0), 'Tmax', 35.0, True]
+        [metadata, date(2000, 7, 1), 'Tmax', 28.0, True],
+        [metadata, date(2000, 7, 2), 'Tmax', 31.0, True],
+        [metadata, date(2000, 7, 3), 'Tmax', 33.0, True],
+        [metadata, date(2000, 7, 4), 'Tmax', 37.0, True],
+        [metadata, date(2000, 7, 5), 'Tmax', 36.0, True],
+        [metadata, date(2000, 7, 6), 'Tmax', 34.0, True],
+        [metadata, date(2000, 7, 7), 'Tmax', 33.0, True],
+        [metadata, date(2000, 7, 8), 'Tmax', 38.0, True],
+        [metadata, date(2000, 7, 9), 'Tmax', 35.0, True]
     ]
     effective = hiscentral.parse(filepath, parameters_filepath=parameters_filepath)
     assert effective == expected_data

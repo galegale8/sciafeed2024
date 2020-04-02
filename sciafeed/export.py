@@ -12,6 +12,7 @@ This module contains the functions and utilities to export data structure to fil
 - flag: a boolean flag to consider valid or not the value
 """
 import csv
+from datetime import datetime
 import operator
 
 
@@ -25,7 +26,7 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     :param omit_parameters: list of the parameters to omit
     :param omit_missing: if False, include also values marked as missing
     """
-    fieldnames = ['cod_utente', 'cod_rete', 'date', 'parameter', 'value', 'valid',
+    fieldnames = ['cod_utente', 'cod_rete', 'date', 'time', 'parameter', 'value', 'valid',
                   'source', 'format']
     with open(out_filepath, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
@@ -39,7 +40,9 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
             row = {
                 'cod_utente': metadata.get('cod_utente', ''),
                 'cod_rete': metadata.get('cod_rete', ''),
-                'date': current_date.isoformat(),
+                'date': current_date.strftime('%Y-%m-%d'),
+                'time': isinstance(current_date, datetime) and current_date.strftime('%H:%M:%S')
+                        or '',
                 'parameter': par_code,
                 'value': par_value,
                 'valid': par_flag and '1' or '0',

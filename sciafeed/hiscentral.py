@@ -343,7 +343,7 @@ def parse_row(row, parameters_map, metadata=None):
         metadata = dict()
     else:
         metadata = metadata.copy()
-    date_obj = datetime.strptime(row['time'], "%Y-%m-%d")
+    date_obj = datetime.strptime(row['time'], "%Y-%m-%d").date()
     data = []
     param_code = metadata.get('par_code')
     props = parameters_map.get(param_code)

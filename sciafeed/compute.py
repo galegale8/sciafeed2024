@@ -135,7 +135,7 @@ def compute_prec01(day_records, at_least_perc=0.75):
     flag = (ndati, wht)
     # valid_records = sum_records_by_hour_groups(valid_records, 1)
     val_mx = max([r[3] for r in valid_records])
-    data_mx = valid_records[valid_records.index(val_mx)][1]
+    data_mx = [r[1] for r in valid_records if r[3] == val_mx][0]
     return flag, val_mx, data_mx
 
 

@@ -209,7 +209,7 @@ def test_compute_cl_prec24():
 
 def test_compute_prec01():
     day_records = DAILY_PREC_SET
-    flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.75)
+    flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.75)
     assert (flag, val_mx, data_mx) == ((24, 1), 23, datetime(2020, 1, 1, 23, 0))
 
     # good but missing too many
@@ -221,10 +221,10 @@ def test_compute_prec01():
         (sample_metadata, datetime(2020, 1, 1, 4, 0), 'PREC', 4, True),
         (sample_metadata, datetime(2020, 1, 1, 5, 0), 'PREC', 5, True),
     ]
-    flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.80)
+    flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.80)
     assert (flag, val_mx, data_mx) == ((6, 0), 5, datetime(2020, 1, 1, 5, 0))
     # with low tolherance
-    flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.10)
+    flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.10)
     assert (flag, val_mx, data_mx) == ((6, 1), 5, datetime(2020, 1, 1, 5, 0))
 
 

@@ -2,7 +2,7 @@
 This module contains the functions and utilities to parse an ARPA of Friuli-Venezia Giulia
 """
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import abspath, basename, join, splitext
 from pathlib import PurePath
 
@@ -170,7 +170,7 @@ def parse_row(row, parameters_map, metadata=None):
     tokens = row.split()
     metadata['lat'] = float(tokens[14])
     date_str = ''.join(tokens[:4])
-    date_obj = datetime.strptime(date_str, '%y%m%d%H.%M')
+    date_obj = datetime.strptime(date_str, '%y%m%d%H.%M') - timedelta(hours=1)
     par_values = tokens[5:14]
     data = []
     for i, param_i_value_str in enumerate(par_values):
@@ -263,6 +263,9 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     found_errors = []
     metadata = extract_metadata(filepath, parameters_filepath)
     start, end = metadata['start_date'], metadata['end_date']
+    # 1 hour tolherance
+    start -= timedelta(hours=1)
+    end = += timedelta(hours=1)
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_row_date = None

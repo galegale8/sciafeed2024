@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse an ARPA-Emilia Romagna
 """
 import copy
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 from os.path import abspath, basename, join, splitext
@@ -402,7 +402,7 @@ def parse_row(row, parameters_map, metadata=None):
     metadata['lon'] = row['lon']
     metadata['network'] = row['network']
     metadata['is_fixed'] = row['ident'] is None
-    thedate = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S')
+    thedate = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S') - timedelta(hours=1)
     for measurement_group in row['data'][1:]:
         group_level = measurement_group['level']
         group_trange = measurement_group['timerange']

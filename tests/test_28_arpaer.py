@@ -505,11 +505,11 @@ def test_parse_row():
     metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 4504139, 'lon': 958959,
                 'network': 'agrmet'}
     expected = [
-        (metadata, datetime(2020, 2, 6, 0, 0), 'PREC', 0.0, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmedia', 1.29, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'UR media', 56.0, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmax', 2.5, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmin', -0.51, True)
+        (metadata, datetime(2020, 2, 5, 23, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmedia', 1.29, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'UR media', 56.0, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmax', 2.5, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmin', -0.51, True)
     ]
     effective = arpaer.parse_row(row, parameters_map)
     assert effective == expected
@@ -521,16 +521,16 @@ def test_parse():
     metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 4504139, 'lon': 958959,
                 'network': 'agrmet', 'source': 'arpaer/results.json', 'format': 'ARPA-ER'}
     expected_data = [
+        (metadata, datetime(2020, 2, 5, 23, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmedia', 1.29, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'UR media', 56.0, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmax', 2.5, True),
+        (metadata, datetime(2020, 2, 5, 23, 0), 'Tmin', -0.51, True),
         (metadata, datetime(2020, 2, 6, 0, 0), 'PREC', 0.0, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmedia', 1.29, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'UR media', 56.0, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmax', 2.5, True),
-        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmin', -0.51, True),
-        (metadata, datetime(2020, 2, 6, 1, 0), 'PREC', 0.0, True),
-        (metadata, datetime(2020, 2, 6, 1, 0), 'Tmedia', -1.41, True),
-        (metadata, datetime(2020, 2, 6, 1, 0), 'UR media', 70.0, True),
-        (metadata, datetime(2020, 2, 6, 1, 0), 'Tmax', 0.4, True),
-        (metadata, datetime(2020, 2, 6, 1, 0), 'Tmin', -2.21, True)
+        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmedia', -1.41, True),
+        (metadata, datetime(2020, 2, 6, 0, 0), 'UR media', 70.0, True),
+        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmax', 0.4, True),
+        (metadata, datetime(2020, 2, 6, 0, 0), 'Tmin', -2.21, True)
     ]
     effective_data = arpaer.parse(filepath, parameters_filepath)
     assert effective_data == expected_data

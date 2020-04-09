@@ -1,7 +1,10 @@
 """
 This module contains functions and utilities that extracts information from a `data` record
 or from a set of `data` records.
-`data` is a tuple of kind (metadata, datetime object, par_code, par_value, flag) .
+`data` is a tuple of kind:
+::
+
+    (metadata, datetime object, par_code, par_value, flag) .
 """
 from datetime import datetime, timedelta
 import statistics
@@ -39,12 +42,15 @@ def sum_records_by_hour_groups(day_records, hours_interval):
 def wet_distribution(input_records):
     """
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
+    ::
+
     * dry: num of input records with PREC <= 1
     * wet_01: num of records with PREC in ]1, 5]
     * wet_02: num of records with PREC in ]5, 10]
     * wet_03: num of records with PREC in ]10, 20]
     * wet_04: num of records with PREC in ]20, 50]
     * wet_05: num of records with PREC > 50
+
     It assumes input records are all of PREC, same station, valid and with not null values.
 
     :param input_records: input records of PREC
@@ -65,10 +71,13 @@ def compute_prec24(day_records, at_least_perc=0.9):
     table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_tot, val_mx, data_mx) where:
+    ::
+
     * flag: (ndati, wht)
     * val_tot: sum of PREC values on these records
     * val_mx: max value of PREC
     * data_mx: datetime of the max value of PREC
+
     If num of valid values/24 >= `at_least_perc` --> wht = 1, otherwise 0
 
     :param day_records: list of `data` objects for a day and a station.
@@ -98,6 +107,8 @@ def compute_cl_prec24(day_records):
     It will fill the field 'cl_prec24' of table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
+    ::
+
     * dry: num of records with PREC <= 1
     * wet_01: num of records with PREC in ]1, 5]
     * wet_02: num of records with PREC in ]5, 10]
@@ -118,6 +129,8 @@ def compute_prec01(day_records, at_least_perc=0.9):
     table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_mx, data_mx) where:
+    ::
+
     * flag: (ndati, wht)
     * val_mx: max value of PREC
     * data_mx: datetime of the max value of PREC
@@ -148,6 +161,8 @@ def compute_prec06(day_records, at_least_perc=0.9):
     It assumes also records are referring to date times (attribute `hour` of index 1 of each
     day record).
     It returns the tuple (flag, val_mx, data_mx) where:
+    ::
+
     * flag: (ndati, wht)
     * val_mx: max value of PREC (cumulated in 4 groups of same time ranges)
     * data_mx: datetime of the max value of PREC
@@ -176,6 +191,8 @@ def compute_cl_prec06(day_records):
     It will fill the field 'cl_prec06' of table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
+    ::
+
     * dry: num of records with PREC <= 1
     * wet_01: num of records with PREC in ]1, 5]
     * wet_02: num of records with PREC in ]5, 10]
@@ -199,6 +216,8 @@ def compute_prec12(day_records, at_least_perc=0.9):
     It assumes also records are referring to date times (attribute `hour` of index 1 of each
     day record).
     It returns the tuple (flag, val_mx, data_mx) where:
+    ::
+
     * flag: (ndati, wht)
     * val_mx: max value of PREC (cumulated in 4 groups of same time ranges)
     * data_mx: datetime of the max value of PREC
@@ -227,6 +246,8 @@ def compute_cl_prec12(day_records):
     It will fill the field 'cl_prec12' of table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
+    ::
+
     * dry: num of records with PREC <= 1
     * wet_01: num of records with PREC in ]1, 5]
     * wet_02: num of records with PREC in ]5, 10]
@@ -283,6 +304,8 @@ def compute_tmdgg(day_records, at_least_perc=0.75):
     It will fill the field 'tmdgg' of table 'sciapgg.ds__ts200'.
     It assumes day_records is of par_code='Tmedia'.
     It returns the tuple (flag, val_md, val_vr) where:
+    ::
+
     * flag: (ndati, wht)
     * val_md: media giornaliera
     * val_vr: varianza
@@ -309,6 +332,8 @@ def compute_tmxgg(day_records, at_least_perc=0.75):
     It will fill the field 'tmxgg' of table 'sciapgg.ds__ts200'.
     It assumes day_records is of par_code='Tmax' or par_code='Tmedia'.
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
+    ::
+
     * flag: (ndati, wht)
     * val_md: media giornaliera
     * val_vr: varianza
@@ -339,6 +364,8 @@ def compute_tmngg(day_records, at_least_perc=0.75):
     It will fill the field 'tmngg' of table 'sciapgg.ds__ts200'.
     It assumes day_records is of par_code='Tmin' or par_code='Tmedia'.
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
+    ::
+
     * flag: (ndati, wht)
     * val_md: media giornaliera
     * val_vr: varianza
@@ -369,6 +396,8 @@ def compute_press(day_records, at_least_perc=0.75):
     It will fill the field 'press' of table 'sciapgg.ds__press'.
     It assumes day_records include both par_code='Pmedia', par_code='Pmax', par_code='Pmin'.
     It returns the tuple (flag, val_md, val_vr, val_mx, val_mn) where:
+    ::
+    
     * flag: (ndati, wht)
     * val_md: media giornaliera
     * val_vr: varianza

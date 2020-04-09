@@ -28,6 +28,7 @@ def data_internal_consistence_check(input_data, limiting_params=None):
     Get the internal consistent check for an input data object.
     It assumes that `input_data` has an agreed structure, i.e.:
     ::
+
     [(metadata, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the data with flags modified.
@@ -83,6 +84,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     as invalid a value if it is out of a defined range.
     It assumes that `input_data` has an agreed structure i.e.:
     ::
+
     [(metadata, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the resulting data with flags updated.

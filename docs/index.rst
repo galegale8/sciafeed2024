@@ -14,6 +14,7 @@ SCIA PostgreSQL database.
    arpafvg
    bolzano
    checks
+   compute
    entry_points
    export
    formats

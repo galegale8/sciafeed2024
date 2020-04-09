@@ -114,7 +114,7 @@ def test_make_report(tmpdir):
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
-        assert len(lines) == 96
+        assert len(lines) == 36
         assert lines[0] == 'cod_utente;cod_rete;date;time;parameter;value;valid;source;format\n'
 
 

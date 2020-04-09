@@ -142,6 +142,8 @@ def parse_row(row, parameters_map, metadata=None):
         metadata = metadata.copy()
     time_str = "%s %s" % (row['DATA'], row['ORA'])
     date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M")
+    if date_obj.minute != 0:
+        return []
     data = []
     for par_indx in parameters_map:
         props = parameters_map[par_indx]

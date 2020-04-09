@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse a RMN file
 (Rete Mareografica Nazionale)
 """
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join
 
 from sciafeed import TEMPLATES_PATH
@@ -141,7 +141,7 @@ def parse_row(row, parameters_map, metadata=None):
     else:
         metadata = metadata.copy()
     time_str = "%s %s" % (row['DATA'], row['ORA'])
-    date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M")
+    date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M") - timedelta(hours=1)
     if date_obj.minute != 0:
         return []
     data = []

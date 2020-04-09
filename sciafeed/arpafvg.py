@@ -265,7 +265,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     start, end = metadata['start_date'], metadata['end_date']
     # 1 hour tolherance
     start -= timedelta(hours=1)
-    end = += timedelta(hours=1)
+    end += timedelta(hours=1)
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_row_date = None

@@ -895,16 +895,16 @@ def test_parse_and_check(tmpdir):
         (7, 'the time is not coherent with the filename'),
         (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent")]
     assert data_parsed == [
-        [metadata, datetime(2018, 1, 1, 2, 0), 'PREC', 0.0, False],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Tmedia', 3.1, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'UR media', 85.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Bagnatura_f', 59.0,
+        [metadata, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, False],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 3.1, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 85.0, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 59.0,
          True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'DD', 317.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'FF', 1.6, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Pstaz', 1001.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'INSOL', 0.0, True]]
+        [metadata, datetime(2018, 1, 1, 1, 0), 'DD', 317.0, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'FF', 1.6, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True]]
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(

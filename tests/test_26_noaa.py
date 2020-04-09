@@ -57,7 +57,8 @@ def test_parse_row():
         [metadata, date(2019, 1, 1), 'Tmax', 5.0, True],
         [metadata, date(2019, 1, 1), 'Tmin', -2.0, True],
         [metadata, date(2019, 1, 1), 'PREC', 0.0, True],
-        [metadata, date(2019, 1, 1), 'SNDP', 40.64, True]
+        [metadata, date(2019, 1, 1), 'SNDP', 40.64, True],
+        [metadata, date(2019, 1, 1), 'UR media', 69.445, True]
     ]
     effective = noaa.parse_row(row, parameters_map)
     assert effective == expected
@@ -137,6 +138,7 @@ def test_parse():
         [metadata, date(2019, 1, 1), 'Tmin', -2.0, True],
         [metadata, date(2019, 1, 1), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 1), 'SNDP', 40.64, True],
+        [metadata, date(2019, 1, 1), 'UR media', 69.445, True],
         [metadata, date(2019, 1, 2), 'Tmedia', -3.6111, True],
         [metadata, date(2019, 1, 2), 'DEWP', -9.1667, True],
         [metadata, date(2019, 1, 2), 'P', None, True],
@@ -149,6 +151,7 @@ def test_parse():
         [metadata, date(2019, 1, 2), 'Tmin', -7.0, True],
         [metadata, date(2019, 1, 2), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 2), 'SNDP', 40.64, True],
+        [metadata, date(2019, 1, 2), 'UR media', 71.111, True],
         [metadata, date(2019, 1, 3), 'Tmedia', -7.0556, True],
         [metadata, date(2019, 1, 3), 'DEWP', -15.3889, True],
         [metadata, date(2019, 1, 3), 'P', None, True],
@@ -161,6 +164,7 @@ def test_parse():
         [metadata, date(2019, 1, 3), 'Tmin', -8.2222, True],
         [metadata, date(2019, 1, 3), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 3), 'SNDP', 40.64, True],
+        [metadata, date(2019, 1, 3), 'UR media', 51.667, True],
         [metadata, date(2019, 1, 4), 'Tmedia', -5.0, True],
         [metadata, date(2019, 1, 4), 'DEWP', -11.7222, True],
         [metadata, date(2019, 1, 4), 'P', None, True],
@@ -173,6 +177,7 @@ def test_parse():
         [metadata, date(2019, 1, 4), 'Tmin', -8.2222, True],
         [metadata, date(2019, 1, 4), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 4), 'SNDP', 40.64, True],
+        [metadata, date(2019, 1, 4), 'UR media', 65.417, True],
         [metadata, date(2019, 1, 5), 'Tmedia', -3.0556, True],
         [metadata, date(2019, 1, 5), 'DEWP', -4.6111, True],
         [metadata, date(2019, 1, 5), 'P', None, True],
@@ -185,6 +190,7 @@ def test_parse():
         [metadata, date(2019, 1, 5), 'Tmin', -5.6111, True],
         [metadata, date(2019, 1, 5), 'PREC', 2.032, True],
         [metadata, date(2019, 1, 5), 'SNDP', 88.9, True],
+        [metadata, date(2019, 1, 5), 'UR media', 80.972, True],
         [metadata, date(2019, 1, 6), 'Tmedia', -1.5, True],
         [metadata, date(2019, 1, 6), 'DEWP', -4.8333, True],
         [metadata, date(2019, 1, 6), 'P', None, True],
@@ -197,6 +203,7 @@ def test_parse():
         [metadata, date(2019, 1, 6), 'Tmin', -2.7778, True],
         [metadata, date(2019, 1, 6), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 6), 'SNDP', 119.38, True],
+        [metadata, date(2019, 1, 6), 'UR media', 79.722, True],
         [metadata, date(2019, 1, 7), 'Tmedia', -2.3333, True],
         [metadata, date(2019, 1, 7), 'DEWP', -5.7222, True],
         [metadata, date(2019, 1, 7), 'P', None, True],
@@ -209,6 +216,7 @@ def test_parse():
         [metadata, date(2019, 1, 7), 'Tmin', -5.0, True],
         [metadata, date(2019, 1, 7), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 7), 'SNDP', 119.38, True],
+        [metadata, date(2019, 1, 7), 'UR media', 83.334, True],
         [metadata, date(2019, 1, 8), 'Tmedia', -2.1667, True],
         [metadata, date(2019, 1, 8), 'DEWP', -4.4444, True],
         [metadata, date(2019, 1, 8), 'P', None, True],
@@ -220,7 +228,8 @@ def test_parse():
         [metadata, date(2019, 1, 8), 'Tmax', 1.7778, True],
         [metadata, date(2019, 1, 8), 'Tmin', -5.7778, True],
         [metadata, date(2019, 1, 8), 'PREC', 3.048, True],
-        [metadata, date(2019, 1, 8), 'SNDP', 149.86, True]
+        [metadata, date(2019, 1, 8), 'SNDP', 149.86, True],
+        [metadata, date(2019, 1, 8), 'UR media', 87.778, True],
     ]
     effective = noaa.parse(filepath, parameters_filepath=parameters_filepath)
     assert effective == expected_data

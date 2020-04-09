@@ -97,6 +97,35 @@ def extract_metadata(filepath, parameters_filepath):
     return metadata
 
 
+def build_urmedia_measure(day_records):
+    """
+    Return a new measure with 'UR Media', computed from other day records.
+
+    :param day_records: records of the same day
+    :return: (metadata, datetime object, 'UR media', par_value, flag)
+    """
+    tmin_records = [r for r in day_records if r[2] == 'Tmin' and r[3] is not None and r[4]]
+    tmax_records = [r for r in day_records if r[2] == 'Tmax' and r[3] is not None and r[4]]
+    dewp_records = [r for r in day_records if r[2] == 'DEWP' and r[3] is not None and r[4]]
+    if not tmin_records or not tmax_records or not dewp_records:
+        return ()
+    tmin = tmin_records[0][3]
+    tmax = tmax_records[0][3]
+    dewp = dewp_records[0][3]
+    metadata, thedate = dewp_records[0][0:2]
+    tmedia = (tmax + tmin) / 2
+    threshold = 100 - 5*(tmedia-dewp)
+    if threshold >= 50:
+        urmedia = threshold
+    else:
+        es_par = 6.11 * 10**(7.5*tmedia/(237.7+tmedia))
+        e_par = 6.11 * 10**(7.5*tmedia/(237.7+dewp))
+        urmedia = 100 * es_par / e_par
+    urmedia = round(urmedia, 3)
+    measure = [metadata, thedate, 'UR media', urmedia, True]
+    return measure
+
+
 def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, metadata=None):
     """
     Parse a row of a NOAA file, and return the parsed data. Data structure is as a list:
@@ -145,6 +174,9 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
             par_value = par_props['convertion'](float(par_value_str.replace('*', '')))
         measure = [metadata, date_obj, par_code, par_value, True]
         data.append(measure)
+    if 'DEWP' in parameters_map and 'MAX' in parameters_map and 'MIN' in parameters_map:
+        ur_measure = build_urmedia_measure(data)
+        data.extend([ur_measure])
     return data
 
 

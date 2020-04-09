@@ -1029,6 +1029,7 @@ def test_parse_and_check(tmpdir):
         [metadata, date(2019, 1, 6), 'Tmin', -2.7778, True],
         [metadata, date(2019, 1, 6), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 6), 'SNDP', 119.38, True],
+        [metadata, date(2019, 1, 6), 'UR media', 79.722, True],
         [metadata, date(2019, 1, 6), 'Tmedia', -1.5, True],
         [metadata, date(2019, 1, 6), 'DEWP', -4.8333, True],
         [metadata, date(2019, 1, 6), 'P', None, True],
@@ -1041,6 +1042,7 @@ def test_parse_and_check(tmpdir):
         [metadata, date(2019, 1, 6), 'Tmin', -2.7778, True],
         [metadata, date(2019, 1, 6), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 6), 'SNDP', 119.38, True],
+        [metadata, date(2019, 1, 6), 'UR media', 79.722, True],
         [metadata, date(2019, 1, 7), 'Tmedia', -2.3333, True],
         [metadata, date(2019, 1, 7), 'DEWP', -5.7222, True],
         [metadata, date(2019, 1, 7), 'P', None, True],
@@ -1053,6 +1055,7 @@ def test_parse_and_check(tmpdir):
         [metadata, date(2019, 1, 7), 'Tmin', -5.0, True],
         [metadata, date(2019, 1, 7), 'PREC', 0.0, True],
         [metadata, date(2019, 1, 7), 'SNDP', 119.38, True],
+        [metadata, date(2019, 1, 7), 'UR media', 83.334, True],
         [metadata, date(2019, 1, 9), 'Tmedia', -2.1667, True],
         [metadata, date(2019, 1, 9), 'DEWP', -4.4444, True],
         [metadata, date(2019, 1, 9), 'P', None, True],
@@ -1064,7 +1067,8 @@ def test_parse_and_check(tmpdir):
         [metadata, date(2019, 1, 9), 'Tmax', 1.7778, True],
         [metadata, date(2019, 1, 9), 'Tmin', -5.7778, True],
         [metadata, date(2019, 1, 9), 'PREC', 3.048, True],
-        [metadata, date(2019, 1, 9), 'SNDP', 149.86, True]
+        [metadata, date(2019, 1, 9), 'SNDP', 149.86, True],
+        [metadata, date(2019, 1, 9), 'UR media', 87.778, True]
     ]
     assert data_parsed == expected_data_parsed
     # global error

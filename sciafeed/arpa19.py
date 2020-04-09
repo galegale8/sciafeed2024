@@ -2,7 +2,7 @@
 This module contains the functions and utilities to parse an ARPA file with 19 variables.
 """
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import abspath, basename, join, splitext
 from pathlib import PurePath
 
@@ -174,7 +174,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         metadata = metadata.copy()
     tokens = row.split()
     date_str = tokens[0]
-    date_obj = datetime.strptime(date_str, '%Y%m%d%H%M')
+    date_obj = datetime.strptime(date_str, '%Y%m%d%H%M') - timedelta(hours=1)
     metadata['lat'] = float(tokens[1])
     par_values = tokens[2:21]
     par_flags = tokens[21:]
@@ -292,6 +292,9 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     found_errors = []
     metadata = extract_metadata(filepath, parameters_filepath)
     start, end = metadata['start_date'], metadata['end_date']
+    # tolherance of 1 hour...
+    start -= timedelta(hours=1)
+    end += timedelta(hours=1)
     parameters_map = load_parameter_file(parameters_filepath)
     with open(filepath) as fp:
         last_row_date = None

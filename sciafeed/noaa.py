@@ -100,6 +100,7 @@ def extract_metadata(filepath, parameters_filepath):
 def build_urmedia_measure(day_records):
     """
     Return a new measure with 'UR Media', computed from other day records.
+    Measure's metadata got from the DEWP record.
 
     :param day_records: records of the same day
     :return: (metadata, datetime object, 'UR media', par_value, flag)
@@ -252,6 +253,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
     metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, metadata):
+        metadata['row'] = i
         parsed_row = parse_row(row, parameters_map,
                                missing_value_markers=missing_value_markers, metadata=metadata)
         data.extend(parsed_row)

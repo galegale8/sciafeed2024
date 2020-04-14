@@ -48,6 +48,7 @@ def parse_and_check(filepath, parameters_filepath, limiting_params=None, format_
     for i, row in rows_generator_f(filepath, par_map, metadata):
         if not row or i in fmt_err_indexes_dict:
             continue
+        metadata['row'] = i
         row_data = parse_row_f(row, par_map, metadata=metadata)
         err_msgs1_row, row_data = checks.data_weak_climatologic_check(
             row_data, par_thresholds)

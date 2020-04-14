@@ -232,7 +232,11 @@ def test_parse():
         [metadata, date(2019, 1, 8), 'UR media', 87.778, True],
     ]
     effective = noaa.parse(filepath, parameters_filepath=parameters_filepath)
-    assert effective == expected_data
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 13 + 2
+        assert effective[i][0] == expected_md
 
 
 def test_is_format_compliant():

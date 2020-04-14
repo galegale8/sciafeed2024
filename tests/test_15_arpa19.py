@@ -358,10 +358,10 @@ def test_parse():
     ]
     effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective_data):
-        assert effective_data[i][1:] == expected_data[i][1:]
+        assert record[1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 19 + 1
-        assert effective_data[i][0] == expected_md
+        assert record[0] == expected_md
 
     effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath,
                                   only_valid=True)

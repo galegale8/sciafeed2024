@@ -175,7 +175,11 @@ def test_parse():
         [metadata, date(1930, 5, 14), 'Tmin', 9.0, True]
     ]
     effective = trentino.parse(filepath, parameters_filepath)
-    assert effective == expected_data
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i + 5
+        assert effective[i][0] == expected_md
 
 
 def test_validate_format():

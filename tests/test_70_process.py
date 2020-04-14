@@ -28,7 +28,7 @@ def test_parse_and_check(tmpdir):
                 'source': 'arpa19/wrong_70002_201301010000_201401010100.dat',
                 'format': 'ARPA-19'
                 }
-    assert data_parsed == [
+    expected_data_parsed = [
         [metadata, datetime(2012, 12, 31, 23, 0), 'FF', 200.0, False],
         [metadata, datetime(2012, 12, 31, 23, 0), 'DD', 355.0, True],
         [metadata, datetime(2012, 12, 31, 23, 0), 'Tmedia', 6.8, True],
@@ -410,6 +410,11 @@ def test_parse_and_check(tmpdir):
         [metadata, datetime(2013, 1, 1, 18, 0), 'PREC', None, False],
         [metadata, datetime(2013, 1, 1, 18, 0), 'Bagnatura_f', None, False]
     ]
+    for i, record in enumerate(data_parsed):
+        assert data_parsed[i][1:] == expected_data_parsed[i][1:]
+        expected_md = expected_data_parsed[i][0]
+        expected_md['row'] = i // 19 + 1
+        assert data_parsed[i][0] == expected_md
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -449,7 +454,7 @@ def test_parse_and_check(tmpdir):
     metadata = {'cod_utente': '00202', 'start_date': datetime(2012, 1, 1, 0, 0),
                 'end_date': datetime(2013, 1, 1, 1, 0), 'lat': 37.33913, 'format': 'ARPA-21',
                 'source': 'arpa21/wrong_00202_201201010000_201301010100.dat'}
-    assert data_parsed == [
+    expected_data_parsed = [
         [metadata, datetime(2011, 12, 31, 23, 0), 'FF', None, False],
         [metadata, datetime(2011, 12, 31, 23, 0), 'DD', 242.0, False],
         [metadata, datetime(2011, 12, 31, 23, 0), 'Tmedia', -57.0, False],
@@ -871,6 +876,12 @@ def test_parse_and_check(tmpdir):
         [metadata, datetime(2012, 1, 1, 18, 0), 'PREC', 0.0, True],
         [metadata, datetime(2012, 1, 1, 18, 0), 'Bagnatura_f', None, False]
     ]
+    for i, record in enumerate(data_parsed):
+        assert data_parsed[i][1:] == expected_data_parsed[i][1:]
+        expected_md = expected_data_parsed[i][0]
+        expected_md['row'] = i // 21 + 1
+        assert data_parsed[i][0] == expected_md
+
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -885,7 +896,7 @@ def test_parse_and_check(tmpdir):
         filepath, parameters_filepath, limiting_params)
     metadata = {'cod_utente': '00001', 'start_date': datetime(2018, 1, 1, 1, 0),
                 'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222, 'format': 'ARPA-FVG',
-                'source': 'arpafvg/wrong_00001_2018010101_2019010101.dat'}
+                'source': 'arpafvg/wrong_00001_2018010101_2019010101.dat', 'row': 2}
     assert err_msgs == [
         (1, 'The number of components in the row is wrong'),
         (3, 'duplication of rows with different data'),
@@ -894,17 +905,18 @@ def test_parse_and_check(tmpdir):
         (6, 'it is not strictly after the previous'),
         (7, 'the time is not coherent with the filename'),
         (2, "The values of 'PREC' and 'Bagnatura_f' are not consistent")]
-    assert data_parsed == [
+    expected_data_parsed = [
         [metadata, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, False],
         [metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 3.1, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 85.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 59.0,
-         True],
+        [metadata, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 59.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'DD', 317.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'FF', 1.6, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True]]
+    assert data_parsed == expected_data_parsed
+
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -945,8 +957,11 @@ def test_parse_and_check(tmpdir):
     ]
     err_msgs, parsed_data = process.parse_and_check(filepath, parameters_filepath)
     assert not err_msgs
-    assert parsed_data == expected_data
-
+    for i, data_item in enumerate(parsed_data):
+        expected_md = expected_data[i][0].copy()
+        expected_md['row'] = i // 3 + 14
+        assert data_item[0] == expected_md
+        assert data_item[1:] == expected_data[i][1:]
     # with some errors
     limiting_params = {'Tmin': ('PREC', 'Tmax')}
     filepath = join(TEST_DATA_PATH, 'bolzano', 'wrong3.xls')
@@ -967,7 +982,7 @@ def test_parse_and_check(tmpdir):
         (23, "The values of 'Tmin' and 'PREC' are not consistent"),
         (24, "The value of 'PREC' is out of range [0.0, 989.0]")
     ]
-    assert parsed_data == [
+    expected_parsed_data = [
         [metadata, date(1981, 1, 3), 'Tmin', -4.0, False],
         [metadata, date(1981, 1, 3), 'Tmax', 5.0, True],
         [metadata, date(1981, 1, 3), 'PREC', 0.0, True],
@@ -990,6 +1005,12 @@ def test_parse_and_check(tmpdir):
         [metadata, date(1981, 1, 8), 'Tmax', -7.0, True],
         [metadata, date(1981, 1, 8), 'PREC', -3.0, False]
     ]
+    rows_info = [16, 17, 19, 20, 21, 23, 24]
+    for i, record in enumerate(parsed_data):
+        assert parsed_data[i][1:] == expected_parsed_data[i][1:]
+        expected_md = expected_parsed_data[i][0]
+        expected_md['row'] = rows_info[i // 3]
+        assert parsed_data[i][0] == expected_md
     # global error
     filepath = str(tmpdir.join('report.txt'))
     with open(filepath, 'w'):
@@ -1070,7 +1091,12 @@ def test_parse_and_check(tmpdir):
         [metadata, date(2019, 1, 9), 'SNDP', 149.86, True],
         [metadata, date(2019, 1, 9), 'UR media', 87.778, True]
     ]
-    assert data_parsed == expected_data_parsed
+    rows_info = [7, 8, 9, 11]
+    for i, record in enumerate(data_parsed):
+        assert record[1:] == expected_data_parsed[i][1:]
+        expected_md = expected_data_parsed[i][0]
+        expected_md['row'] = rows_info[i // 13]
+        assert record[0] == expected_md
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -1086,6 +1112,7 @@ def test_parse_and_check(tmpdir):
     assert not err_msgs
     metadata = {'cod_utente': 'ANCONA', 'format': 'RMN',
                 'fieldnames': ['DATA', 'ORA', 'DD', 'FF', 'Tmedia', 'P', 'UR media']}
+    rows_info = [7, 8, 9, 11]
     expected_data_parsed = [
         [metadata, datetime(2017, 12, 31, 23, 0), 'DD', 180.0, True],
         [metadata, datetime(2017, 12, 31, 23, 0), 'FF', 1.9, True],
@@ -1123,7 +1150,11 @@ def test_parse_and_check(tmpdir):
         [metadata, datetime(2018, 1, 1, 5, 0), 'P', 1014.1, True],
         [metadata, datetime(2018, 1, 1, 5, 0), 'UR media', 64.0, True]
     ]
-    assert data_parsed == expected_data_parsed
+    for i, record in enumerate(expected_data_parsed):
+        assert record[1:] == expected_data_parsed[i][1:]
+        expected_md = expected_data_parsed[i][0]
+        expected_md['row'] = rows_info[i // 13]
+        assert record[0] == expected_md
     # global error
     filepath = str(tmpdir.join('report.txt'))
     with open(filepath, 'w'):
@@ -1147,7 +1178,7 @@ def test_parse_and_check(tmpdir):
         (34, "The values of 'Tmedia' and 'UR media' are not consistent"),
         (40, "The values of 'Tmedia' and 'UR media' are not consistent")
     ]
-    assert data_parsed == [
+    expected_data_parsed = [
         [metadata, datetime(2017, 12, 31, 23, 0), 'DD', 361.0, False],
         [metadata, datetime(2017, 12, 31, 23, 0), 'FF', 1.9, True],
         [metadata, datetime(2017, 12, 31, 23, 0), 'Tmedia', 7.2, False],
@@ -1179,6 +1210,12 @@ def test_parse_and_check(tmpdir):
         [metadata, datetime(2018, 1, 1, 5, 0), 'P', 1014.1, True],
         [metadata, datetime(2018, 1, 1, 5, 0), 'UR media', 64.0, True]
     ]
+    rows_info = [4, 16, 22, 28, 34, 40]
+    for i, record in enumerate(data_parsed):
+        assert record[1:] == expected_data_parsed[i][1:]
+        expected_md = expected_data_parsed[i][0]
+        expected_md['row'] = rows_info[i // 5]
+        assert record[0] == expected_md
 
     # --- trentino format ---
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
@@ -1204,7 +1241,11 @@ def test_parse_and_check(tmpdir):
     ]
     err_msgs, parsed_data = process.parse_and_check(filepath, parameters_filepath)
     assert not err_msgs
-    assert parsed_data == expected_data
+    for i, record in enumerate(parsed_data):
+        assert record[1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i + 5
+        assert record[0] == expected_md
     # with some errors
     filepath = join(TEST_DATA_PATH, 'trentino', 'wrong3.csv')
     err_msgs, parsed_data = process.parse_and_check(filepath, parameters_filepath)
@@ -1229,7 +1270,12 @@ def test_parse_and_check(tmpdir):
         [metadata, date(1930, 5, 13), 'Tmin', None, True],
         [metadata, date(1930, 5, 14), 'Tmin', 9.0, True]
     ]
-    assert parsed_data == expected_data
+    rows_info = [7, 9, 10, 11, 14, 15, 16, 17, 18, 19, 20]
+    for i, record in enumerate(parsed_data):
+        assert record[1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = rows_info[i]
+        assert record[0] == expected_md
 
 
 def test_make_report(tmpdir):

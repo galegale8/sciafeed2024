@@ -4,7 +4,8 @@ This module contains the functions and utilities to parse a RMN file
 """
 import csv
 from datetime import datetime, timedelta
-from os.path import join
+from os.path import abspath, dirname, join
+from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
 from sciafeed import utils
@@ -205,9 +206,13 @@ def extract_metadata(filepath, parameters_filepath):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: dictionary of metadata extracted
     """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
     parameters_map = load_parameter_file(parameters_filepath)
     fieldnames, station = guess_fieldnames(filepath, parameters_map)
-    metadata = {'cod_utente': station, 'fieldnames': fieldnames, 'format': FORMAT_LABEL}
+    metadata = {'cod_utente': station, 'fieldnames': fieldnames, 'format': FORMAT_LABEL,
+                'source': source}
+    folder_name = dirname(source)
+    metadata.update(utils.folder2props(folder_name))
     return metadata
 
 

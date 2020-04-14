@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse an ARPA file with 19 v
 """
 import csv
 from datetime import datetime, timedelta
-from os.path import abspath, basename, join, splitext
+from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
@@ -252,6 +252,8 @@ def extract_metadata(filepath, parameters_filepath):
     code, start_obj, end_obj = parse_filename(filename)
     ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
                  'source': source, 'format': FORMAT_LABEL}
+    folder_name = dirname(source)
+    ret_value.update(utils.folder2props(folder_name))
     return ret_value
 
 

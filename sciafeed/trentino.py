@@ -3,7 +3,7 @@ This module contains functions and utilities to parse a file with format used by
 """
 import csv
 from datetime import datetime
-from os.path import abspath, basename, join, splitext
+from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
@@ -241,11 +241,14 @@ def extract_metadata(filepath, parameters_filepath):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: dictionary of metadata extracted
     """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
     parameters_map = load_parameter_file(parameters_filepath)
     fieldnames, _, metadata = guess_fieldnames(filepath, parameters_map)
     metadata['fieldnames'] = fieldnames
-    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    metadata['source'] = source
     metadata['format'] = FORMAT_LABEL
+    folder_name = dirname(source)
+    metadata.update(utils.folder2props(folder_name))
     return metadata
 
 

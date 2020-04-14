@@ -84,3 +84,31 @@ def test_load_excel():
     ]
     rows = utils.load_excel(filepath, sheet_index=0)
     assert rows == expected_rows
+
+
+def test_folder2props():
+    for folder_name, exp_result in [
+        ('random_folder', {}),
+        ('11_Sinottica', {'cod_rete': '11'}),
+        ('14_Mareografica', {'cod_rete': '14'}),
+        ('20_ARPAEmiliaRomagna', {'cod_rete': '20'}),
+        ('21_ARPAFriuliVeneziaGiulia', {'cod_rete': '21'}),
+        ('22_ARPALiguria', {'cod_rete': '22'}),
+        ('23_ARPAValleAosta', {'cod_rete': '23'}),
+        ('25_ARPALombardia', {'cod_rete': '25'}),
+        ('27_ARPAVeneto', {'cod_rete': '27'}),
+        ('28_ARPAPiemonte', {'cod_rete': '28'}),
+        ('30_SIASSicilia', {'cod_rete': '30'}),
+        ('31_ARPACalabria', {'cod_rete': '31'}),
+        ('32_MeteoTrentino', {'cod_rete': '32'}),
+        ('33_ASSAMMarche', {'cod_rete': '33'}),
+        ('34_ARPACampania', {'cod_rete': '34'}),
+        ('35_ProvinciaAutonomaBolzano', {'cod_rete': '35'}),
+        ('36_ALSIABasilicata', {'cod_rete': '36'}),
+        ('38_ARSIALLazio', {'cod_rete': '38'}),
+        ('15_IDROGRAFICA_Lazio_12', {'cod_rete': '15', 'cod_utente_prefix': '12'}),
+        ('15_IDROGRAFICA_Sicilia_19', {'cod_rete': '15', 'cod_utente_prefix': '19'}),
+        ('15_IDROGRAFICA_Umbria_10', {'cod_rete': '15', 'cod_utente_prefix': '10'})
+    ]:
+        eff_result = utils.folder2props(folder_name)
+        assert eff_result == exp_result

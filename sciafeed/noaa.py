@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse a NOAA file
 """
 import csv
 from datetime import datetime
-from os.path import abspath, join, splitext
+from os.path import abspath, dirname, join, splitext
 from pathlib import PurePath
 
 from sciafeed import TEMPLATES_PATH
@@ -236,8 +236,10 @@ def extract_metadata(filepath, parameters_filepath):
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: dictionary of metadata extracted
     """
-    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:]),
-                'format': FORMAT_LABEL}
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
+    metadata = {'source': source, 'format': FORMAT_LABEL}
+    folder_name = dirname(source)
+    metadata.update(utils.folder2props(folder_name))
     return metadata
 
 

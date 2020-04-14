@@ -6,7 +6,7 @@ import csv
 from datetime import datetime, timedelta
 import json
 import os
-from os.path import abspath, basename, join, splitext
+from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 
 import requests
@@ -331,6 +331,8 @@ def extract_metadata(filepath, parameters_filepath):
     """
     source = join(*PurePath(abspath(filepath)).parts[-2:])
     ret_value = {'source': source, 'format': FORMAT_LABEL}
+    folder_name = dirname(source)
+    ret_value.update(utils.folder2props(folder_name))
     return ret_value
 
 

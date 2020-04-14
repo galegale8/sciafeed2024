@@ -140,3 +140,23 @@ def is_same_list(list1, list2, any_marker):
         else:
             return False
     return True
+
+
+def folder2props(folder_name):
+    """
+    Extract some station/network properties from a folder name,
+    according to agreed conventions.
+
+    :param folder_name: the name of the folder
+    :return: a dictionary of properties extracted
+    """
+    ret_value = dict()
+    folder_name_tokens = folder_name.split('_')
+    cod_rete = folder_name_tokens[0]
+    if cod_rete.isdigit():
+        ret_value['cod_rete'] = cod_rete
+    # case HISCENTRAL
+    cod_utente_prefix = folder_name_tokens[-1]
+    if ret_value.get('cod_rete') == '15' and cod_utente_prefix.isdigit():
+        ret_value['cod_utente_prefix'] = cod_utente_prefix
+    return ret_value

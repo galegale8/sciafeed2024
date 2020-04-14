@@ -4,7 +4,7 @@ This module contains the functions and utilities to download and parse a HISCENT
 import csv
 from datetime import datetime
 import xml.dom.minidom
-from os.path import abspath, basename, join, splitext
+from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 import zeep
 
@@ -399,6 +399,8 @@ def extract_metadata(filepath, parameters_filepath):
         par_code = parameters_map[par_name]['par_code']
     ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source,
                  'format': FORMAT_LABEL}
+    folder_name = dirname(source)
+    ret_value.update(utils.folder2props(folder_name))
     return ret_value
 
 

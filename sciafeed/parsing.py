@@ -51,48 +51,6 @@ def validate_format(filepath, parameters_filepath, format_label=None):
     return ret_value
 
 
-def folder2props(folder_name):
-    """
-    Extract some station/network properties from a folder name,
-    according to agreed conventions.
-
-    :param folder_name: the name of the folder
-    :return: a dictionary of properties extracted
-    """
-    ret_value = dict()
-    folder_name_tokens = folder_name.split('_')
-    cod_rete = folder_name_tokens[0]
-    if cod_rete.isdigit():
-        ret_value['cod_rete'] = cod_rete
-    # case HISCENTRAL
-    cod_utente_prefix = folder_name_tokens[-1]
-    if ret_value.get('cod_rete') == '15' and cod_utente_prefix.isdigit():
-        ret_value['cod_utente_prefix'] = cod_utente_prefix
-    return ret_value
-
-
-def extract_metadata(filepath, parameters_filepath, format_label=None):
-    """
-    Extract generic metadata from a file located at `filepath`.
-
-    Return the dictionary of metadata extracted
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param format_label: the label string (according to `sciafeed.formats.FORMATS`)
-    :return: dictionary of metadata extracted
-    """
-    if not format_label:
-        _, format_module = guess_format(filepath)
-    else:
-        format_module = dict(FORMATS).get(format_label)
-    extract_metadata_f = getattr(format_module, 'extract_metadata')
-    metadata = extract_metadata_f(filepath, parameters_filepath)
-    folder_name = dirname(filepath)
-    metadata.update(folder2props(folder_name))
-    return metadata
-
-
 def parse(filepath, parameters_filepath=None, format_label=None):
     """
     Try to extract data from a file located at `filepath`. Data returned is of kind:

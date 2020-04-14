@@ -881,7 +881,6 @@ def test_parse_and_check(tmpdir):
         expected_md = expected_data_parsed[i][0]
         expected_md['row'] = i // 21 + 1
         assert data_parsed[i][0] == expected_md
-
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -916,7 +915,6 @@ def test_parse_and_check(tmpdir):
         [metadata, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
         [metadata, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True]]
     assert data_parsed == expected_data_parsed
-
     # global error
     filepath = str(tmpdir.join('report.txt'))
     err_msgs, _ = process.parse_and_check(
@@ -1277,6 +1275,8 @@ def test_parse_and_check(tmpdir):
         expected_md['row'] = rows_info[i]
         assert record[0] == expected_md
 
+    # TODO: test hiscentral and arpaer
+
 
 def test_make_report(tmpdir):
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
@@ -1293,7 +1293,7 @@ def test_make_report(tmpdir):
     assert exists(out_filepath)
     assert exists(outdata_filepath)
     assert "No errors found" in msgs
-    assert data_parsed == arpa19.parse(in_filepath, parameters_filepath)
+    assert data_parsed == arpa19.parse(in_filepath, parameters_filepath)[0]
 
     # some formatting errors
     in_filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70001_201301010000_201401010100.dat')

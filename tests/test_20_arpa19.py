@@ -356,15 +356,16 @@ def test_parse():
         [metadata, datetime(2013, 1, 1, 5, 0), 'PREC', None, False],
         [metadata, datetime(2013, 1, 1, 5, 0), 'Bagnatura_f', None, False]
     ]
-    effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
+    effective_data, eff_errors = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective_data):
         assert record[1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 19 + 1
         assert record[0] == expected_md
+    assert eff_errors == arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
 
-    effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath,
-                                  only_valid=True)
+    effective_data, eff_errors = arpa19.parse(filepath, parameters_filepath=parameters_filepath,
+                                              only_valid=True)
     expected_data = [
         [metadata, datetime(2012, 12, 31, 23, 0), 'FF', 0.9, True],
         [metadata, datetime(2012, 12, 31, 23, 0), 'DD', 355.0, True],
@@ -407,6 +408,7 @@ def test_parse():
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 5 + 1
         assert effective_data[i][0] == expected_md
+    assert eff_errors == arpa19.validate_format(filepath, parameters_filepath=parameters_filepath)
 
 
 def test_is_format_compliant():

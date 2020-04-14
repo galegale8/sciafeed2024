@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from os.path import join, exists
+from os.path import join
 
 import pytest
 
@@ -103,15 +103,15 @@ def test_parse_row():
 
     # full parsing
     expected = [
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'PREC', 0.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Tmedia', 2.8, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'UR media', 86.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Bagnatura_f', 58.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'DD', 357.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'FF', 0.5, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Pstaz', 1001.0, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'RADSOL', 0.0239, True],
-        [{'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'INSOL', 0.0, True]
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'PREC', 0.0, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Tmedia', 2.8, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'UR media', 86.0, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Bagnatura_f', 58.0, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'DD', 357.0, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'FF', 0.5, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'Pstaz', 1001.0, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'RADSOL', 0.0239, True),
+        ({'lat': 46.077222}, datetime(2018, 1, 1, 0, 0), 'INSOL', 0.0, True),
     ]
     effective = arpafvg.parse_row(row, parameters_map)
     assert effective == expected
@@ -170,55 +170,56 @@ def test_parse():
                 'end_date': datetime(2019, 1, 1, 1, 0), 'lat': 46.077222, 'format': 'ARPA-FVG',
                 'source': 'arpafvg/loc01_00001_2018010101_2019010101.dat'}
     expected_data = [
-        [metadata, datetime(2018, 1, 1, 0, 0), 'PREC', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'Tmedia', 2.8, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'UR media', 86.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'Bagnatura_f', 58.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'DD', 357.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'FF', 0.5, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'Pstaz', 1001.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 0, 0), 'INSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 3.1, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 85.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 59.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'DD', 317.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'FF', 1.6, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'PREC', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Tmedia', 3.4, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'UR media', 82.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Bagnatura_f', 39.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'DD', 345.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'FF', 1.2, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'Pstaz', 1000.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 2, 0), 'INSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'PREC', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'Tmedia', 3.4, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'UR media', 82.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'Bagnatura_f', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'DD', 313.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'FF', 1.8, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'Pstaz', 999.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 3, 0), 'INSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'PREC', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'Tmedia', 3.4, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'UR media', 83.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'Bagnatura_f', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'DD', 348.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'FF', 0.9, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'Pstaz', 998.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'RADSOL', 0.0, True],
-        [metadata, datetime(2018, 1, 1, 4, 0), 'INSOL', 0.0, True]
+        (metadata, datetime(2018, 1, 1, 0, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'Tmedia', 2.8, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'UR media', 86.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'Bagnatura_f', 58.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'DD', 357.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'FF', 0.5, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'Pstaz', 1001.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'RADSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'INSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 3.1, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 85.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'Bagnatura_f', 59.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'DD', 317.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'FF', 1.6, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'Pstaz', 1001.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'RADSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'INSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'Tmedia', 3.4, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'UR media', 82.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'Bagnatura_f', 39.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'DD', 345.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'FF', 1.2, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'Pstaz', 1000.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'RADSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'INSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'Tmedia', 3.4, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'UR media', 82.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'Bagnatura_f', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'DD', 313.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'FF', 1.8, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'Pstaz', 999.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'RADSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'INSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'PREC', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'Tmedia', 3.4, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'UR media', 83.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'Bagnatura_f', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'DD', 348.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'FF', 0.9, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'Pstaz', 998.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'RADSOL', 0.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'INSOL', 0.0, True)
     ]
-    effective = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
+    effective, err_msgs = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective):
         assert effective[i][1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 9 + 1
         assert effective[i][0] == expected_md
+    assert err_msgs == arpafvg.validate_format(filepath, parameters_filepath=parameters_filepath)

@@ -130,25 +130,6 @@ def validate_filename(filename: str):
     return err_msg
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format arpa-fvg.
-    Return the dictionary of the metadata extracted.
-    The function assumes the file name is validated against the format (see function
-    `validate_filename`).
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    source = join(*PurePath(abspath(filepath)).parts[-2:])
-    filename = basename(filepath)
-    code, start_obj, end_obj = parse_filename(filename)
-    ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
-                 'source': source, 'format': FORMAT_LABEL}
-    return ret_value
-
-
 def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a arpafvg file, and return the parsed data. Data structure is as a list:
@@ -177,7 +158,7 @@ def parse_row(row, parameters_map, metadata=None):
         props = parameters_map[i + 1]
         param_i_code = props['par_code']
         param_i_value = props['convertion'](float(param_i_value_str))
-        measure = [metadata, date_obj, param_i_code, param_i_value, True]
+        measure = (metadata, date_obj, param_i_code, param_i_value, True)
         data.append(measure)
     return data
 
@@ -213,7 +194,16 @@ def validate_row_format(row):
     return err_msg
 
 
-def rows_generator(filepath, parameters_filepath, metadata):
+def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of an arpafvg file containing data. Each value returned
+    is a tuple (index of the row, row).
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
             if not row.strip():
@@ -222,31 +212,26 @@ def rows_generator(filepath, parameters_filepath, metadata):
 
 
 # entry point candidate
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+def extract_metadata(filepath, parameters_filepath):
     """
-    Read an arpafvg file located at `filepath` and returns the data stored inside. 
-    Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format arpa-fvg.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file name is validated against the format (see function
+    `is_format_compliant`).
 
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: path to the arpafvg file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
-    """""
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(row, parameters_map, metadata=metadata)
-        data.extend(parsed_row)
-    return data
+    :return: dictionary of metadata extracted
+    """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
+    filename = basename(filepath)
+    code, start_obj, end_obj = parse_filename(filename)
+    ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
+                 'source': source, 'format': FORMAT_LABEL}
+    return ret_value
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpafvg file and validate it against the format.
@@ -306,6 +291,39 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Read an arpafvg file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found.
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: path to the arpafvg file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: (data, found_errors)
+    """""
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(row, parameters_map, metadata=metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

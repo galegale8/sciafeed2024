@@ -17,9 +17,9 @@ SCIA PostgreSQL database.
    compute
    entry_points
    export
-   formats
    hiscentral
    noaa
+   parsing
    process
    rmn
    trentino

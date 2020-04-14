@@ -3,7 +3,7 @@ This module contains functions and utilities that involve more components of sci
 """
 from sciafeed import checks
 from sciafeed import export
-from sciafeed import formats
+from sciafeed import parsing
 
 
 def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks=True,
@@ -22,7 +22,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks
     :param limiting_params: dictionary of limiting parameters for each parameter code
     :return: (report_strings, data_parsed)
     """
-    format_label, format_module = formats.guess_format(in_filepath)
+    format_label, format_module = parsing.guess_format(in_filepath)
     if not format_module:
         msgs, data_parsed = ["file %r has unknown format" % in_filepath, ''], None
         return msgs, data_parsed

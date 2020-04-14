@@ -173,7 +173,7 @@ def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSIN
         flag = float(flag_num) <= 1
         if not flag and only_valid:
             continue
-        measure = [metadata, date_obj, param_i_code, param_i_value, flag]
+        measure = (metadata, date_obj, param_i_code, param_i_value, flag)
         data.append(measure)
     return data
 
@@ -238,6 +238,7 @@ def rows_generator(filepath, parameters_map, metadata):
             yield i, row
 
 
+# entry point candidate
 def extract_metadata(filepath, parameters_filepath):
     """
     Extract generic metadata information from a file `filepath` of format arpa21.
@@ -337,13 +338,12 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     :return: (data, found_errors)
     """""
     data = []
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
     found_errors = validate_format(filepath, parameters_filepath)
     found_errors_dict = dict(found_errors)
     if 0 in found_errors_dict:
         return data, found_errors
-
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
     for i, row in rows_generator(filepath, parameters_map, metadata):
         if i in found_errors_dict:
             continue

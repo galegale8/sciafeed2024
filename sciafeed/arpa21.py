@@ -134,25 +134,6 @@ def validate_filename(filename: str):
     return err_msg
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format arpa21.
-    Return the dictionary of the metadata extracted.
-    The function assumes the file name is validated against the format (see function
-    `validate_filename`).
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    source = join(*PurePath(abspath(filepath)).parts[-2:])
-    filename = basename(filepath)
-    code, start_obj, end_obj = parse_filename(filename)
-    ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
-                 'source': source, 'format': FORMAT_LABEL}
-    return ret_value
-
-
 def parse_row(row, parameters_map, only_valid=False, missing_value_marker=MISSING_VALUE_MARKER,
               metadata=None):
     """
@@ -241,6 +222,15 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of an arpa21 file containing data. Each value returned
+    is a tuple (index of the row, row).
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     with open(filepath) as fp:
         for i, row in enumerate(fp, 1):
             if not row.strip():
@@ -248,37 +238,26 @@ def rows_generator(filepath, parameters_map, metadata):
             yield i, row
 
 
-# entry point candidate
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
-          missing_value_marker=MISSING_VALUE_MARKER):
+def extract_metadata(filepath, parameters_filepath):
     """
-    Read an arpa21 file located at `filepath` and returns the data stored inside. 
-    Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format arpa21.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file name is validated against the format (see function
+    `validate_filename`).
 
-      [(stat_props, datetime object, par_code, par_value, flag), ...]
-    
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-    
-    :param filepath: path to the arpa21 file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param only_valid: parse only values flagged as valid (default: False)
-    :param missing_value_marker: the string used as a marker for missing value
-    :return: [(stat_props, datetime object, par_code, par_value, flag), ...]
-    """""
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(
-            row, parameters_map, only_valid=only_valid,
-            missing_value_marker=missing_value_marker, metadata=metadata)
-        data.extend(parsed_row)
-    return data
+    :return: dictionary of metadata extracted
+    """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
+    filename = basename(filepath)
+    code, start_obj, end_obj = parse_filename(filename)
+    ret_value = {'cod_utente': code, 'start_date': start_obj, 'end_date': end_obj,
+                 'source': source, 'format': FORMAT_LABEL}
+    return ret_value
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open an arpa21 file and validate it against the format.
@@ -338,6 +317,45 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
+          missing_value_marker=MISSING_VALUE_MARKER):
+    """
+    Read an arpa21 file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found. 
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+    
+    The list of error messages is returned as the function `validate_format` does.
+    
+    :param filepath: path to the arpa21 file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param only_valid: parse only values flagged as valid (default: False)
+    :param missing_value_marker: the string used as a marker for missing value
+    :return: (data, found_errors)
+    """""
+    data = []
+    parameters_map = load_parameter_file(parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(
+            row, parameters_map, only_valid=only_valid,
+            missing_value_marker=missing_value_marker, metadata=metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

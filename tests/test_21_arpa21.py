@@ -389,14 +389,16 @@ def test_parse():
         [metadata, datetime(2012, 1, 1, 5, 0), 'PREC', 0.0, True],
         [metadata, datetime(2012, 1, 1, 5, 0), 'Bagnatura_f', None, False]
     ]
-    effective = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
+    effective, errs = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective):
         assert effective[i][1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 21 + 1
         assert effective[i][0] == expected_md
+    assert errs == arpa21.validate_format(filepath, parameters_filepath=parameters_filepath)
 
-    effective = arpa21.parse(filepath, parameters_filepath=parameters_filepath, only_valid=True)
+    effective, errs = arpa21.parse(
+        filepath, parameters_filepath=parameters_filepath, only_valid=True)
     expected_data_valid = [
         [metadata, datetime(2011, 12, 31, 23, 0), 'Tmedia', 5.7, True],
         [metadata, datetime(2011, 12, 31, 23, 0), 'Tmin', 5.5, True],
@@ -453,3 +455,4 @@ def test_parse():
         expected_md = expected_data_valid[i][0]
         expected_md['row'] = i // 7 + 1
         assert effective[i][0] == expected_md
+    assert errs == arpa21.validate_format(filepath, parameters_filepath=parameters_filepath)

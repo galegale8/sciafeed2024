@@ -130,7 +130,9 @@ def test_parse():
     ]
     effective_data = bolzano.parse(filepath, parameters_filepath)
     for i, data_item in enumerate(effective_data):
-        assert data_item[0] == station_info_expected
+        expected_md = station_info_expected.copy()
+        expected_md['row'] = i // 3 + 14
+        assert data_item[0] == expected_md
         assert data_item[1:] == data_info_expected[i]
 
 

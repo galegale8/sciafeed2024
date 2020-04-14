@@ -238,7 +238,11 @@ def test_parse():
         [metadata, date(2000, 7, 9), 'Tmax', 35.0, True]
     ]
     effective = hiscentral.parse(filepath, parameters_filepath=parameters_filepath)
-    assert effective == expected_data
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i + 1
+        assert effective[i][0] == expected_md
 
 
 def test_is_format_compliant():

@@ -145,25 +145,6 @@ def guess_fieldnames(filepath, parameters_map):
     return fieldnames, station_code, station_props
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format trentino.
-    Return the dictionary of the metadata extracted.
-    The function assumes the file is validated against the format (see function
-    `guess_fieldnames`).
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    parameters_map = load_parameter_file(parameters_filepath)
-    fieldnames, _, metadata = guess_fieldnames(filepath, parameters_map)
-    metadata['fieldnames'] = fieldnames
-    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
-    metadata['format'] = FORMAT_LABEL
-    return metadata
-
-
 def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a trentino file, and return the parsed data. Data structure is as a list:
@@ -192,7 +173,7 @@ def parse_row(row, parameters_map, metadata=None):
     else:
         param_value = props['convertion'](float(row[param_code].strip()))
     is_valid = row['quality'].strip() in ('1', '76', '151', '255')
-    measure = [metadata, date_obj, param_code, param_value, is_valid]
+    measure = (metadata, date_obj, param_code, param_value, is_valid)
     data = [measure]
     return data
 
@@ -227,6 +208,15 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of a TRENTINO file containing data. Each value returned
+    is a tuple (index of the row, row). row is a dictionary.
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=',', fieldnames=metadata['fieldnames'])
     j = 0
@@ -239,31 +229,27 @@ def rows_generator(filepath, parameters_map, metadata):
         yield i, row
 
 
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+# entry point candidate
+def extract_metadata(filepath, parameters_filepath):
     """
-    Read a trentino file located at `filepath` and returns the data stored inside. 
-    Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format trentino.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file is validated against the format (see function
+    `guess_fieldnames`).
 
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-    
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: path to the trentino file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
-    """""
+    :return: dictionary of metadata extracted
+    """
     parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(row, parameters_map, metadata)
-        data.extend(parsed_row)
-    return data
+    fieldnames, _, metadata = guess_fieldnames(filepath, parameters_map)
+    metadata['fieldnames'] = fieldnames
+    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    metadata['format'] = FORMAT_LABEL
+    return metadata
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open a trentino file and validate it against the format.
@@ -314,6 +300,40 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Read a trentino file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found. 
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+    
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: path to the trentino file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: (data, found_errors)
+    """""
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
+    data = []
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(row, parameters_map, metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

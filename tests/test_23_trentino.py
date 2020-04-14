@@ -95,7 +95,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, date(1930, 5, 1), 'Tmin', 10.0, True]]
+        expected = [({}, date(1930, 5, 1), 'Tmin', 10.0, True), ]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -106,7 +106,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, date(1930, 5, 1), 'Tmin', None, True]]
+        expected = [({}, date(1930, 5, 1), 'Tmin', None, True), ]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -117,7 +117,7 @@ def test_parse_row():
             'Tmin': '10.0',
             'quality': quality
         }
-        expected = [[{}, date(1930, 5, 1), 'Tmin', 10.0, False]]
+        expected = [({}, date(1930, 5, 1), 'Tmin', 10.0, False), ]
         effective = trentino.parse_row(row, parameters_map)
         assert effective == expected
 
@@ -151,37 +151,6 @@ def test_validate_row_format():
     assert err_msg == 'the value for Tmin is not numeric'
 
 
-def test_parse():
-    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
-    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
-    metadata = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
-                'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156,
-                'fieldnames': ['date', 'Tmin', 'quality'],
-                'source': 'trentino/T0001.csv', 'format': 'TRENTINO'}
-    expected_data = [
-        [metadata, date(1930, 5, 1), 'Tmin', 10.0, True],
-        [metadata, date(1930, 5, 2), 'Tmin', 11.0, True],
-        [metadata, date(1930, 5, 3), 'Tmin', 10.0, True],
-        [metadata, date(1930, 5, 4), 'Tmin', 8.0, True],
-        [metadata, date(1930, 5, 5), 'Tmin', 12.0, True],
-        [metadata, date(1930, 5, 6), 'Tmin', 8.0, True],
-        [metadata, date(1930, 5, 7), 'Tmin', 10.0, True],
-        [metadata, date(1930, 5, 8), 'Tmin', 7.0, True],
-        [metadata, date(1930, 5, 9), 'Tmin', 8.0, True],
-        [metadata, date(1930, 5, 10), 'Tmin', 7.0, True],
-        [metadata, date(1930, 5, 11), 'Tmin', 5.0, True],
-        [metadata, date(1930, 5, 12), 'Tmin', 7.0, True],
-        [metadata, date(1930, 5, 13), 'Tmin', None, True],
-        [metadata, date(1930, 5, 14), 'Tmin', 9.0, True]
-    ]
-    effective = trentino.parse(filepath, parameters_filepath)
-    for i, record in enumerate(effective):
-        assert effective[i][1:] == expected_data[i][1:]
-        expected_md = expected_data[i][0]
-        expected_md['row'] = i + 5
-        assert effective[i][0] == expected_md
-
-
 def test_validate_format():
     parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
 
@@ -209,6 +178,38 @@ def test_validate_format():
         (12, 'the row is duplicated with different values'),
         (13, 'the value for quality is missing')
     ]
+
+
+def test_parse():
+    filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'trentino', 'trentino_params.csv')
+    metadata = {'cod_utente': '0001', 'desc': 'Pergine Valsugana (Convento)',
+                'height': 475.0, 'lat': 46.06227631, 'lon': 11.23670156,
+                'fieldnames': ['date', 'Tmin', 'quality'],
+                'source': 'trentino/T0001.csv', 'format': 'TRENTINO'}
+    expected_data = [
+        (metadata, date(1930, 5, 1), 'Tmin', 10.0, True),
+        (metadata, date(1930, 5, 2), 'Tmin', 11.0, True),
+        (metadata, date(1930, 5, 3), 'Tmin', 10.0, True),
+        (metadata, date(1930, 5, 4), 'Tmin', 8.0, True),
+        (metadata, date(1930, 5, 5), 'Tmin', 12.0, True),
+        (metadata, date(1930, 5, 6), 'Tmin', 8.0, True),
+        (metadata, date(1930, 5, 7), 'Tmin', 10.0, True),
+        (metadata, date(1930, 5, 8), 'Tmin', 7.0, True),
+        (metadata, date(1930, 5, 9), 'Tmin', 8.0, True),
+        (metadata, date(1930, 5, 10), 'Tmin', 7.0, True),
+        (metadata, date(1930, 5, 11), 'Tmin', 5.0, True),
+        (metadata, date(1930, 5, 12), 'Tmin', 7.0, True),
+        (metadata, date(1930, 5, 13), 'Tmin', None, True),
+        (metadata, date(1930, 5, 14), 'Tmin', 9.0, True),
+    ]
+    effective, err_msgs = trentino.parse(filepath, parameters_filepath)
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i + 5
+        assert effective[i][0] == expected_md
+    assert err_msgs == trentino.validate_format(filepath, parameters_filepath)
 
 
 def test_is_format_compliant():

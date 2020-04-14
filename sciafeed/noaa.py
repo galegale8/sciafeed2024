@@ -83,20 +83,6 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
     return ret_value
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format NOAA.
-    Return the dictionary of the metadata extracted.
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:]),
-                'format': FORMAT_LABEL}
-    return metadata
-
-
 def build_urmedia_measure(day_records):
     """
     Return a new measure with 'UR Media', computed from other day records.
@@ -123,7 +109,7 @@ def build_urmedia_measure(day_records):
         e_par = 6.11 * 10**(7.5*tmedia/(237.7+dewp))
         urmedia = 100 * es_par / e_par
     urmedia = round(urmedia, 3)
-    measure = [metadata, thedate, 'UR media', urmedia, True]
+    measure = (metadata, thedate, 'UR media', urmedia, True)
     return measure
 
 
@@ -173,11 +159,11 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
             par_value = None
         else:
             par_value = par_props['convertion'](float(par_value_str.replace('*', '')))
-        measure = [metadata, date_obj, par_code, par_value, True]
+        measure = (metadata, date_obj, par_code, par_value, True)
         data.append(measure)
     if 'DEWP' in parameters_map and 'MAX' in parameters_map and 'MIN' in parameters_map:
         ur_measure = build_urmedia_measure(data)
-        data.extend([ur_measure])
+        data.append(ur_measure)
     return data
 
 
@@ -222,6 +208,15 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of a NOAA file containing data. Each value returned
+    is a tuple (index of the row, row).
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     with open(filepath) as fp:
         for _ in fp:
             break  # avoid first line!
@@ -232,34 +227,21 @@ def rows_generator(filepath, parameters_map, metadata):
 
 
 # entry point candidate
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
-          missing_value_markers=MISSING_VALUE_MARKERS):
+def extract_metadata(filepath, parameters_filepath):
     """
-    Read a NOAA file located at `filepath` and returns the data stored inside.  
-    Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format NOAA.
+    Return the dictionary of the metadata extracted.
 
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-    
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: path to the NOAA file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :param missing_value_markers: the map of the strings used as a marker for missing value
-    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
-    """""
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(row, parameters_map,
-                               missing_value_markers=missing_value_markers, metadata=metadata)
-        data.extend(parsed_row)
-    return data
+    :return: dictionary of metadata extracted
+    """
+    metadata = {'source': join(*PurePath(abspath(filepath)).parts[-2:]),
+                'format': FORMAT_LABEL}
+    return metadata
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open a NOAA file and validate it against the format.
@@ -307,6 +289,42 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH,
+          missing_value_markers=MISSING_VALUE_MARKERS):
+    """
+    Read a NOAA file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found. 
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+    
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: path to the NOAA file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param missing_value_markers: the map of the strings used as a marker for missing value
+    :return: (data, found_errors)
+    """""
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    parameters_map = load_parameter_file(parameters_filepath)
+    metadata = extract_metadata(filepath, parameters_filepath)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(row, parameters_map,
+                               missing_value_markers=missing_value_markers, metadata=metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

@@ -80,7 +80,7 @@ def test_validate_filename():
         assert exp_error == err_msg
 
 
-def test_extract_metadata(tmpdir):
+def test_extract_metadata():
     # right file
     filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     parameters_filepath = join(TEST_DATA_PATH, 'arpa19', 'arpa19_params.csv')
@@ -357,7 +357,11 @@ def test_parse():
         [metadata, datetime(2013, 1, 1, 5, 0), 'Bagnatura_f', None, False]
     ]
     effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath)
-    assert effective_data == expected_data
+    for i, record in enumerate(effective_data):
+        assert effective_data[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 19 + 1
+        assert effective_data[i][0] == expected_md
 
     effective_data = arpa19.parse(filepath, parameters_filepath=parameters_filepath,
                                   only_valid=True)
@@ -398,7 +402,11 @@ def test_parse():
         [metadata, datetime(2013, 1, 1, 5, 0), 'UR media', 93.0, True],
         [metadata, datetime(2013, 1, 1, 5, 0), '12', 1018.1, True]
     ]
-    assert effective_data == expected_data
+    for i, record in enumerate(effective_data):
+        assert effective_data[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 5 + 1
+        assert effective_data[i][0] == expected_md
 
 
 def test_is_format_compliant():

@@ -271,6 +271,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH, only_valid=False,
     metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, metadata):
+        metadata['row'] = i
         parsed_row = parse_row(
             row, parameters_map, only_valid=only_valid,
             missing_value_marker=missing_value_marker, metadata=metadata)
@@ -310,6 +311,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
             if err_msg:
                 found_errors.append((i, err_msg))
                 continue
+            metadata['row'] = i
             row_measures = parse_row(row, parameters_map, metadata=metadata)
             if not row_measures:
                 continue

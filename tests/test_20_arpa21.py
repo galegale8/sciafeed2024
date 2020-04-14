@@ -390,7 +390,11 @@ def test_parse():
         [metadata, datetime(2012, 1, 1, 5, 0), 'Bagnatura_f', None, False]
     ]
     effective = arpa21.parse(filepath, parameters_filepath=parameters_filepath)
-    assert effective == expected_data
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 21 + 1
+        assert effective[i][0] == expected_md
 
     effective = arpa21.parse(filepath, parameters_filepath=parameters_filepath, only_valid=True)
     expected_data_valid = [
@@ -444,5 +448,8 @@ def test_parse():
         [metadata, datetime(2012, 1, 1, 5, 0), 'UR max', 86.0, True],
         [metadata, datetime(2012, 1, 1, 5, 0), 'PREC', 0.0, True]
     ]
-
-    assert effective == expected_data_valid
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data_valid[i][1:]
+        expected_md = expected_data_valid[i][0]
+        expected_md['row'] = i // 7 + 1
+        assert effective[i][0] == expected_md

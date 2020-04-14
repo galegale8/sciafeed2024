@@ -217,4 +217,8 @@ def test_parse():
         [metadata, datetime(2018, 1, 1, 4, 0), 'INSOL', 0.0, True]
     ]
     effective = arpafvg.parse(filepath, parameters_filepath=parameters_filepath)
-    assert effective == expected_data
+    for i, record in enumerate(effective):
+        assert effective[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 9 + 1
+        assert effective[i][0] == expected_md

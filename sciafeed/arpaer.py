@@ -452,6 +452,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     metadata = extract_metadata(filepath, parameters_filepath)
     data = []
     for i, row in rows_generator(filepath, parameters_map, metadata):
+        metadata['row'] = i
         parsed_row = parse_row(row, parameters_map, metadata)
         data.extend(parsed_row)
     return data

@@ -533,7 +533,11 @@ def test_parse():
         (metadata, datetime(2020, 2, 6, 0, 0), 'Tmin', -2.21, True)
     ]
     effective_data = arpaer.parse(filepath, parameters_filepath)
-    assert effective_data == expected_data
+    for i, record in enumerate(effective_data):
+        assert effective_data[i][1:] == expected_data[i][1:]
+        expected_md = expected_data[i][0]
+        expected_md['row'] = i // 5 + 1
+        assert effective_data[i][0] == expected_md
 
 
 def test_validate_format():

@@ -49,7 +49,7 @@ def data_internal_consistence_check(input_data, limiting_params=None):
         for par_code, (par_value, par_flag, metadata) in props.items():
             if par_code not in limiting_params or not par_flag or par_value is None:
                 # no check if the parameter is flagged invalid or no in the limiting_params
-                measure = [metadata, row_date, par_code, par_value, par_flag]
+                measure = (metadata, row_date, par_code, par_value, par_flag)
                 data_modified.append(measure)
                 continue
             par_code_min, par_code_max = limiting_params[par_code]
@@ -73,7 +73,7 @@ def data_internal_consistence_check(input_data, limiting_params=None):
                     err_msg = "The values of %r and %r are not consistent" \
                               % (par_code, par_code_max)
                     err_msgs.append(err_msg)
-            measure = [metadata, row_date, par_code, par_value, par_flag]
+            measure = (metadata, row_date, par_code, par_value, par_flag)
             data_modified.append(measure)
     return err_msgs, data_modified
 
@@ -110,6 +110,6 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
             err_msg = "The value of %r is out of range [%s, %s]" \
                       % (par_code, min_threshold, max_threshold)
             err_msgs.append(err_msg)
-        new_measure = [metadata, row_date, par_code, par_value, par_flag]
+        new_measure = (metadata, row_date, par_code, par_value, par_flag)
         data_modified.append(new_measure)
     return err_msgs, data_modified

@@ -32,6 +32,8 @@ def data_internal_consistence_check(input_data, limiting_params=None):
     [(metadata, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the data with flags modified.
+    The list of error messages is [(record_id, error string), ...].
+
     `limiting_params` is a dict {code: (code_min, code_max), ...}.
 
     :param input_data: an object containing measurements
@@ -53,26 +55,26 @@ def data_internal_consistence_check(input_data, limiting_params=None):
                 data_modified.append(measure)
                 continue
             par_code_min, par_code_max = limiting_params[par_code]
-            par_code_min_value, par_code_min_flag, _ = props[par_code_min]
-            par_code_max_value, par_code_max_flag, _ = props[par_code_max]
+            par_code_min_value, par_code_min_flag, md_min = props[par_code_min]
+            par_code_max_value, par_code_max_flag, md_max = props[par_code_max]
             # check minimum
             if par_code_min_flag and par_code_min_value is not None:
                 par_code_min_value = float(par_code_min_value)
                 if par_value < par_code_min_value:
                     par_flag = False
-                    # TODO: an ID on the string when it comes from the db
+                    row_id = metadata.get('row', 1)  # TODO: an ID when it comes from the db
                     err_msg = "The values of %r and %r are not consistent" \
                               % (par_code, par_code_min)
-                    err_msgs.append(err_msg)
+                    err_msgs.append((row_id, err_msg))
             # check maximum
             if par_code_max_flag and par_code_max_value is not None:
                 par_code_max_value = float(par_code_max_value)
                 if par_value > par_code_max_value:
                     par_flag = False
-                    # TODO: an ID on the string when it comes from the db
+                    row_id = metadata.get('row', 1)  # TODO: an ID when it comes from the db
                     err_msg = "The values of %r and %r are not consistent" \
                               % (par_code, par_code_max)
-                    err_msgs.append(err_msg)
+                    err_msgs.append((row_id, err_msg))
             measure = (metadata, row_date, par_code, par_value, par_flag)
             data_modified.append(measure)
     return err_msgs, data_modified
@@ -88,6 +90,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     [(metadata, date obj, par_code, par_value, par_flag), ....]
 
     Return the list of error messages, and the resulting data with flags updated.
+    The list of error messages is [(record_id, error string), ...].
     `parameters_thresholds` is a dict {code: (min, max), ...}.
 
     :param input_data: an object containing measurements
@@ -100,6 +103,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     data_modified = []
     for measure in input_data:
         metadata, row_date, par_code, par_value, par_flag = measure
+        row_id = metadata.get('row', 1)  # TODO: an ID when it comes from the db
         if par_code not in parameters_thresholds or not par_flag or par_value is None:
             # no check if limiting parameters are flagged invalid or value is None
             data_modified.append(measure)
@@ -109,7 +113,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
             par_flag = False
             err_msg = "The value of %r is out of range [%s, %s]" \
                       % (par_code, min_threshold, max_threshold)
-            err_msgs.append(err_msg)
+            err_msgs.append((row_id, err_msg))
         new_measure = (metadata, row_date, par_code, par_value, par_flag)
         data_modified.append(new_measure)
     return err_msgs, data_modified

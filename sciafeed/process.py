@@ -55,8 +55,8 @@ def parse_and_check(filepath, parameters_filepath, limiting_params=None, format_
         err_msgs2_row, row_data = checks.data_internal_consistence_check(
             row_data, limiting_params)
         data.extend(row_data)
-        err_msgs.extend([(i, err_msg1_row) for err_msg1_row in err_msgs1_row])
-        err_msgs.extend([(i, err_msg2_row) for err_msg2_row in err_msgs2_row])
+        err_msgs.extend([(i, err_msg1_row[1]) for err_msg1_row in err_msgs1_row])
+        err_msgs.extend([(i, err_msg2_row[1]) for err_msg2_row in err_msgs2_row])
     ret_value = err_msgs, data
     return ret_value
 

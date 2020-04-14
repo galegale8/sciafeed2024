@@ -4,6 +4,15 @@ from datetime import datetime
 from sciafeed import checks
 
 
+def set_row_index(input_data):
+    new_input_data = []
+    for i, record in enumerate(input_data, 1):
+        record_md = record[0].copy()
+        record_md['row'] = i
+        new_input_data.append((record_md,) + record[1:])
+    return new_input_data
+
+
 def test_data_internal_consistence_check():
     # right data
     metadata = {'cod_utente': '70001', 'lat': 43.876999, 'cod_rete': '15'}
@@ -389,6 +398,7 @@ def test_data_internal_consistence_check():
         (metadata, datetime(2013, 1, 1, 19, 0), '18', None, False),
         (metadata, datetime(2013, 1, 1, 19, 0), '19', None, False),
     ]
+    input_data = set_row_index(input_data)
     limiting_params = {'3': ('4', '5')}
     err_msgs, out_data = checks.data_internal_consistence_check(input_data, limiting_params)
     assert not err_msgs
@@ -398,24 +408,14 @@ def test_data_internal_consistence_check():
     limiting_params = {'3': ('1', '2')}
     err_msgs, out_data = checks.data_internal_consistence_check(input_data, limiting_params)
     assert err_msgs == [
-        "The values of '3' and '2' are not consistent",
-        "The values of '3' and '2' are not consistent",
-        "The values of '3' and '2' are not consistent",
-        "The values of '3' and '2' are not consistent",
-        "The values of '3' and '2' are not consistent"
+        (79, "The values of '3' and '2' are not consistent"),
+        (98, "The values of '3' and '2' are not consistent"),
+        (117, "The values of '3' and '2' are not consistent"),
+        (174, "The values of '3' and '2' are not consistent"),
+        (364, "The values of '3' and '2' are not consistent"),
     ]
-
-    assert out_data[78] == (metadata, datetime(2013, 1, 1, 4, 0), '3', 64.0, False)
-    out_data[78] = (metadata, datetime(2013, 1, 1, 4, 0), '3', 64.0, True)
-    assert out_data[97] == (metadata, datetime(2013, 1, 1, 5, 0), '3', 67.0, False)
-    out_data[97] = (metadata, datetime(2013, 1, 1, 5, 0), '3', 67.0, True)
-    assert out_data[116] == (metadata, datetime(2013, 1, 1, 6, 0), '3', 65.0, False)
-    out_data[116] = (metadata, datetime(2013, 1, 1, 6, 0), '3', 65.0, True)
-    assert out_data[173] == (metadata, datetime(2013, 1, 1, 9, 0), '3', 106.0, False)
-    out_data[173] = (metadata, datetime(2013, 1, 1, 9, 0), '3', 106.0, True)
-    assert out_data[363] == (metadata, datetime(2013, 1, 1, 19, 0), '3', 99.0, False)
-    out_data[363] = (metadata, datetime(2013, 1, 1, 19, 0), '3', 99.0, True)
-    assert out_data == input_data
+    for err_indx, _ in err_msgs:
+        assert out_data[err_indx-1][-1] is False
 
     # no limiting parameters: no check
     err_msgs, out_data = checks.data_internal_consistence_check(input_data)
@@ -462,6 +462,7 @@ def test_data_weak_climatologic_check():
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '18', None, False),
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '19', None, False),
     ]
+    input_data = set_row_index(input_data)
     err_msgs, out_data = checks.data_weak_climatologic_check(input_data, parameters_thresholds)
     assert not err_msgs
     assert out_data == input_data
@@ -490,15 +491,15 @@ def test_data_weak_climatologic_check():
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '18', None, False),
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '19', None, False),
     ]
+    input_data = set_row_index(input_data)
     err_msgs, out_data = checks.data_weak_climatologic_check(
         input_data, parameters_thresholds)
-    assert err_msgs == ["The value of '1' is out of range [0.0, 1020.0]",
-                        "The value of '9' is out of range [20.0, 100.0]"]
-    assert out_data[0] == ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '1', 1021.0, False)
-    assert out_data[8] == ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '9', 101.0, False)
-    out_data[0] = ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '1', 1021.0, True)
-    out_data[8] = ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '9', 101.0, True)
-    assert out_data == input_data
+    assert err_msgs == [
+        (1, "The value of '1' is out of range [0.0, 1020.0]"),
+        (9, "The value of '9' is out of range [20.0, 100.0]")
+    ]
+    for err_indx, _ in err_msgs:
+        assert out_data[err_indx-1][-1] is False
 
     # no check if no parameters_thresholds
     err_msgs, out_data = checks.data_weak_climatologic_check(input_data)
@@ -527,6 +528,7 @@ def test_data_weak_climatologic_check():
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '18', None, False),
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '19', None, False),
     ]
+    input_data = set_row_index(input_data)
     err_msgs, out_data = checks.data_weak_climatologic_check(input_data, parameters_thresholds)
     assert not err_msgs
     assert out_data == out_data
@@ -554,6 +556,7 @@ def test_data_weak_climatologic_check():
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '18', None, False),
         ({'lat': 43.876999}, datetime(2013, 1, 1, 7, 0), '19', None, False),
     ]
+    input_data = set_row_index(input_data)
     err_msgs, out_data = checks.data_weak_climatologic_check(input_data, parameters_thresholds)
     assert not err_msgs
     assert out_data == input_data

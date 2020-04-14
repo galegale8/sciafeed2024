@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from os.path import exists, join
 
-from sciafeed import process, arpa19, arpaer
+from sciafeed import process, arpa19, arpaer, hiscentral
 
 from . import TEST_DATA_PATH
 
@@ -1288,7 +1288,19 @@ def test_parse_and_check(tmpdir):
     ]
     assert data_parsed == arpaer.parse(filepath, parameters_filepath)[0]
 
-    # TODO: test hiscentral
+    # --- hiscentral format ---
+    filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_wrong2-reg.abruzzoTmax.csv')
+    parameters_filepath = join(TEST_DATA_PATH, 'hiscentral', 'hiscentral_params.csv')
+    limiting_params = dict()
+    err_msgs, data_parsed = process.parse_and_check(
+        filepath, parameters_filepath, limiting_params)
+    assert err_msgs == [
+        (4, 'the reference time for the row is not parsable'),
+        (8, 'the row is duplicated with different values'),
+        (9, 'the row is not strictly after the previous'),
+        (11, "the value '3A8' is not numeric")
+    ]
+    assert data_parsed == hiscentral.parse(filepath, parameters_filepath)[0]
 
 
 def test_make_report(tmpdir):

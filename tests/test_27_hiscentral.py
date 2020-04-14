@@ -39,13 +39,6 @@ def test_get_region_variables(mocker):
 def test_get_region_locations(mocker):
     mocker.patch('sciafeed.hiscentral.get_wsdl_service_response',
                  new=dummy_get_wsdl_service_response)
-    expected = {
-        'Discharge': {'code': 'Discharge', 'name': 'Discharge', 'unit': 'm3s'},
-        'Precipitation': {'code': 'Precipitation', 'name': 'Precipitation', 'unit': 'mm'},
-        'Tmax': {'code': 'Tmax', 'name': 'Temperature', 'unit': 'degC'},
-        'Tmin': {'code': 'Tmin', 'name': 'Temperature', 'unit': 'degC'},
-        'Water_Level': {'code': 'Water_Level', 'name': 'Water Level', 'unit': 'm'}
-    }
     effective = hiscentral.get_region_locations('02')
     assert len(effective) == 77
     assert '4400' in effective
@@ -141,7 +134,7 @@ def test_parse_row():
     metadata = {'par_code': 'Tmax'}
     parameters_map = hiscentral.load_parameter_file(parameters_filepath=parameters_filepath)
     expected = [
-        [metadata, date(2000, 7, 1), 'Tmax', 28.0, True]
+        (metadata, date(2000, 7, 1), 'Tmax', 28.0, True),
     ]
     effective = hiscentral.parse_row(row, parameters_map, metadata=metadata)
     assert effective == expected
@@ -227,22 +220,24 @@ def test_parse():
     metadata = {'cod_utente': '990', 'par_code': 'Tmax', 'format': 'HISCENTRAL',
                 'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv'}
     expected_data = [
-        [metadata, date(2000, 7, 1), 'Tmax', 28.0, True],
-        [metadata, date(2000, 7, 2), 'Tmax', 31.0, True],
-        [metadata, date(2000, 7, 3), 'Tmax', 33.0, True],
-        [metadata, date(2000, 7, 4), 'Tmax', 37.0, True],
-        [metadata, date(2000, 7, 5), 'Tmax', 36.0, True],
-        [metadata, date(2000, 7, 6), 'Tmax', 34.0, True],
-        [metadata, date(2000, 7, 7), 'Tmax', 33.0, True],
-        [metadata, date(2000, 7, 8), 'Tmax', 38.0, True],
-        [metadata, date(2000, 7, 9), 'Tmax', 35.0, True]
+        (metadata, date(2000, 7, 1), 'Tmax', 28.0, True),
+        (metadata, date(2000, 7, 2), 'Tmax', 31.0, True),
+        (metadata, date(2000, 7, 3), 'Tmax', 33.0, True),
+        (metadata, date(2000, 7, 4), 'Tmax', 37.0, True),
+        (metadata, date(2000, 7, 5), 'Tmax', 36.0, True),
+        (metadata, date(2000, 7, 6), 'Tmax', 34.0, True),
+        (metadata, date(2000, 7, 7), 'Tmax', 33.0, True),
+        (metadata, date(2000, 7, 8), 'Tmax', 38.0, True),
+        (metadata, date(2000, 7, 9), 'Tmax', 35.0, True),
     ]
-    effective = hiscentral.parse(filepath, parameters_filepath=parameters_filepath)
+    effective, err_msgs = hiscentral.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective):
         assert effective[i][1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
-        expected_md['row'] = i + 1
+        expected_md['row'] = i + 2
         assert effective[i][0] == expected_md
+    assert err_msgs == hiscentral.validate_format(
+        filepath, parameters_filepath=parameters_filepath)
 
 
 def test_is_format_compliant():

@@ -67,9 +67,9 @@ def test_parse_row():
 
     row = ['', '01.01.1981', '0,0', '9,0', '3,0']
     expected = [
-        [{}, date(1981, 1, 1), 'Tmin', 3.0, True],
-        [{}, date(1981, 1, 1), 'Tmax', 9.0, True],
-        [{}, date(1981, 1, 1), 'PREC', 0.0, True]
+        ({}, date(1981, 1, 1), 'Tmin', 3.0, True),
+        ({}, date(1981, 1, 1), 'Tmax', 9.0, True),
+        ({}, date(1981, 1, 1), 'PREC', 0.0, True),
     ]
 
     effective = bolzano.parse_row(row, parameters_map)
@@ -91,49 +91,6 @@ def test_validate_row_format():
     row = ['', '01.02.1981', '0,0', '9,0', '3A,0']
     err_msg = bolzano.validate_row_format(row)
     assert err_msg == 'the row contains values not numeric'
-
-
-def test_parse():
-    filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
-    parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
-    station_info_expected = {'cod_utente': '02500MS',
-                             'desc': 'Marienberg - Monte Maria',
-                             'height': '1310', 'utmx': '616288',
-                             'utmy': '5173583',
-                             'source': 'bolzano/MonteMaria.xls',
-                             'format': 'BOLZANO'}
-    data_info_expected = [
-        [date(1981, 1, 1), 'Tmin', 3.0, True],
-        [date(1981, 1, 1), 'Tmax', 9.0, True],
-        [date(1981, 1, 1), 'PREC', 0.0, True],
-        [date(1981, 1, 2), 'Tmin', -4.0, True],
-        [date(1981, 1, 2), 'Tmax', 5.0, True],
-        [date(1981, 1, 2), 'PREC', 0.4, True],
-        [date(1981, 1, 3), 'Tmin', -4.0, True],
-        [date(1981, 1, 3), 'Tmax', 5.0, True],
-        [date(1981, 1, 3), 'PREC', 0.0, True],
-        [date(1981, 1, 4), 'Tmin', 1.0, True],
-        [date(1981, 1, 4), 'Tmax', 9.0, True],
-        [date(1981, 1, 4), 'PREC', 14.5, True],
-        [date(1981, 1, 5), 'Tmin', -8.0, True],
-        [date(1981, 1, 5), 'Tmax', 3.0, True],
-        [date(1981, 1, 5), 'PREC', 5.1, True],
-        [date(1981, 1, 6), 'Tmin', -8.0, True],
-        [date(1981, 1, 6), 'Tmax', -5.0, True],
-        [date(1981, 1, 6), 'PREC', 1.0, True],
-        [date(1981, 1, 7), 'Tmin', -9.0, True],
-        [date(1981, 1, 7), 'Tmax', -5.0, True],
-        [date(1981, 1, 7), 'PREC', 6.1, True],
-        [date(1981, 1, 8), 'Tmin', -13.0, True],
-        [date(1981, 1, 8), 'Tmax', -7.0, True],
-        [date(1981, 1, 8), 'PREC', 0.0, True]
-    ]
-    effective_data = bolzano.parse(filepath, parameters_filepath)
-    for i, data_item in enumerate(effective_data):
-        expected_md = station_info_expected.copy()
-        expected_md['row'] = i // 3 + 14
-        assert data_item[0] == expected_md
-        assert data_item[1:] == data_info_expected[i]
 
 
 def test_validate_format():
@@ -162,6 +119,50 @@ def test_validate_format():
         (18, 'the row is not strictly after the previous'),
         (22, 'the row is duplicated with different values')
     ]
+
+
+def test_parse():
+    filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+    parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
+    station_info_expected = {'cod_utente': '02500MS',
+                             'desc': 'Marienberg - Monte Maria',
+                             'height': '1310', 'utmx': '616288',
+                             'utmy': '5173583',
+                             'source': 'bolzano/MonteMaria.xls',
+                             'format': 'BOLZANO'}
+    data_info_expected = [
+        (date(1981, 1, 1), 'Tmin', 3.0, True),
+        (date(1981, 1, 1), 'Tmax', 9.0, True),
+        (date(1981, 1, 1), 'PREC', 0.0, True),
+        (date(1981, 1, 2), 'Tmin', -4.0, True),
+        (date(1981, 1, 2), 'Tmax', 5.0, True),
+        (date(1981, 1, 2), 'PREC', 0.4, True),
+        (date(1981, 1, 3), 'Tmin', -4.0, True),
+        (date(1981, 1, 3), 'Tmax', 5.0, True),
+        (date(1981, 1, 3), 'PREC', 0.0, True),
+        (date(1981, 1, 4), 'Tmin', 1.0, True),
+        (date(1981, 1, 4), 'Tmax', 9.0, True),
+        (date(1981, 1, 4), 'PREC', 14.5, True),
+        (date(1981, 1, 5), 'Tmin', -8.0, True),
+        (date(1981, 1, 5), 'Tmax', 3.0, True),
+        (date(1981, 1, 5), 'PREC', 5.1, True),
+        (date(1981, 1, 6), 'Tmin', -8.0, True),
+        (date(1981, 1, 6), 'Tmax', -5.0, True),
+        (date(1981, 1, 6), 'PREC', 1.0, True),
+        (date(1981, 1, 7), 'Tmin', -9.0, True),
+        (date(1981, 1, 7), 'Tmax', -5.0, True),
+        (date(1981, 1, 7), 'PREC', 6.1, True),
+        (date(1981, 1, 8), 'Tmin', -13.0, True),
+        (date(1981, 1, 8), 'Tmax', -7.0, True),
+        (date(1981, 1, 8), 'PREC', 0.0, True),
+    ]
+    effective_data, err_msgs = bolzano.parse(filepath, parameters_filepath)
+    for i, data_item in enumerate(effective_data):
+        expected_md = station_info_expected.copy()
+        expected_md['row'] = i // 3 + 14
+        assert data_item[0] == expected_md
+        assert data_item[1:] == data_info_expected[i]
+    assert err_msgs == bolzano.validate_format(filepath, parameters_filepath)
 
 
 def test_is_format_compliant():

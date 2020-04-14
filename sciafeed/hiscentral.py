@@ -300,30 +300,6 @@ def validate_filename(filename: str, allowed_parameters=ALLOWED_PARAMETERS):
     return err_msg
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format HISCENTRAL.
-    Return the dictionary of the metadata extracted.
-    The function assumes the file name is validated against the format (see function
-    `validate_filename`).
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    source = join(*PurePath(abspath(filepath)).parts[-2:])
-    filename = basename(filepath)
-    cod_utente, par_name = parse_filename(filename)
-    parameters_map = load_parameter_file(parameters_filepath)
-    if par_name not in parameters_map:
-        par_code = par_name
-    else:
-        par_code = parameters_map[par_name]['par_code']
-    ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source,
-                 'format': FORMAT_LABEL}
-    return ret_value
-
-
 def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a HISCENTRAL file, and return the parsed data. Data structure is as a list:
@@ -354,7 +330,7 @@ def parse_row(row, parameters_map, metadata=None):
         param_value = props['convertion'](float(param_value.replace(',', '.')))
     else:
         param_value = None
-    measure = [metadata, date_obj, param_code, param_value, True]
+    measure = (metadata, date_obj, param_code, param_value, True)
     data.append(measure)
     return data
 
@@ -385,39 +361,48 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of an hiscentral file containing data. Each value returned
+    is a tuple (index of the row, row). row is a dictionary.
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     csv_file = open(filepath, 'r', encoding='unicode_escape')
     csv_reader = csv.DictReader(csv_file, delimiter=';')
-    i = 0
-    for i, row in enumerate(csv_reader, 1):
+    i = 1
+    for i, row in enumerate(csv_reader, 2):
         yield i, row
 
 
 # entry point candidate
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+def extract_metadata(filepath, parameters_filepath):
     """
-    Read a HISCENTRAL file located at `filepath` and returns the data stored inside. 
-    Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format HISCENTRAL.
+    Return the dictionary of the metadata extracted.
+    The function assumes the file name is validated against the format (see function
+    `validate_filename`).
 
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: path to the HISCENTRAL file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
-    """""
+    :return: dictionary of metadata extracted
+    """
+    source = join(*PurePath(abspath(filepath)).parts[-2:])
+    filename = basename(filepath)
+    cod_utente, par_name = parse_filename(filename)
     parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(row, parameters_map, metadata=metadata)
-        data.extend(parsed_row)
-    return data
+    if par_name not in parameters_map:
+        par_code = par_name
+    else:
+        par_code = parameters_map[par_name]['par_code']
+    ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source,
+                 'format': FORMAT_LABEL}
+    return ret_value
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open a HISCENTRAL file and validate it against the format.
@@ -466,6 +451,39 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Read a HISCENTRAL file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found.  
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: path to the HISCENTRAL file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: (data, found_errors)
+    """""
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(row, parameters_map, metadata=metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

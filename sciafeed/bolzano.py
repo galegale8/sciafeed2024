@@ -93,23 +93,6 @@ def get_station_props(filepath):
     raise ValueError('BOLZANO file not compliant')
 
 
-def extract_metadata(filepath, parameters_filepath):
-    """
-    Extract generic metadata information from a file `filepath` of format bolzano.
-    Return the dictionary of the metadata extracted.
-    The function assumes the station information is complaint against the format (see function
-    `get_station_props`).
-
-    :param filepath: path to the file to validate
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: dictionary of metadata extracted
-    """
-    metadata = get_station_props(filepath)
-    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
-    metadata['format'] = FORMAT_LABEL
-    return metadata
-
-
 def parse_row(row, parameters_map, metadata=None):
     """
     Parse a row of a BOLZANO file, and return the parsed data. Data structure is as a list:
@@ -139,7 +122,7 @@ def parse_row(row, parameters_map, metadata=None):
             par_value = None
         else:
             par_value = par_props['convertion'](float(par_value))
-        measure = [metadata, date_obj, par_code, par_value, True]
+        measure = (metadata, date_obj, par_code, par_value, True)
         data.append(measure)
     return data
 
@@ -172,6 +155,15 @@ def validate_row_format(row):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of a BOLZANO file containing data. Each value returned
+    is a tuple (index of the row, row). row is a list of Excel cells' values.
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     # NOTE: assuming the column with the date is the second one
     date_column_indx = 1
     for i, row in enumerate(utils.load_excel(filepath), 1):
@@ -182,30 +174,25 @@ def rows_generator(filepath, parameters_map, metadata):
         yield i, row
 
 
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+# entry point candidate
+def extract_metadata(filepath, parameters_filepath):
     """
-    Parse a row of a BOLZANO file, and return the parsed data. Data structure is as a list:
-    ::
+    Extract generic metadata information from a file `filepath` of format bolzano.
+    Return the dictionary of the metadata extracted.
+    The function assumes the station information is complaint against the format (see function
+    `get_station_props`).
 
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-      
-    The function assumes the file as validated against the format (see function 
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: path to the BOLZANO file
+    :param filepath: path to the file to validate
     :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [(metadata, datetime object, par_code, par_value, flag), ...]
-    """""
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_filepath, metadata):
-        metadata['row'] = i
-        row_data = parse_row(row, parameters_map, metadata)
-        data.extend(row_data)
-    return data
+    :return: dictionary of metadata extracted
+    """
+    metadata = get_station_props(filepath)
+    metadata['source'] = join(*PurePath(abspath(filepath)).parts[-2:])
+    metadata['format'] = FORMAT_LABEL
+    return metadata
 
 
+# entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Open a BOLZANO file and validate it against the format.
@@ -256,6 +243,38 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     return found_errors
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Parse a row of a BOLZANO file, and return the parsed data and the list
+    of error messages eventually found. Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+      
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: path to the BOLZANO file
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: (data, found_errors)
+    """""
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
+    for i, row in rows_generator(filepath, parameters_filepath, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        row_data = parse_row(row, parameters_map, metadata)
+        data.extend(row_data)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

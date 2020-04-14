@@ -425,6 +425,15 @@ def parse_row(row, parameters_map, metadata=None):
 
 
 def rows_generator(filepath, parameters_map, metadata):
+    """
+    A generator of rows of an arpa-er file containing data. Each value returned
+    is a tuple (index of the row, row). `row` is a JSON-parsed dictionary.
+
+    :param filepath: the file path of the input file
+    :param parameters_map: dictionary of information about stored parameters at each position
+    :param metadata: default metadata if not provided in the row
+    :return: iterable of (index of the row, row)
+    """
     with open(filepath) as fp:
         for i, dumped_json in enumerate(fp, 1):
             if not dumped_json.strip():
@@ -433,31 +442,7 @@ def rows_generator(filepath, parameters_map, metadata):
             yield i, row
 
 
-def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
-    """
-    Read an ARPA-ER file located at `filepath` and returns the data stored inside.
-    Data structure is as a list:
-    ::
-
-      [(metadata, datetime object, par_code, par_value, flag), ...]
-
-    The function assumes the file as validated against the format (see function
-    `validate_format`). No checks on data are performed.
-
-    :param filepath: the input ARPA-ER file path
-    :param parameters_filepath: path to the CSV file containing info about stored parameters
-    :return: [(stat_props, date, measures), ...]
-    """
-    parameters_map = load_parameter_file(parameters_filepath)
-    metadata = extract_metadata(filepath, parameters_filepath)
-    data = []
-    for i, row in rows_generator(filepath, parameters_map, metadata):
-        metadata['row'] = i
-        parsed_row = parse_row(row, parameters_map, metadata)
-        data.extend(parsed_row)
-    return data
-
-
+# entry point candidate
 def validate_format(filepath, parameters_filepath=None):
     """
     Open an ARPA-ER file and validate it against the format.
@@ -488,6 +473,40 @@ def validate_format(filepath, parameters_filepath=None):
     return ret_value
 
 
+# entry point candidate
+def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
+    """
+    Read an ARPA-ER file located at `filepath` and returns the data stored inside and the list
+    of error messages eventually found.
+
+    Data structure is as a list:
+    ::
+
+      [(metadata, datetime object, par_code, par_value, flag), ...]
+
+    The list of error messages is returned as the function `validate_format` does.
+
+    :param filepath: the input ARPA-ER file path
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :return: (data, found_errors)
+    """
+    data = []
+    found_errors = validate_format(filepath, parameters_filepath)
+    found_errors_dict = dict(found_errors)
+    if 0 in found_errors_dict:
+        return data, found_errors
+    metadata = extract_metadata(filepath, parameters_filepath)
+    parameters_map = load_parameter_file(parameters_filepath)
+    for i, row in rows_generator(filepath, parameters_map, metadata):
+        if i in found_errors_dict:
+            continue
+        metadata['row'] = i
+        parsed_row = parse_row(row, parameters_map, metadata)
+        data.extend(parsed_row)
+    return data, found_errors
+
+
+# entry point candidate
 def is_format_compliant(filepath):
     """
     Return True if the file located at `filepath` is compliant to the format, False otherwise.

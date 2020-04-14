@@ -515,6 +515,20 @@ def test_parse_row():
     assert effective == expected
 
 
+def test_validate_format():
+    # right file
+    filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
+    err_msgs = arpaer.validate_format(filepath)
+    assert not err_msgs
+
+    # wrong file
+    filepath = join(TEST_DATA_PATH, 'arpaer', 'wrong_results1.json')
+    err_msgs = arpaer.validate_format(filepath)
+    assert err_msgs == [
+        (2, 'information of the station is not parsable'),
+        (3, 'information of the date is wrong')]
+
+
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
@@ -532,26 +546,13 @@ def test_parse():
         (metadata, datetime(2020, 2, 6, 0, 0), 'Tmax', 0.4, True),
         (metadata, datetime(2020, 2, 6, 0, 0), 'Tmin', -2.21, True)
     ]
-    effective_data = arpaer.parse(filepath, parameters_filepath)
+    effective_data, errs = arpaer.parse(filepath, parameters_filepath)
     for i, record in enumerate(effective_data):
         assert effective_data[i][1:] == expected_data[i][1:]
         expected_md = expected_data[i][0]
         expected_md['row'] = i // 5 + 1
         assert effective_data[i][0] == expected_md
-
-
-def test_validate_format():
-    # right file
-    filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
-    err_msgs = arpaer.validate_format(filepath)
-    assert not err_msgs
-
-    # wrong file
-    filepath = join(TEST_DATA_PATH, 'arpaer', 'wrong_results1.json')
-    err_msgs = arpaer.validate_format(filepath)
-    assert err_msgs == [
-        (2, 'information of the station is not parsable'),
-        (3, 'information of the date is wrong')]
+    assert errs == arpaer.validate_format(filepath)
 
 
 def test_is_format_compliant():

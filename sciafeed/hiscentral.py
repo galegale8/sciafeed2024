@@ -12,6 +12,7 @@ from sciafeed import TEMPLATES_PATH
 from sciafeed import utils
 
 
+MISSING_VALUE_MARKER = '-9999'
 FORMAT_LABEL = 'HISCENTRAL'
 ALLOWED_PARAMETERS = ('Precipitation', 'Tmax', 'Tmin')
 FIELDNAMES = ['time', 'DataValue', 'UTCOffset', 'Qualifier', 'CensorCode', 'DateTimeUTC',
@@ -157,7 +158,7 @@ def download_series(region_id, variable, location, out_csv_path):
     wsdl_url = WSDL_URLS[region_id]
     series_xml = get_wsdl_service_response(wsdl_url, 'GetValues',
                                            location=location, variable=variable)
-    print('  ...and writing CSV on path % out_csv_path')
+    print('  ...and writing CSV on path %s' % out_csv_path)
     doc = xml.dom.minidom.parseString(series_xml)
     key_tag_map = {
         'time': 'dateTime',
@@ -195,7 +196,7 @@ def download_hiscentral(region_id, out_csv_folder, variables=None, locations=Non
     i = 1
     for location in locations:
         for variable in variables:
-            out_csv_name = "serie_%s-reg.%s%s" \
+            out_csv_name = "serie_%s-reg.%s%s.csv" \
                            % (location, REGION_IDS_MAP[region_id].lower(), variable.capitalize())
             out_csv_path = join(out_csv_folder, out_csv_name)
             print("processing %s/%s ..." % (i, file_number))
@@ -300,7 +301,7 @@ def validate_filename(filename: str, allowed_parameters=ALLOWED_PARAMETERS):
     return err_msg
 
 
-def parse_row(row, parameters_map, metadata=None):
+def parse_row(row, parameters_map, metadata=None, missing_value_marker=MISSING_VALUE_MARKER):
     """
     Parse a row of a HISCENTRAL file, and return the parsed data. Data structure is as a list:
     ::
@@ -313,6 +314,7 @@ def parse_row(row, parameters_map, metadata=None):
     :param row: a row dictionary of the HISCENTRAL file as parsed by csv.DictReader
     :param parameters_map: dictionary of information about stored parameters at each position
     :param metadata: default metadata if not provided in the row
+    :param missing_value_marker: the string used as a marker for missing value
     :return: [(metadata, datetime object, par_code, par_value, flag), ...]
     """
     if metadata is None:
@@ -326,7 +328,7 @@ def parse_row(row, parameters_map, metadata=None):
     if not props:
         return []
     param_value = row['DataValue'].strip()
-    if param_value not in ('-', ''):
+    if param_value not in ('-', '', MISSING_VALUE_MARKER):
         param_value = props['convertion'](float(param_value.replace(',', '.')))
     else:
         param_value = None

@@ -2,7 +2,7 @@
 This modules provides the functions of the SCIA FEED package's entry points
 """
 from os import listdir, mkdir
-from os.path import exists, isfile, join
+from os.path import exists, isdir, isfile, join
 import sys
 
 import click
@@ -51,6 +51,9 @@ def make_reports(**kwargs):
         # return
     if outdata_folder and not exists(outdata_folder):
         mkdir(outdata_folder)
+    if not isdir(in_folder):
+        print('wrong "in_folder": this must be a folder')
+        sys.exit(2)
     children = sorted(listdir(in_folder))
     for child in children:
         in_filepath = join(in_folder, child)

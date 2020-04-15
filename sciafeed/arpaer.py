@@ -362,10 +362,8 @@ def validate_row_format(row):
     except KeyError:
         err_msg = 'information of the station is not parsable'
         return err_msg
-    # date format
-    try:
-        datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S')
-    except ValueError:
+    # date format: try 2 formats
+    if not utils.parse_date(row['date'], ['%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S']):
         err_msg = 'information of the date is wrong'
         return err_msg
     # extracting measures
@@ -404,7 +402,8 @@ def parse_row(row, parameters_map, metadata=None):
     metadata['lon'] = row['lon']
     metadata['network'] = row['network']
     metadata['is_fixed'] = row['ident'] is None
-    thedate = datetime.strptime(row['date'], '%Y-%m-%dT%H:%M:%S') - timedelta(hours=1)
+    patterns = ['%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S']
+    thedate = utils.parse_date(row['date'], patterns) - timedelta(hours=1)
     for measurement_group in row['data'][1:]:
         group_level = measurement_group['level']
         group_trange = measurement_group['timerange']
@@ -419,7 +418,9 @@ def parse_row(row, parameters_map, metadata=None):
                 if not utils.is_same_list(par_level, group_level, JSON_ANY_MARKER) or not \
                         utils.is_same_list(par_trange, group_trange, JSON_ANY_MARKER):
                     continue
-                par_value = props['convertion'](float(current_vars[bcode]['v']))
+                par_value = current_vars[bcode]['v']
+                if par_value is not None:
+                    par_value = props['convertion'](float(par_value))
                 flag = 'B33196' not in current_vars[bcode].get('a', {})
                 measure = (metadata, thedate, par_code, par_value, flag)
                 measures.append(measure)

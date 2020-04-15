@@ -160,3 +160,20 @@ def folder2props(folder_name):
     if ret_value.get('cod_rete') == '15' and cod_utente_prefix.isdigit():
         ret_value['cod_utente_prefix'] = cod_utente_prefix
     return ret_value
+
+
+def parse_date(thedate, patterns):
+    """
+    Try to extract the date object using the input patterns.
+
+    :param thedate: the date string
+    :param patterns: list of date patterns
+    :return: the date obj or None
+    """
+    ret_value = None
+    for pattern in patterns:
+        try:
+            ret_value = datetime.strptime(thedate, pattern)
+        except ValueError:
+            continue
+    return ret_value

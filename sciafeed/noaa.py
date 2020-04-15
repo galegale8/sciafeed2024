@@ -163,7 +163,8 @@ def parse_row(row, parameters_map, missing_value_markers=MISSING_VALUE_MARKERS, 
         data.append(measure)
     if 'DEWP' in parameters_map and 'MAX' in parameters_map and 'MIN' in parameters_map:
         ur_measure = build_urmedia_measure(data)
-        data.append(ur_measure)
+        if ur_measure:
+            data.append(ur_measure)
     return data
 
 

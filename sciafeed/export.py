@@ -37,8 +37,9 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
                 continue
             if omit_missing and par_value is None:
                 continue
+            cod_utente = metadata.get('cod_utente_prefix', '') + metadata.get('cod_utente', '')
             row = {
-                'cod_utente': metadata.get('cod_utente', ''),
+                'cod_utente': cod_utente,
                 'cod_rete': metadata.get('cod_rete', ''),
                 'date': current_date.strftime('%Y-%m-%d'),
                 'time': isinstance(current_date, datetime) and current_date.strftime('%H:%M:%S')

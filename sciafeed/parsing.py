@@ -70,5 +70,8 @@ def parse(filepath, parameters_filepath=None, format_label=None):
     else:
         format_module = dict(FORMATS).get(format_label)
     parse_f = getattr(format_module, 'parse')
-    data, found_errors = parse_f(filepath, parameters_filepath)
+    if not parameters_filepath:
+        data, found_errors = parse_f(filepath)
+    else:
+        data, found_errors = parse_f(filepath, parameters_filepath)
     return data, found_errors

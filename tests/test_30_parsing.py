@@ -1,7 +1,7 @@
 
 from os.path import join
 
-from sciafeed import arpa19, arpa21, arpaer, arpafvg, hiscentral, rmn, trentino
+from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino
 from sciafeed import parsing
 
 from . import TEST_DATA_PATH
@@ -11,27 +11,39 @@ def test_guess_format(tmpdir):
     # arpa19
     test_filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('ARPA-19', arpa19)
+    assert label, module == (arpa19.FORMAT_LABEL, arpa19)
     # arpa21
     test_filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('ARPA-21', arpa21)
+    assert label, module == (arpa21.FORMAT_LABEL, arpa21)
     # arpaer
     test_filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('ARPA-ER', arpaer)
+    assert label, module == (arpaer.FORMAT_LABEL, arpaer)
     # arpafvg
     test_filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('ARPA-FVG', arpafvg)
+    assert label, module == (arpafvg.FORMAT_LABEL, arpafvg)
+    # bolzano
+    test_filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+    label, module = parsing.guess_format(test_filepath)
+    assert label, module == (bolzano.FORMAT_LABEL, arpafvg)
     # rmn
     test_filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('RMN', rmn)
+    assert label, module == (rmn.FORMAT_LABEL, rmn)
     # hiscentral
     test_filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_990-reg.abruzzoTmax.csv')
     label, module = parsing.guess_format(test_filepath)
-    assert label, module == ('HISCENTRAL', hiscentral)
+    assert label, module == (hiscentral.FORMAT_LABEL, hiscentral)
+    # NOAA
+    test_filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
+    label, module = parsing.guess_format(test_filepath)
+    assert label, module == (noaa.FORMAT_LABEL, noaa)
+    # trentino
+    test_filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    label, module = parsing.guess_format(test_filepath)
+    assert label, module == (trentino.FORMAT_LABEL, trentino)
     # unknown
     test_filepath = str(tmpdir.join('loc01_00001_2018010101_2019010101.dat'))
     with open(test_filepath, 'w') as fp:
@@ -90,3 +102,42 @@ def test_validate_format():
     result = parsing.validate_format(filepath=parameters_filepath,
                                      parameters_filepath=parameters_filepath)
     assert result == ([(0, "file %r has unknown format" % parameters_filepath)], None)
+
+
+def test_parse():
+    # arpa19
+    test_filepath = join(TEST_DATA_PATH, 'arpa19', 'loc01_70001_201301010000_201401010100.dat')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == arpa19.parse(test_filepath)
+    # arpa21
+    test_filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == arpa21.parse(test_filepath)
+    # arpaer
+    test_filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == arpaer.parse(test_filepath)
+    # arpafvg
+    test_filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == arpafvg.parse(test_filepath)
+    # bolzano
+    test_filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == bolzano.parse(test_filepath)
+    # rmn
+    test_filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == rmn.parse(test_filepath)
+    # hiscentral
+    test_filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_990-reg.abruzzoTmax.csv')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == hiscentral.parse(test_filepath)
+    # NOAA
+    test_filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == noaa.parse(test_filepath)
+    # trentino
+    test_filepath = join(TEST_DATA_PATH, 'trentino', 'T0001.csv')
+    data, found_errors = parsing.parse(test_filepath)
+    assert data, found_errors == trentino.parse(test_filepath)

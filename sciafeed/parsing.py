@@ -1,8 +1,6 @@
 """
 This module contains the functions and utilities to parse all SCIA data formats
 """
-from os.path import dirname
-
 from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino
 
 

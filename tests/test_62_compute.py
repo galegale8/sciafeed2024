@@ -269,3 +269,17 @@ def test_compute_tmdgg():
     input_records = create_samples('Tmedia')
     flag, val_md, val_vr = compute.compute_tmdgg(input_records, at_least_perc=0.75)
     assert (flag, val_md, val_vr) == ((24, 1), 11.5, 50.0)
+
+
+def test_compute_tmxgg():
+    input_records = create_samples('Tmax')
+    flag, val_md, val_vr, val_x, data_x = compute.compute_tmxgg(input_records, at_least_perc=0.75)
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 50, 23,
+                                                     datetime(2020, 1, 1, 23, 0))
+
+
+def test_compute_tmngg():
+    input_records = create_samples('Tmin')
+    flag, val_md, val_vr, val_x, data_x = compute.compute_tmngg(input_records, at_least_perc=0.75)
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 50, 0,
+                                                     datetime(2020, 1, 1, 0, 0))

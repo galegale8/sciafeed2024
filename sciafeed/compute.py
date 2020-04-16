@@ -206,11 +206,14 @@ def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    val_mx = None
+    data_mx = None
     if not valid_records or not isinstance(valid_records[0][1], datetime):
-        return (0, 0), None, None
+        return flag, val_mx, data_mx
     new_records = sum_records_by_hour_groups(valid_records, 6)
-    val_mx = max([r[3] for r in new_records])
-    data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
+    if new_records:
+        val_mx = max([r[3] for r in new_records])
+        data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
     return flag, val_mx, data_mx
 
 
@@ -260,11 +263,14 @@ def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    val_mx = None
+    data_mx = None
     if not valid_records or not isinstance(valid_records[0][1], datetime):
-        return (0, 0), None, None
+        return flag, val_mx, data_mx
     new_records = sum_records_by_hour_groups(valid_records, 12)
-    val_mx = max([r[3] for r in new_records])
-    data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
+    if new_records:
+        val_mx = max([r[3] for r in new_records])
+        data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
     return flag, val_mx, data_mx
 
 

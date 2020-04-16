@@ -207,7 +207,7 @@ def test_compute_prec01():
     ]
     flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.80)
     assert (flag, val_mx, data_mx) == ((6, 0), 5, datetime(2020, 1, 1, 5, 0))
-    # with low tolherance
+    # with low tolerance
     flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.10)
     assert (flag, val_mx, data_mx) == ((6, 1), 5, datetime(2020, 1, 1, 5, 0))
 

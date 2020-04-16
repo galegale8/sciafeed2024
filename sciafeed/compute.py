@@ -9,6 +9,8 @@ or from a set of `data` records.
 from datetime import datetime, timedelta
 import statistics
 
+# -------------- GENERIC UTILITIES --------------
+
 
 def sum_records_by_hour_groups(day_records, hours_interval):
     """
@@ -65,7 +67,36 @@ def wet_distribution(input_records):
     return dry, wet_01, wet_02, wet_03, wet_04, wet_05
 
 
-def compute_prec24(day_records, at_least_perc=0.9):
+def compute_flag(day_records, at_least_perc):
+    """
+    Return (ndati, wht) where:
+    ::
+
+    * ndati: num of valid input records of the day
+    * wht: 0 if num/total expected record < at_least_perc, 1 otherwise
+
+    It assumes if dates are datetime objects we expect 24 total measures in a day, else 1.
+
+    :param day_records: input day records
+    :param at_least_perc: minimum percentage of valid data for the wht
+    :return: (ndati, wht)
+    """
+    if not day_records:
+        return 0, 0
+    ndati = len([r for r in day_records if r[4] and r[3] is not None])
+    num_expected = 1
+    if isinstance(day_records[0][1], datetime):
+        num_expected = 24
+    wht = 0
+    if ndati / num_expected >= at_least_perc:
+        wht = 1
+    return ndati, wht
+
+
+# --------------   PRECIPITATION   --------------
+
+
+def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione cumulata giornaliera". It will fill the field 'prec24' of
     table 'sciapgg.ds__preci'.
@@ -78,26 +109,24 @@ def compute_prec24(day_records, at_least_perc=0.9):
     * val_mx: max value of PREC
     * data_mx: datetime of the max value of PREC
 
-    If num of valid values/24 >= `at_least_perc` --> wht = 1, otherwise 0
+    If `force_flag` is not None, returned flag is `force_flag`.
 
     :param day_records: list of `data` objects for a day and a station.
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_tot, val_mx, data_mx)
     """
-    if not day_records:
-        return (0, 0), None, None, None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
     valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
-    ndati = len(valid_values)
     val_tot = None
     val_mx = None
     data_mx = None
-    wht = 0
-    if ndati:
+    if valid_values:
         val_tot = sum(valid_values)
         val_mx = max(valid_values)
         data_mx = [r[1] for r in day_records if r[3] == val_mx][0]
-        wht = ndati / 24 >= at_least_perc and 1 or 0
-    flag = (ndati, wht)
     return flag, val_tot, val_mx, data_mx
 
 
@@ -123,7 +152,7 @@ def compute_cl_prec24(day_records):
     return wet_distribution(valid_records)
 
 
-def compute_prec01(day_records, at_least_perc=0.9):
+def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione max cumulata su 1 ora". It will fill the field 'prec01' of
     table 'sciapgg.ds__preci'.
@@ -135,31 +164,30 @@ def compute_prec01(day_records, at_least_perc=0.9):
     * val_mx: max value of PREC
     * data_mx: datetime of the max value of PREC
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a hour and a station
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
-    if not day_records:
-        return (0, 0), None, None
-    valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
-        return (0, 0), None, None
-    ndati = len(valid_records)
-    wht = ndati / 24 >= at_least_perc and 1 or 0
-    flag = (ndati, wht)
-    # valid_records = sum_records_by_hour_groups(valid_records, 1)
-    val_mx = max([r[3] for r in valid_records])
-    data_mx = [r[1] for r in valid_records if r[3] == val_mx][0]
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    val_mx = None
+    data_mx = None
+    if valid_values:
+        val_mx = max(valid_values)
+        data_mx = [r[1] for r in day_records if r[3] == val_mx][0]
     return flag, val_mx, data_mx
 
 
-def compute_prec06(day_records, at_least_perc=0.9):
+def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     """
-    Compute "precipitazione max cumulata su 6 ore". It will fill the field 'prec06' of
+    Compute "precipitazione cumulata su 6 ore". It will fill the field 'prec06' of
     table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
-    It assumes also records are referring to date times (attribute `hour` of index 1 of each
-    day record).
     It returns the tuple (flag, val_mx, data_mx) where:
     ::
 
@@ -167,18 +195,19 @@ def compute_prec06(day_records, at_least_perc=0.9):
     * val_mx: max value of PREC (cumulated in 4 groups of same time ranges)
     * data_mx: datetime of the max value of PREC
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a day and a station
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
-    if not day_records:
-        return (0, 0), None, None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
+    if not valid_records or not isinstance(valid_records[0][1], datetime):
         return (0, 0), None, None
-    ndati = len(valid_records)
-    wht = ndati / 24 <= at_least_perc and 0 or 1
-    flag = (ndati, wht)
     new_records = sum_records_by_hour_groups(valid_records, 6)
     val_mx = max([r[3] for r in new_records])
     data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
@@ -208,13 +237,11 @@ def compute_cl_prec06(day_records):
     return wet_distribution(new_records)
 
 
-def compute_prec12(day_records, at_least_perc=0.9):
+def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
     """
-    Compute "precipitazione max cumulata su 12 ore". It will fill the field 'prec12' of
+    Compute "precipitazione cumulata su 12 ore". It will fill the field 'prec12' of
     table 'sciapgg.ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
-    It assumes also records are referring to date times (attribute `hour` of index 1 of each
-    day record).
     It returns the tuple (flag, val_mx, data_mx) where:
     ::
 
@@ -222,18 +249,19 @@ def compute_prec12(day_records, at_least_perc=0.9):
     * val_mx: max value of PREC (cumulated in 4 groups of same time ranges)
     * data_mx: datetime of the max value of PREC
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a day and a station
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
-    if not day_records:
-        return (0, 0), None, None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
+    if not valid_records or not isinstance(valid_records[0][1], datetime):
         return (0, 0), None, None
-    ndati = len(valid_records)
-    wht = ndati / 24 <= at_least_perc and 0 or 1
-    flag = (ndati, wht)
     new_records = sum_records_by_hour_groups(valid_records, 12)
     val_mx = max([r[3] for r in new_records])
     data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
@@ -263,11 +291,15 @@ def compute_cl_prec12(day_records):
     return wet_distribution(new_records)
 
 
+# --------------    TEMPERATURE    --------------
+
+
 def compute_temperature_flag(input_records, perc_day=0.75, perc_night=0.75,
                              daylight_hours=(9, 18)):
     """
     It compute the flag for temperature indicators, considering number of valid measures
-    during the daylight and during the night.
+    during the daylight and during the night. If input records have dates instead datetimes,
+    it consider only the `perc_day` percentage.
 
     :param input_records: input records of temperature
     :param perc_day: minimum percentage of valid measures during the daylight
@@ -275,30 +307,27 @@ def compute_temperature_flag(input_records, perc_day=0.75, perc_night=0.75,
     :param daylight_hours: time interval of hours considered for the daylight
     :return: (ndati, wht)
     """
-    if not input_records:
-        return 0, 0
     valid_records = [r for r in input_records if r[4] and r[3] is not None]
+    if not valid_records:
+        return 0, 0
+    if not isinstance(valid_records[0][1], datetime):
+        return compute_flag(valid_records, at_least_perc=perc_day)
     ndati = len(valid_records)
     day_hours = range(daylight_hours[0], daylight_hours[1]+1)
     night_hours = [h for h in range(0, 24) if h not in day_hours]
-    if not len(day_hours) or not len(night_hours):
-        # wrong daylight_hours
+    if not day_hours or not night_hours:
+        # empty interval of day or night
         return ndati, 0
     day_records = [r for r in valid_records if r[1].hour in day_hours]
     night_records = [r for r in valid_records if r[1].hour in night_hours]
-    ndati_day = len(day_records)
-    ndati_night = len(night_records)
-    if not ndati_day or not ndati_night:
-        # complete missing of day or night
-        return ndati, 0
-    data_perc_day = ndati_day / len(day_hours)
-    data_perc_night = ndati_night / len(night_hours)
+    data_perc_day = len(day_records) / len(day_hours)
+    data_perc_night = len(night_records) / len(night_hours)
     if data_perc_day < perc_day or data_perc_night < perc_night:
         return ndati, 0
     return ndati, 1
 
 
-def compute_tmdgg(day_records, at_least_perc=0.75):
+def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "media e varianza della temperatura giornaliera".
     It will fill the field 'tmdgg' of table 'sciapgg.ds__ts200'.
@@ -310,27 +339,33 @@ def compute_tmdgg(day_records, at_least_perc=0.75):
     * val_md: media giornaliera
     * val_vr: varianza
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a day and a station.
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr)
     """
-    if not day_records:
-        return (0, 0), None, None
-    valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
-        return (0, 0), None, None
-    flag = compute_temperature_flag(day_records, perc_day=at_least_perc, perc_night=at_least_perc)
-    values = [r[3] for r in valid_records]
-    val_md = statistics.mean(values)
-    val_vr = statistics.variance(values)
+    flag = force_flag
+    if not flag:
+        flag = compute_temperature_flag(
+            day_records, perc_day=at_least_perc, perc_night=at_least_perc)
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    val_md = None
+    val_vr = None
+    if not day_records or not valid_values:
+        return flag, val_md, val_vr
+    val_md = statistics.mean(valid_values)
+    if len(valid_values) >= 2:
+        val_vr = statistics.variance(valid_values)
     return flag, val_md, val_vr
 
 
-def compute_tmxgg(day_records, at_least_perc=0.75):
+def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "massimo della temperatura giornaliera".
     It will fill the field 'tmxgg' of table 'sciapgg.ds__ts200'.
-    It assumes day_records is of par_code='Tmax' or par_code='Tmedia'.
+    It assumes day_records is of par_code='Tmax' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
 
@@ -340,29 +375,38 @@ def compute_tmxgg(day_records, at_least_perc=0.75):
     * val_x: valore massimo giornaliero
     * data_x: data del valore massimo giornaliero
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a day and a station.
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_x, data_x)
     """
-    if not day_records:
-        return (0, 0), None, None
+    flag = force_flag
+    if not flag:
+        flag = compute_temperature_flag(
+            day_records, perc_day=at_least_perc, perc_night=at_least_perc)
+    val_md = None
+    val_vr = None
+    val_x = None
+    data_x = None
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
     if not valid_records:
-        return (0, 0), None, None
-    flag = compute_temperature_flag(day_records, perc_day=at_least_perc, perc_night=at_least_perc)
+        return flag, val_md, val_vr, val_x, data_x
     values = [r[3] for r in valid_records]
     val_md = statistics.mean(values)
-    val_vr = statistics.variance(values)
+    if len(values) >= 2:
+        val_vr = statistics.variance(values)
     val_x = max(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
 
 
-def compute_tmngg(day_records, at_least_perc=0.75):
+def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "minimo della temperatura giornaliera".
     It will fill the field 'tmngg' of table 'sciapgg.ds__ts200'.
-    It assumes day_records is of par_code='Tmin' or par_code='Tmedia'.
+    It assumes day_records is of par_code='Tmin' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
 
@@ -372,29 +416,42 @@ def compute_tmngg(day_records, at_least_perc=0.75):
     * val_x: valore minimo giornaliero
     * data_x: data del valore minimo giornaliero
 
+    If `force_flag` is not None, returned flag is `force_flag`.
+
     :param day_records: list of `data` objects for a day and a station.
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_x, data_x)
     """
-    if not day_records:
-        return (0, 0), None, None
+    flag = force_flag
+    if not flag:
+        flag = compute_temperature_flag(
+            day_records, perc_day=at_least_perc, perc_night=at_least_perc)
+    val_md = None
+    val_vr = None
+    val_x = None
+    data_x = None
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
     if not valid_records:
-        return (0, 0), None, None
-    flag = compute_temperature_flag(day_records, perc_day=at_least_perc, perc_night=at_least_perc)
+        return flag, val_md, val_vr, val_x, data_x
     values = [r[3] for r in valid_records]
     val_md = statistics.mean(values)
-    val_vr = statistics.variance(values)
+    if len(values) >= 2:
+        val_vr = statistics.variance(values)
     val_x = min(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
 
 
-def compute_press(day_records, at_least_perc=0.75):
+# --------------     PRESSURE     ---------------
+
+
+def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_least_perc=0.75,
+                  force_flag=None):
     """
-    Compute "minimo della temperatura giornaliera".
+    Compute "pressione atmosferica media, massima e minima".
     It will fill the field 'press' of table 'sciapgg.ds__press'.
-    It assumes day_records include both par_code='Pmedia', par_code='Pmax', par_code='Pmin'.
+    It assumes day_records is of the same station and day.
     It returns the tuple (flag, val_md, val_vr, val_mx, val_mn) where:
     ::
     
@@ -404,30 +461,34 @@ def compute_press(day_records, at_least_perc=0.75):
     * val_mx: valore massimo giornaliero
     * val_mn: valore minimo giornaliero
 
-    :param day_records: list of `data` objects for a day and a station.
+    If `force_flag` is not None, returned flag is `force_flag`.
+
+    :param day_records_pmedia: list of `data` objects of Pmedia
+    :param day_records_pmax: list of `data` objects of Pmax
+    :param day_records_pmin: list of `data` objects of Pmin
     :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
-    if not day_records:
-        return (0, 0), None, None
-    valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
-        return (0, 0), None, None
-    pmedia_values = [r[3] for r in valid_records if r[2] == 'Pmedia']
-    pmax_values = [r[3] for r in valid_records if r[2] == 'Pmax']
-    pmin_values = [r[3] for r in valid_records if r[2] == 'Pmin']
-    # NOTE: for the flag I use the Pmedia
-    ndati = len(pmedia_values)
-    wht = ndati / 24 <= at_least_perc and 0 or 1
-    flag = (ndati, wht)
-    val_md = statistics.mean(pmedia_values)
-    val_vr = statistics.variance(pmedia_values)
+    flag = force_flag
+    if not flag:
+        # flag computed from Pmedia
+        flag = compute_flag(day_records_pmedia, at_least_perc)
+    pmedia_values = [r[3] for r in day_records_pmedia if r[4] and r[3] is not None]
+    pmax_values = [r[3] for r in day_records_pmax if r[4] and r[3] is not None]
+    pmin_values = [r[3] for r in day_records_pmin if r[4] and r[3] is not None]
+    val_md = None
+    val_vr = None
+    val_mx = None
+    val_mn = None
+    if pmedia_values:
+        val_md = statistics.mean(pmedia_values)
+        val_mx = max(pmedia_values)
+        val_mn = min(pmedia_values)
+        if len(pmedia_values) >= 2:
+            val_vr = statistics.variance(pmedia_values)
     if pmax_values:
         val_mx = max(pmax_values)
-    else:
-        val_mx = max(pmedia_values)
     if pmin_values:
         val_mn = min(pmin_values)
-    else:
-        val_mn = min(pmedia_values)
     return flag, val_md, val_vr, val_mx, val_mn

@@ -283,3 +283,13 @@ def test_compute_tmngg():
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmngg(input_records, at_least_perc=0.75)
     assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 50, 0,
                                                      datetime(2020, 1, 1, 0, 0))
+
+
+def test_compute_press():
+    day_records_pmedia = create_samples('Pmedia')
+    day_records_pmax = create_samples('Pmax')
+    day_records_pmin = create_samples('Pmin')
+
+    flag, val_md, val_vr, val_mx, val_mn = compute.compute_press(
+        day_records_pmedia, day_records_pmax, day_records_pmin)
+    assert (flag, val_md, val_vr, val_mx, val_mn) == ((24, 1), 11.5, 50, 23, 0)

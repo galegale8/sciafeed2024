@@ -29,7 +29,7 @@ def test_load_parameter_thresholds():
 def test_get_station_props():
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
     expected = {
-        'cod_utente': '02500MS',
+        'cod_utente': '0250',
         'desc': 'Marienberg - Monte Maria',
         'height': '1310',
         'utmx': '616288',
@@ -46,7 +46,7 @@ def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
     expected = {
-        'cod_utente': '02500MS',
+        'cod_utente': '0250',
         'desc': 'Marienberg - Monte Maria',
         'height': '1310',
         'utmx': '616288',
@@ -124,7 +124,7 @@ def test_validate_format():
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'bolzano', 'MonteMaria.xls')
     parameters_filepath = join(TEST_DATA_PATH, 'bolzano', 'bolzano_params.csv')
-    station_info_expected = {'cod_utente': '02500MS',
+    station_info_expected = {'cod_utente': '0250',
                              'desc': 'Marienberg - Monte Maria',
                              'height': '1310', 'utmx': '616288',
                              'utmy': '5173583',

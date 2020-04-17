@@ -365,7 +365,7 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
         return flag, val_md, val_vr
     val_md = statistics.mean(valid_values)
     if len(valid_values) >= 2:
-        val_vr = statistics.stdev(valid_values)
+        val_vr = round(statistics.stdev(valid_values), 4)
     return flag, val_md, val_vr
 
 
@@ -404,7 +404,7 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     values = [r[3] for r in valid_records]
     val_md = statistics.mean(values)
     if len(values) >= 2:
-        val_vr = statistics.stdev(values)
+        val_vr = round(statistics.stdev(values), 4)
     val_x = max(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
@@ -445,7 +445,7 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     values = [r[3] for r in valid_records]
     val_md = statistics.mean(values)
     if len(values) >= 2:
-        val_vr = statistics.stdev(values)
+        val_vr = round(statistics.stdev(values), 4)
     val_x = min(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
@@ -494,7 +494,7 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
         val_mx = max(pmedia_values)
         val_mn = min(pmedia_values)
         if len(pmedia_values) >= 2:
-            val_vr = statistics.stdev(pmedia_values)
+            val_vr = round(statistics.stdev(pmedia_values), 4)
     if pmax_values:
         val_mx = max(pmax_values)
     if pmin_values:
@@ -544,7 +544,7 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     val_mn = min(valid_values)
     val_tot = sum(valid_values)
     if len(valid_values) >= 2:
-        val_vr = statistics.stdev(valid_values)
+        val_vr = round(statistics.stdev(valid_values), 4)
     return flag, val_md, val_vr, val_mx, val_mn, val_tot
 
 
@@ -584,7 +584,7 @@ def compute_elio(day_records, at_least_perc=0.75, force_flag=None):
         return flag, val_md, val_vr, val_mx
     val_md = sum(valid_values)
     if len(valid_values) >= 2:
-        val_vr = statistics.stdev(valid_values)
+        val_vr = round(statistics.stdev(valid_values), 4)
     return flag, val_md, val_vr, val_mx
 
 
@@ -628,7 +628,7 @@ def compute_radglob(day_records, at_least_perc=0.75, force_flag=None):
     val_mx = max(valid_values)
     val_mn = min(valid_values)
     if len(valid_values) >= 2:
-        val_vr = statistics.stdev(valid_values)
+        val_vr = round(statistics.stdev(valid_values), 4)
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -675,7 +675,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
     if urmedia_values:
         val_md = statistics.mean(urmedia_values)
         if len(urmedia_values) >= 2:
-            val_vr = statistics.stdev(urmedia_values)
+            val_vr = round(statistics.stdev(urmedia_values), 4)
         if urmax_values:
             val_mx = max(urmax_values)
         else:

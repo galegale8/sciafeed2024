@@ -11,6 +11,8 @@ import itertools
 import operator
 import statistics
 
+ROUND_PRECISION = 4
+
 # -------------- GENERIC UTILITIES --------------
 
 
@@ -363,9 +365,9 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
     val_vr = None
     if not valid_values:
         return flag, val_md, val_vr
-    val_md = statistics.mean(valid_values)
+    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), 4)
+        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
     return flag, val_md, val_vr
 
 
@@ -402,9 +404,9 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     if not valid_records:
         return flag, val_md, val_vr, val_x, data_x
     values = [r[3] for r in valid_records]
-    val_md = statistics.mean(values)
+    val_md = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
-        val_vr = round(statistics.stdev(values), 4)
+        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
     val_x = max(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
@@ -443,9 +445,9 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     if not valid_records:
         return flag, val_md, val_vr, val_x, data_x
     values = [r[3] for r in valid_records]
-    val_md = statistics.mean(values)
+    val_md = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
-        val_vr = round(statistics.stdev(values), 4)
+        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
     val_x = min(values)
     data_x = [r[1] for r in valid_records if r[3] == val_x][0]
     return flag, val_md, val_vr, val_x, data_x
@@ -490,11 +492,11 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
     val_mx = None
     val_mn = None
     if pmedia_values:
-        val_md = statistics.mean(pmedia_values)
+        val_md = round(statistics.mean(pmedia_values), ROUND_PRECISION)
         val_mx = max(pmedia_values)
         val_mn = min(pmedia_values)
         if len(pmedia_values) >= 2:
-            val_vr = round(statistics.stdev(pmedia_values), 4)
+            val_vr = round(statistics.stdev(pmedia_values), ROUND_PRECISION)
     if pmax_values:
         val_mx = max(pmax_values)
     if pmin_values:
@@ -539,12 +541,12 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     val_tot = None
     if not valid_values:
         return flag, val_md, val_vr, val_mx, val_mn, val_tot
-    val_md = statistics.mean(valid_values)
-    val_mx = max(valid_values)
-    val_mn = min(valid_values)
-    val_tot = sum(valid_values)
+    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_mx = round(max(valid_values), ROUND_PRECISION)
+    val_mn = round(min(valid_values), ROUND_PRECISION)
+    val_tot = round(sum(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), 4)
+        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
     return flag, val_md, val_vr, val_mx, val_mn, val_tot
 
 
@@ -582,9 +584,9 @@ def compute_elio(day_records, at_least_perc=0.75, force_flag=None):
     val_mx = None
     if not valid_values:
         return flag, val_md, val_vr, val_mx
-    val_md = sum(valid_values)
+    val_md = round(sum(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), 4)
+        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
     return flag, val_md, val_vr, val_mx
 
 
@@ -624,11 +626,11 @@ def compute_radglob(day_records, at_least_perc=0.75, force_flag=None):
     val_mn = None
     if not valid_values:
         return flag, val_md, val_vr, val_mx, val_mn
-    val_md = statistics.mean(valid_values)
-    val_mx = max(valid_values)
-    val_mn = min(valid_values)
+    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_mx = round(max(valid_values), ROUND_PRECISION)
+    val_mn = round(min(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), 4)
+        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -673,9 +675,9 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
     val_mx = None
     val_mn = None
     if urmedia_values:
-        val_md = statistics.mean(urmedia_values)
+        val_md = round(statistics.mean(urmedia_values), ROUND_PRECISION)
         if len(urmedia_values) >= 2:
-            val_vr = round(statistics.stdev(urmedia_values), 4)
+            val_vr = round(statistics.stdev(urmedia_values), ROUND_PRECISION)
         if urmax_values:
             val_mx = max(urmax_values)
         else:
@@ -715,7 +717,7 @@ def compute_vntmd(day_records, at_least_perc=0.75, force_flag=None):
     ff = None
     if not valid_values:
         return flag, ff
-    ff = statistics.mean(valid_values)
+    ff = round(statistics.mean(valid_values), ROUND_PRECISION)
     return flag, ff
 
 

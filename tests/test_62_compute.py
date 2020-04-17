@@ -293,3 +293,102 @@ def test_compute_press():
     flag, val_md, val_vr, val_mx, val_mn = compute.compute_press(
         day_records_pmedia, day_records_pmax, day_records_pmin)
     assert (flag, val_md, val_vr, val_mx, val_mn) == ((24, 1), 11.5, 7.0711, 23, 0)
+
+
+def test_compute_bagna():
+    metadata = sample_metadata.copy()
+    day_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'Bagnatura_f', 46.6998, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'Bagnatura_f', 19.3586, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'Bagnatura_f', 32.8168, False),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'Bagnatura_f', 49.6327, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'Bagnatura_f', 5.8928, False),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'Bagnatura_f', 1.8212, False),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'Bagnatura_f', 22.0986, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'Bagnatura_f', 45.9589, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'Bagnatura_f', 26.5065, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'Bagnatura_f', 20.6426, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'Bagnatura_f', 54.9259, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'Bagnatura_f', 6.737, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'Bagnatura_f', 45.4702, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'Bagnatura_f', 42.287, False),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'Bagnatura_f', 4.2066, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'Bagnatura_f', 21.8372, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'Bagnatura_f', 20.4227, True),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'Bagnatura_f', 22.0616, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'Bagnatura_f', 48.8321, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'Bagnatura_f', 32.1013, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'Bagnatura_f', 45.4906, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'Bagnatura_f', 4.2239, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'Bagnatura_f', 57.1591, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'Bagnatura_f', 11.9748, False)
+    ]
+    flag, val_md, val_vr, val_mx, val_mn, val_tot = compute.compute_bagna(day_records)
+    assert (flag, val_md, val_vr, val_mx, val_mn, val_tot) == \
+           ((11, 0), 0.4449, 0.2563, 0.8272, 0.0701, 4.8936)
+
+
+def test_compute_elio():
+    metadata = sample_metadata.copy()
+    day_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'INSOL', 12.3156, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'INSOL', 53.384, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'INSOL', 8.9947, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'INSOL', 17.9736, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'INSOL', 41.2483, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'INSOL', 12.0817, False),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'INSOL', 44.4205, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'INSOL', 49.4548, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'INSOL', 33.5316, False),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'INSOL', 4.5963, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'INSOL', 23.815, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'INSOL', 18.4742, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'INSOL', 25.068, False),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'INSOL', 50.023, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'INSOL', 7.0285, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'INSOL', 29.6455, False),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'INSOL', 3.0326, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'INSOL', 41.8781, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'INSOL', 54.6086, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'INSOL', 53.9748, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'INSOL', 13.0228, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'INSOL', 12.48, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'INSOL', 31.0874, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'INSOL', 35.6489, False)
+    ]
+    flag, val_md, val_vr, val_mx = compute.compute_elio(day_records)
+    # NOTE: val_md is the SUM
+    assert (flag, val_md, val_vr, val_mx) == ((9, 0), 4.4147, 0.2693, None)
+
+
+def test_compute_radglob():
+    metadata = sample_metadata.copy()
+    day_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'RADSOL', 29.503, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'RADSOL', 80.9462, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'RADSOL', 71.3331, False),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'RADSOL', 28.2172, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'RADSOL', 9.2708, False),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'RADSOL', 20.3447, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'RADSOL', 3.8309, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'RADSOL', 26.1966, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'RADSOL', 58.7787, False),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'RADSOL', 85.7274, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'RADSOL', 66.2083, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'RADSOL', 65.1714, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'RADSOL', 29.8974, False),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'RADSOL', 41.012, False),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'RADSOL', 34.1688, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'RADSOL', 83.0679, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'RADSOL', 6.9506, True),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'RADSOL', 74.8353, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'RADSOL', 9.9903, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'RADSOL', 30.9549, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'RADSOL', 75.6266, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'RADSOL', 47.9269, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'RADSOL', 22.7512, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'RADSOL', 11.4268, False),
+    ]
+    flag, val_md, val_vr, val_mx, val_mn = compute.compute_radglob(day_records)
+    assert (flag, val_md, val_vr, val_mx, val_mn) == ((9, 0), 21.8431, 14.4367, 41.5178, 3.3662)
+

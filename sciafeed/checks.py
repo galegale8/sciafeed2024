@@ -44,6 +44,7 @@ def data_internal_consistence_check(input_data, limiting_params=None):
         limiting_params = dict()
     err_msgs = []
     data_modified = []
+    input_data = sorted(input_data, key=different_data_record_info)
     for (station_id, row_date), measures in itertools.groupby(
             input_data, key=different_data_record_info):
         # here measures have all the same station and date

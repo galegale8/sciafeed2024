@@ -180,13 +180,12 @@ def parse_date(thedate, patterns):
     return ret_value
 
 
-def create_random_samples(par_code, hour_step=1, values_range=None):
+def create_random_samples(par_code, hour_step=1, values_range=(-100, 100)):
     metadata = {'a metadata': 'a value'}
     start_time = datetime(2020, 1, 1, 0, 0)
     ret_value = []
     for thehour in range(0, 24, hour_step):
-        if values_range:
-            par_value = round(random.uniform(*values_range), 4)
+        par_value = round(random.uniform(*values_range), 4)
         valid = random.choice([True, False])
         record = (metadata, start_time+timedelta(hours=thehour), par_code, par_value, valid)
         ret_value.append(record)

@@ -392,3 +392,88 @@ def test_compute_radglob():
     flag, val_md, val_vr, val_mx, val_mn = compute.compute_radglob(day_records)
     assert (flag, val_md, val_vr, val_mx, val_mn) == ((9, 0), 21.8431, 14.4367, 41.5178, 3.3662)
 
+
+def test_compute_ur():
+    metadata = sample_metadata.copy()
+    day_records_urmedia =  [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'UR media', 93.0725, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'UR media', 14.0488, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'UR media', 19.5679, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'UR media', 98.4374, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'UR media', 60.5525, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'UR media', 5.3557, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'UR media', 19.0187, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'UR media', 40.0136, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'UR media', 81.0316, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'UR media', 38.7842, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'UR media', 42.5653, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'UR media', 78.6204, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'UR media', 32.623, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'UR media', 8.1728, False),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'UR media', 46.7942, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'UR media', 19.52, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'UR media', 73.0788, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'UR media', 69.9987, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'UR media', 44.1692, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'UR media', 0.7595, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'UR media', 13.4624, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'UR media', 72.7669, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'UR media', 4.1295, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'UR media', 48.7278, False)
+    ]
+    day_records_urmax = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'UR max', 1.1287, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'UR max', 84.5, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'UR max', 7.051, False),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'UR max', 86.2606, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'UR max', 19.5809, False),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'UR max', 82.32, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'UR max', 56.0317, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'UR max', 73.2838, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'UR max', 76.6591, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'UR max', 84.9542, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'UR max', 80.976, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'UR max', 2.5568, False),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'UR max', 24.7245, False),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'UR max', 2.1739, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'UR max', 19.1577, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'UR max', 11.1011, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'UR max', 90.4718, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'UR max', 67.5488, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'UR max', 97.9166, True),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'UR max', 25.1655, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'UR max', 54.2473, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'UR max', 80.8128, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'UR max', 71.5309, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'UR max', 23.1089, True)
+    ]
+    day_records_urmin = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'UR min', 93.4062, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'UR min', 57.377, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'UR min', 63.7623, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'UR min', 65.5366, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'UR min', 6.0608, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'UR min', 7.9139, False),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'UR min', 41.3705, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'UR min', 94.9941, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'UR min', 98.9935, False),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'UR min', 6.9763, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'UR min', 83.4629, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'UR min', 0.0951, False),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'UR min', 83.8421, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'UR min', 28.7116, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'UR min', 38.8209, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'UR min', 98.0396, False),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'UR min', 74.3587, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'UR min', 36.3907, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'UR min', 91.5099, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'UR min', 26.6897, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'UR min', 74.6414, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'UR min', 86.2716, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'UR min', 20.7062, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'UR min', 54.3221, True)
+    ]
+    flag, val_md, val_vr, flag1, val_mx, val_mn = compute.compute_ur(
+        day_records_urmedia, day_records_urmax, day_records_urmin)
+    assert (flag, val_md, val_vr, flag1, val_mx, val_mn) == \
+           ((11, 0), 39.7866, 24.7727, (None, None), 97.9166, 6.0608)

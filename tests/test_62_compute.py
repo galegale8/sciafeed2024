@@ -4,12 +4,13 @@ from datetime import datetime, timedelta
 from sciafeed import compute
 
 from pprint import pprint
-
+from sciafeed import utils
 sample_metadata = {'a metadata': 'a value'}
 
 
+
 def create_samples(par_code, hour_step=1):
-    metadata = {'a metadata': 'a value'}
+    metadata = sample_metadata.copy()
     start_time = datetime(2020, 1, 1, 0, 0)
     ret_value = []
     for par_value, thehour in enumerate(range(0, 24, hour_step)):
@@ -395,7 +396,7 @@ def test_compute_radglob():
 
 def test_compute_ur():
     metadata = sample_metadata.copy()
-    day_records_urmedia =  [
+    day_records_urmedia = [
         (metadata, datetime(2020, 1, 1, 0, 0), 'UR media', 93.0725, False),
         (metadata, datetime(2020, 1, 1, 1, 0), 'UR media', 14.0488, False),
         (metadata, datetime(2020, 1, 1, 2, 0), 'UR media', 19.5679, True),
@@ -477,3 +478,333 @@ def test_compute_ur():
         day_records_urmedia, day_records_urmax, day_records_urmin)
     assert (flag, val_md, val_vr, flag1, val_mx, val_mn) == \
            ((11, 0), 39.7866, 24.7727, (None, None), 97.9166, 6.0608)
+
+
+def test_compute_vntmd():
+    metadata = sample_metadata.copy()
+    day_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'FF', 17.3247, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'FF', 68.9561, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'FF', 99.828, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'FF', 59.3268, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'FF', 86.4781, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'FF', 49.0313, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'FF', 23.5007, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'FF', 86.5212, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'FF', 38.2074, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'FF', 88.8914, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'FF', 97.5881, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'FF', 24.5994, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'FF', 27.0289, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'FF', 24.5575, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'FF', 13.6417, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'FF', 79.6259, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)
+    ]
+    flag, ff = compute.compute_vntmd(day_records, at_least_perc=0.75, force_flag=None)
+    assert (flag, ff) == ((18, 1), 52.0266)
+
+
+def test_compute_wind_flag():
+    metadata = sample_metadata.copy()
+    day_ff_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'FF', 17.3247, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'FF', 68.9561, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),  #
+        (metadata, datetime(2020, 1, 1, 3, 0), 'FF', 99.828, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),  #
+        (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),  #
+        (metadata, datetime(2020, 1, 1, 6, 0), 'FF', 59.3268, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'FF', 86.4781, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),  #
+        (metadata, datetime(2020, 1, 1, 9, 0), 'FF', 49.0313, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'FF', 23.5007, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'FF', 86.5212, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),  #
+        (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),  #
+        (metadata, datetime(2020, 1, 1, 14, 0), 'FF', 38.2074, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),  #
+        (metadata, datetime(2020, 1, 1, 16, 0), 'FF', 88.8914, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'FF', 97.5881, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'FF', 24.5994, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'FF', 27.0289, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'FF', 24.5575, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'FF', 13.6417, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'FF', 79.6259, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)  #
+    ]
+    day_dd_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'DD', 358.3351, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'DD', 175.2109, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'DD', 220.809, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'DD', 288.4084, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'DD', 311.3915, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'DD', 209.0426, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'DD', 110.1688, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'DD', 136.3192, False),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'DD', 210.9397, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'DD', 315.8591, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'DD', 159.6154, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'DD', 95.822, True),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'DD', 43.7687, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'DD', 11.644, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'DD', 266.7326, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'DD', 176.5122, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+    ]
+    flag = compute.compute_wind_flag(day_ff_records, day_dd_records)
+    assert flag == (8, 0)
+    flag = compute.compute_wind_flag(day_ff_records, day_dd_records, at_least_perc=0.3)
+    assert flag == (8, 1)
+
+
+def test_compute_vntmxgg():
+    metadata = sample_metadata.copy()
+    day_ff_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'FF', 17.3247, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'FF', 68.9561, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),  #
+        (metadata, datetime(2020, 1, 1, 3, 0), 'FF', 99.828, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),  #
+        (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),  #
+        (metadata, datetime(2020, 1, 1, 6, 0), 'FF', 59.3268, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'FF', 86.4781, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),  #
+        (metadata, datetime(2020, 1, 1, 9, 0), 'FF', 49.0313, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'FF', 23.5007, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'FF', 86.5212, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),  #
+        (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),  #
+        (metadata, datetime(2020, 1, 1, 14, 0), 'FF', 38.2074, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),  #
+        (metadata, datetime(2020, 1, 1, 16, 0), 'FF', 88.8914, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'FF', 97.5881, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'FF', 24.5994, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'FF', 27.0289, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'FF', 24.5575, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'FF', 13.6417, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'FF', 79.6259, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)  #
+    ]
+    day_dd_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'DD', 358.3351, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'DD', 175.2109, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'DD', 220.809, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'DD', 288.4084, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'DD', 311.3915, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'DD', 209.0426, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'DD', 110.1688, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'DD', 136.3192, False),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'DD', 210.9397, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'DD', 315.8591, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'DD', 159.6154, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'DD', 95.822, True),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'DD', 43.7687, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'DD', 11.644, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'DD', 266.7326, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'DD', 176.5122, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+    ]
+    flag, ff, dd = compute.compute_vntmxgg(day_ff_records, day_dd_records)
+    assert (flag, ff, dd) == ((18, 1), 99.828, None)
+
+
+def test_wind_ff_distribution():
+    metadata = sample_metadata.copy()
+    input_records = [
+        (metadata, datetime(2020, 1, 1, 1, 0), 'FF', 68.9561, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'FF', 99.828, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'FF', 59.3268, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'FF', 49.0313, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'FF', 86.5212, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'FF', 38.2074, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'FF', 97.5881, True),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'FF', 27.0289, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'FF', 13.6417, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'FF', 79.6259, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True),
+    ]
+    [c1, c2, c3, c4] = compute.wind_ff_distribution(input_records)
+    assert [c1, c2, c3, c4] == [1, 0, 2, 15]
+
+
+def test_wind_dd_partition():
+    metadata = sample_metadata.copy()
+    input_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'DD', 358.3351, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'DD', 110.1688, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'DD', 95.822, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'DD', 11.644, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+    ]
+    result = compute.wind_dd_partition(input_records)
+    assert result == [
+        [
+            (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+            (metadata, datetime(2020, 1, 1, 20, 0), 'DD', 11.644, True)],
+        [
+            (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True)
+        ],
+        [],
+        [],
+        [
+            (metadata, datetime(2020, 1, 1, 10, 0), 'DD', 110.1688, True),
+            (metadata, datetime(2020, 1, 1, 18, 0), 'DD', 95.822, True)],
+        [],
+        [
+            (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True)
+        ],
+        [
+            (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+            (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+            (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+            (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+            (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True)
+        ],
+        [],
+        [],
+        [
+            (metadata, datetime(2020, 1, 1, 0, 0), 'DD', 358.3351, True)
+        ]
+    ]
+
+
+def test_compute_vnt():
+    metadata = sample_metadata.copy()
+    day_ff_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'FF', 17.3247, False),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'FF', 0.2, True),  # -> calme
+        (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),  #
+        (metadata, datetime(2020, 1, 1, 3, 0), 'FF', 99.828, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),  #
+        (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),  #
+        (metadata, datetime(2020, 1, 1, 6, 0), 'FF', 59.3268, True),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'FF', 86.4781, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),  #
+        (metadata, datetime(2020, 1, 1, 9, 0), 'FF', 49.0313, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'FF', 23.5007, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'FF', 86.5212, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),  #
+        (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),  #
+        (metadata, datetime(2020, 1, 1, 14, 0), 'FF', 38.2074, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),  #
+        (metadata, datetime(2020, 1, 1, 16, 0), 'FF', 88.8914, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'FF', 97.5881, True),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'FF', 24.5994, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'FF', 27.0289, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'FF', 24.5575, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'FF', 13.6417, True),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'FF', 79.6259, True),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)  #
+    ]
+    day_dd_records = [
+        (metadata, datetime(2020, 1, 1, 0, 0), 'DD', 358.3351, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'DD', 175.2109, False),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'DD', 220.809, False),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'DD', 288.4084, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'DD', 311.3915, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'DD', 209.0426, False),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'DD', 110.1688, True),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'DD', 136.3192, False),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'DD', 210.9397, False),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'DD', 315.8591, False),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'DD', 159.6154, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'DD', 95.822, True),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'DD', 43.7687, False),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'DD', 11.644, True),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'DD', 266.7326, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'DD', 176.5122, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+    ]
+    # ff = [
+    #     (metadata, datetime(2020, 1, 1, 2, 0), 'FF', 26.4429, True),  #
+    #     (metadata, datetime(2020, 1, 1, 4, 0), 'FF', 7.7739, True),  #
+    #     (metadata, datetime(2020, 1, 1, 5, 0), 'FF', 98.4608, True),  #
+    #     (metadata, datetime(2020, 1, 1, 8, 0), 'FF', 20.4499, True),  #
+    #     (metadata, datetime(2020, 1, 1, 12, 0), 'FF', 98.4362, True),  #
+    #     (metadata, datetime(2020, 1, 1, 13, 0), 'FF', 55.9767, True),  #
+    #     (metadata, datetime(2020, 1, 1, 15, 0), 'FF', 6.5295, True),  #
+    #     (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)  #
+    # ]
+    # dd = [
+    #     (metadata, datetime(2020, 1, 1, 2, 0), 'DD', 138.8715, True),
+    #     (metadata, datetime(2020, 1, 1, 4, 0), 'DD', 271.7507, True),
+    #     (metadata, datetime(2020, 1, 1, 5, 0), 'DD', 291.5353, True),
+    #     (metadata, datetime(2020, 1, 1, 8, 0), 'DD', 175.8598, True),
+    #     (metadata, datetime(2020, 1, 1, 12, 0), 'DD', 278.2642, True),
+    #     (metadata, datetime(2020, 1, 1, 13, 0), 'DD', 40.0071, True),
+    #     (metadata, datetime(2020, 1, 1, 15, 0), 'DD', 11.0144, True),
+    #     (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
+    # ]
+    result = compute.compute_vnt(day_ff_records, day_dd_records)
+    assert len(result) == 66
+    flag, frq_calme = result[:2]
+    frq_sicj = result[2:]
+    assert flag == (18, 1)
+    assert frq_calme == 1
+    assert frq_sicj == [
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 1, 2,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0
+    ]

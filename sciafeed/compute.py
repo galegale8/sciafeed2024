@@ -721,7 +721,7 @@ def compute_vntmd(day_records, at_least_perc=0.75, force_flag=None):
     return flag, ff
 
 
-def compute_wind_flag(day_ff_records, day_dd_records, at_least_perc):
+def compute_wind_flag(day_ff_records, day_dd_records, at_least_perc=0.75):
     """
     Compute the flag considering a good measure if there are both FF and DD records for each time.
 
@@ -783,7 +783,6 @@ def wind_ff_distribution(input_records):
     It returns the list [c1, c2, c3, c4, c5] where:
     ::
 
-    * calme: num of input records with FF <= 0.5
     * c1: num of records with PREC in ]0.5, 3]
     * c2: num of records with PREC in ]3, 5]
     * c3: num of records with PREC in ]5, 10]
@@ -792,7 +791,7 @@ def wind_ff_distribution(input_records):
     It assumes input records are all of FF, same station, valid and with not null values.
 
     :param input_records: input records of FF
-    :return: (c1, c2, c3, c4, c5)
+    :return: [c1, c2, c3, c4, c5]
     """
     c1 = len([d for d in input_records if 0.5 < d[3] <= 3])
     c2 = len([d for d in input_records if 3 < d[3] <= 5])
@@ -820,7 +819,7 @@ def wind_dd_partition(input_records):
     def get_sector_index(dd_record):
         if dd_record[3] == 0:
             return 15
-        sector_indx = dd_record[3][1] // 22.5
+        sector_indx = int(dd_record[3] // 22.5)
         if dd_record[3] % 22.5 == 0:
             sector_indx -= 1
         return sector_indx
@@ -859,19 +858,25 @@ def compute_vnt(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=N
     valid_ff_records = [m for m in day_ff_records if m[3] is not None and m[4]]
     valid_dd_records = [m for m in day_dd_records if m[3] is not None and m[4]]
 
-    # compute a map between DD record's time and corresponding FF record
+    # compute ff_hour_map: a map between DD record's time and corresponding FF record
+    # dd_measures_complete: DD records that have the corresponding FF records
     ff_hour_map = dict()
     all_records = sorted(valid_ff_records + valid_dd_records, key=operator.itemgetter(1))
     frq_calme = 0
-    for measure_time, measures in itertools.groupby(all_records, key=operator.itemgetter(1)):
-        valid_ff_measures = [m for m in measures if m[1] == 'FF']
-        valid_dd_measures = [m for m in measures if m[1] == 'DD']
+
+    dd_measures_complete = []
+    for measure_time, measures_it in itertools.groupby(all_records, key=operator.itemgetter(1)):
+        measures = list(measures_it)
+        valid_ff_measures = [m for m in measures if m[2] == 'FF']
+        valid_dd_measures = [m for m in measures if m[2] == 'DD']
         if valid_ff_measures and valid_ff_measures[0][3] <= 0.5:
             frq_calme += 1
         if valid_ff_measures and valid_dd_measures:
             ff_hour_map[measure_time] = valid_ff_measures[0]
+            dd_measures_complete.append(valid_dd_measures[0])
 
-    sectors_dd_records = wind_dd_partition(valid_dd_records)
+    # sectors_ff_records[i] = list of FF records with DD in the i-th sector
+    sectors_dd_records = wind_dd_partition(dd_measures_complete)
     sectors_ff_records = [[] for _ in range(16)]
     for i, sector_dd_records in enumerate(sectors_dd_records):
         sectors_ff_records[i] = [ff_hour_map[s[1]] for s in sector_dd_records]

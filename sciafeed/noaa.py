@@ -94,22 +94,32 @@ def build_urmedia_measure(day_records):
     tmin_records = [r for r in day_records if r[2] == 'Tmin' and r[3] is not None and r[4]]
     tmax_records = [r for r in day_records if r[2] == 'Tmax' and r[3] is not None and r[4]]
     dewp_records = [r for r in day_records if r[2] == 'DEWP' and r[3] is not None and r[4]]
-    if not tmin_records or not tmax_records or not dewp_records:
+    tmed_records = [r for r in day_records if r[2] == 'Tmedia' and r[3] is not None and r[4]]
+    if not dewp_records:
         return ()
-    tmin = tmin_records[0][3]
-    tmax = tmax_records[0][3]
+    if not tmin_records or not tmax_records:
+        if not tmed_records:
+            return ()
+        tmedia = tmed_records[0][3]
+    else:
+        tmin = tmin_records[0][3]
+        tmax = tmax_records[0][3]
+        tmedia = (tmax + tmin) / 2
+
     dewp = dewp_records[0][3]
     metadata, thedate = dewp_records[0][0:2]
-    tmedia = (tmax + tmin) / 2
     threshold = 100 - 5*(tmedia-dewp)
-    if threshold >= 50:
+    if threshold > 50:
         urmedia = threshold
     else:
-        es_par = 6.11 * 10**(7.5*tmedia/(237.7+tmedia))
-        e_par = 6.11 * 10**(7.5*tmedia/(237.7+dewp))
-        urmedia = 100 * es_par / e_par
-    urmedia = round(urmedia, 3)
-    measure = (metadata, thedate, 'UR media', urmedia, True)
+        es_par = 6.11 * (10**(7.5*tmedia/(237.7+tmedia)))
+        e_par = 6.11 * (10**(7.5*dewp/(237.7+dewp)))
+        urmedia = 100 * e_par / es_par
+    urmedia = round(urmedia, 4)
+    valid = True
+    if not (0 <= urmedia <= 100):
+        valid = False
+    measure = (metadata, thedate, 'UR media', urmedia, valid)
     return measure
 
 

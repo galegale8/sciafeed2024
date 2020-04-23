@@ -30,6 +30,20 @@ def test_load_parameter_thresholds():
     assert parameter_thresholds == expected_thresholds
 
 
+def test_build_urmedia_measure():
+    md = dict()
+    day_records = [
+        (md, date(2019, 1, 1), 'Tmedia', -5.5, True),
+        (md, date(2019, 1, 1), 'DEWP', -28.5, True),
+        (md, date(2019, 1, 1), 'VISIB', 9977.908, True),
+        (md, date(2019, 1, 1), 'Tmax', -3.6111, True),
+        (md, date(2019, 1, 1), 'Tmin', -9, True),
+        (md, date(2019, 1, 1), 'PREC', 0, True),
+    ]
+    ur_measure = noaa.build_urmedia_measure(day_records)
+    assert ur_measure == (md, date(2019, 1, 1), 'UR media', 15.2274, True)
+
+
 def test_extract_metadata():
     filepath = join(TEST_DATA_PATH, 'noaa', '160080-99999-2019.op')
     parameters_filepath = join(TEST_DATA_PATH, 'noaa', 'noaa_params.csv')
@@ -58,7 +72,7 @@ def test_parse_row():
         (metadata, date(2019, 1, 1), 'Tmin', -2.0, True),
         (metadata, date(2019, 1, 1), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 1), 'SNDP', 40.64, True),
-        (metadata, date(2019, 1, 1), 'UR media', 69.445, True),
+        (metadata, date(2019, 1, 1), 'UR media', 69.4445, True),
     ]
     effective = noaa.parse_row(row, parameters_map)
     assert effective == expected
@@ -138,7 +152,7 @@ def test_parse():
         (metadata, date(2019, 1, 1), 'Tmin', -2.0, True),
         (metadata, date(2019, 1, 1), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 1), 'SNDP', 40.64, True),
-        (metadata, date(2019, 1, 1), 'UR media', 69.445, True),
+        (metadata, date(2019, 1, 1), 'UR media', 69.4445, True),
         (metadata, date(2019, 1, 2), 'Tmedia', -3.6111, True),
         (metadata, date(2019, 1, 2), 'DEWP', -9.1667, True),
         (metadata, date(2019, 1, 2), 'P', None, True),
@@ -164,7 +178,7 @@ def test_parse():
         (metadata, date(2019, 1, 3), 'Tmin', -8.2222, True),
         (metadata, date(2019, 1, 3), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 3), 'SNDP', 40.64, True),
-        (metadata, date(2019, 1, 3), 'UR media', 51.667, True),
+        (metadata, date(2019, 1, 3), 'UR media', 51.6665, True),
         (metadata, date(2019, 1, 4), 'Tmedia', -5.0, True),
         (metadata, date(2019, 1, 4), 'DEWP', -11.7222, True),
         (metadata, date(2019, 1, 4), 'P', None, True),
@@ -177,7 +191,7 @@ def test_parse():
         (metadata, date(2019, 1, 4), 'Tmin', -8.2222, True),
         (metadata, date(2019, 1, 4), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 4), 'SNDP', 40.64, True),
-        (metadata, date(2019, 1, 4), 'UR media', 65.417, True),
+        (metadata, date(2019, 1, 4), 'UR media', 65.4167, True),
         (metadata, date(2019, 1, 5), 'Tmedia', -3.0556, True),
         (metadata, date(2019, 1, 5), 'DEWP', -4.6111, True),
         (metadata, date(2019, 1, 5), 'P', None, True),
@@ -190,7 +204,7 @@ def test_parse():
         (metadata, date(2019, 1, 5), 'Tmin', -5.6111, True),
         (metadata, date(2019, 1, 5), 'PREC', 2.032, True),
         (metadata, date(2019, 1, 5), 'SNDP', 88.9, True),
-        (metadata, date(2019, 1, 5), 'UR media', 80.972, True),
+        (metadata, date(2019, 1, 5), 'UR media', 80.9723, True),
         (metadata, date(2019, 1, 6), 'Tmedia', -1.5, True),
         (metadata, date(2019, 1, 6), 'DEWP', -4.8333, True),
         (metadata, date(2019, 1, 6), 'P', None, True),
@@ -203,7 +217,7 @@ def test_parse():
         (metadata, date(2019, 1, 6), 'Tmin', -2.7778, True),
         (metadata, date(2019, 1, 6), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 6), 'SNDP', 119.38, True),
-        (metadata, date(2019, 1, 6), 'UR media', 79.722, True),
+        (metadata, date(2019, 1, 6), 'UR media', 79.7225, True),
         (metadata, date(2019, 1, 7), 'Tmedia', -2.3333, True),
         (metadata, date(2019, 1, 7), 'DEWP', -5.7222, True),
         (metadata, date(2019, 1, 7), 'P', None, True),
@@ -216,7 +230,7 @@ def test_parse():
         (metadata, date(2019, 1, 7), 'Tmin', -5.0, True),
         (metadata, date(2019, 1, 7), 'PREC', 0.0, True),
         (metadata, date(2019, 1, 7), 'SNDP', 119.38, True),
-        (metadata, date(2019, 1, 7), 'UR media', 83.334, True),
+        (metadata, date(2019, 1, 7), 'UR media', 83.3335, True),
         (metadata, date(2019, 1, 8), 'Tmedia', -2.1667, True),
         (metadata, date(2019, 1, 8), 'DEWP', -4.4444, True),
         (metadata, date(2019, 1, 8), 'P', None, True),

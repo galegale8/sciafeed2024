@@ -20,6 +20,8 @@ development_require = [
 install_requires = [
     'click==7.0',
     'xlrd==1.2.0',
+    'sqlalchemy==1.3.16',
+    'psycopg2==2.8.5',
     'zeep==3.4.0',
 ]
 

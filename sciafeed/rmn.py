@@ -125,7 +125,7 @@ def parse_row(row, parameters_map, metadata=None):
     else:
         metadata = metadata.copy()
     time_str = "%s %s" % (row['DATA'], row['ORA'])
-    date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M") - timedelta(hours=1)
+    date_obj = datetime.strptime(time_str, "%Y%m%d %H:%M")
     if date_obj.minute != 0:
         return []
     data = []

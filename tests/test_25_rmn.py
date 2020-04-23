@@ -76,11 +76,11 @@ def test_parse_row():
     parameters_map = rmn.load_parameter_file(parameters_filepath=parameters_filepath)
 
     expected = [
-        ({}, datetime(2017, 12, 31, 23, 0), 'DD', 180.0, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'FF', 1.9, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'Tmedia', 7.2, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'P', 1018.1, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'UR media', 63.0, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'DD', 180.0, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'FF', 1.9, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'Tmedia', 7.2, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'P', 1018.1, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'UR media', 63.0, True)
     ]
     effective = rmn.parse_row(row, parameters_map)
     assert effective == expected
@@ -95,11 +95,11 @@ def test_parse_row():
         'UR media': '63'
     }
     expected = [
-        ({}, datetime(2017, 12, 31, 23, 0), 'DD', None, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'FF', None, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'Tmedia', 7.2, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'P', 1018.1, True),
-        ({}, datetime(2017, 12, 31, 23, 0), 'UR media', 63.0, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'DD', None, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'FF', None, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'Tmedia', 7.2, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'P', 1018.1, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'UR media', 63.0, True)
     ]
     effective = rmn.parse_row(row, parameters_map)
     assert effective == expected
@@ -110,7 +110,7 @@ def test_parse_row():
         'ORA': '00:00',
     }
     expected = [
-        ({}, datetime(2017, 12, 31, 23, 0), 'DD', 180.0, True),
+        ({}, datetime(2018, 1, 1, 0, 0), 'DD', 180.0, True),
     ]
     effective = rmn.parse_row(row, parameters_map)
     assert effective == expected
@@ -195,41 +195,41 @@ def test_parse():
     metadata = {'cod_utente': 'ANCONA', 'format': 'RMN', 'source': 'rmn/ancona_right.csv',
                 'fieldnames': ['DATA', 'ORA', 'DD', 'FF', 'Tmedia', 'P', 'UR media']}
     expected_data = [
-        (metadata, datetime(2017, 12, 31, 23, 0), 'DD', 180.0, True),
-        (metadata, datetime(2017, 12, 31, 23, 0), 'FF', 1.9, True),
-        (metadata, datetime(2017, 12, 31, 23, 0), 'Tmedia', 7.2, True),
-        (metadata, datetime(2017, 12, 31, 23, 0), 'P', 1018.1, True),
-        (metadata, datetime(2017, 12, 31, 23, 0), 'UR media', 63.0, True),
         (metadata, datetime(2018, 1, 1, 0, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 0, 0), 'FF', 1.0, True),
-        (metadata, datetime(2018, 1, 1, 0, 0), 'Tmedia', 8.0, True),
-        (metadata, datetime(2018, 1, 1, 0, 0), 'P', 1017.6, True),
-        (metadata, datetime(2018, 1, 1, 0, 0), 'UR media', 60.0, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'FF', 1.9, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'Tmedia', 7.2, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'P', 1018.1, True),
+        (metadata, datetime(2018, 1, 1, 0, 0), 'UR media', 63.0, True),
         (metadata, datetime(2018, 1, 1, 1, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 1, 0), 'FF', 4.0, True),
-        (metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 9.0, True),
-        (metadata, datetime(2018, 1, 1, 1, 0), 'P', 1016.9, True),
-        (metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 58.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'FF', 1.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'Tmedia', 8.0, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'P', 1017.6, True),
+        (metadata, datetime(2018, 1, 1, 1, 0), 'UR media', 60.0, True),
         (metadata, datetime(2018, 1, 1, 2, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 2, 0), 'FF', 3.9, True),
-        (metadata, datetime(2018, 1, 1, 2, 0), 'Tmedia', 8.7, True),
-        (metadata, datetime(2018, 1, 1, 2, 0), 'P', 1016.2, True),
-        (metadata, datetime(2018, 1, 1, 2, 0), 'UR media', 59.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'FF', 4.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'Tmedia', 9.0, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'P', 1016.9, True),
+        (metadata, datetime(2018, 1, 1, 2, 0), 'UR media', 58.0, True),
         (metadata, datetime(2018, 1, 1, 3, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 3, 0), 'FF', 4.5, True),
-        (metadata, datetime(2018, 1, 1, 3, 0), 'Tmedia', 10.1, True),
-        (metadata, datetime(2018, 1, 1, 3, 0), 'P', 1015.2, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'FF', 3.9, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'Tmedia', 8.7, True),
+        (metadata, datetime(2018, 1, 1, 3, 0), 'P', 1016.2, True),
         (metadata, datetime(2018, 1, 1, 3, 0), 'UR media', 59.0, True),
         (metadata, datetime(2018, 1, 1, 4, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 4, 0), 'FF', 5.8, True),
-        (metadata, datetime(2018, 1, 1, 4, 0), 'Tmedia', 9.7, True),
-        (metadata, datetime(2018, 1, 1, 4, 0), 'P', 1014.3, True),
-        (metadata, datetime(2018, 1, 1, 4, 0), 'UR media', 62.0, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'FF', 4.5, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'Tmedia', 10.1, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'P', 1015.2, True),
+        (metadata, datetime(2018, 1, 1, 4, 0), 'UR media', 59.0, True),
         (metadata, datetime(2018, 1, 1, 5, 0), 'DD', 180.0, True),
-        (metadata, datetime(2018, 1, 1, 5, 0), 'FF', 4.6, True),
-        (metadata, datetime(2018, 1, 1, 5, 0), 'Tmedia', 9.5, True),
-        (metadata, datetime(2018, 1, 1, 5, 0), 'P', 1014.1, True),
-        (metadata, datetime(2018, 1, 1, 5, 0), 'UR media', 64.0, True),
+        (metadata, datetime(2018, 1, 1, 5, 0), 'FF', 5.8, True),
+        (metadata, datetime(2018, 1, 1, 5, 0), 'Tmedia', 9.7, True),
+        (metadata, datetime(2018, 1, 1, 5, 0), 'P', 1014.3, True),
+        (metadata, datetime(2018, 1, 1, 5, 0), 'UR media', 62.0, True),
+        (metadata, datetime(2018, 1, 1, 6, 0), 'DD', 180.0, True),
+        (metadata, datetime(2018, 1, 1, 6, 0), 'FF', 4.6, True),
+        (metadata, datetime(2018, 1, 1, 6, 0), 'Tmedia', 9.5, True),
+        (metadata, datetime(2018, 1, 1, 6, 0), 'P', 1014.1, True),
+        (metadata, datetime(2018, 1, 1, 6, 0), 'UR media', 64.0, True),
     ]
     effective, err_msgs = rmn.parse(filepath, parameters_filepath=parameters_filepath)
     for i, record in enumerate(effective):

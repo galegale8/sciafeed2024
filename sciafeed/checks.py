@@ -13,14 +13,7 @@ This module contains the functions and utilities to check climatologic data.
 """
 import itertools
 
-
-def different_data_record_info(data_record):
-    """
-    Used to group all the records with the same station and date
-    """
-    metadata, row_date, par_code, par_value, par_flag = data_record
-    station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
-    return station_id, row_date
+from sciafeed import utils
 
 
 def data_internal_consistence_check(input_data, limiting_params=None):
@@ -44,9 +37,9 @@ def data_internal_consistence_check(input_data, limiting_params=None):
         limiting_params = dict()
     err_msgs = []
     data_modified = []
-    input_data = sorted(input_data, key=different_data_record_info)
+    input_data = sorted(input_data, key=utils.different_data_record_info)
     for (station_id, row_date), measures in itertools.groupby(
-            input_data, key=different_data_record_info):
+            input_data, key=utils.different_data_record_info):
         # here measures have all the same station and date
         props = {m[2]: (m[3], m[4], m[0]) for m in measures}
         for par_code, (par_value, par_flag, metadata) in props.items():

@@ -190,3 +190,12 @@ def create_random_samples(par_code, hour_step=1, values_range=(-100, 100)):
         record = (metadata, start_time+timedelta(hours=thehour), par_code, par_value, valid)
         ret_value.append(record)
     return ret_value
+
+
+def different_data_record_info(data_record):
+    """
+    Used to group all the records with the same station and date
+    """
+    metadata, row_date, par_code, par_value, par_flag = data_record
+    station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
+    return station_id, row_date

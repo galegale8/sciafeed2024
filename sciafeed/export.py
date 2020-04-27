@@ -15,6 +15,8 @@ import csv
 from datetime import datetime
 import operator
 
+ROUND_PRECISION = 1
+
 
 def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     """
@@ -37,6 +39,8 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
                 continue
             if omit_missing and par_value is None:
                 continue
+            if par_value is not None:
+                par_value = round(par_value, ROUND_PRECISION)
             cod_utente = metadata.get('cod_utente_prefix', '') + metadata.get('cod_utente', '')
             row = {
                 'cod_utente': cod_utente,

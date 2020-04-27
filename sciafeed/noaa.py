@@ -116,10 +116,7 @@ def build_urmedia_measure(day_records):
         e_par = 6.11 * (10**(7.5*dewp/(237.7+dewp)))
         urmedia = 100 * e_par / es_par
     urmedia = round(urmedia, 4)
-    valid = True
-    if not (0 <= urmedia <= 100):
-        valid = False
-    measure = (metadata, thedate, 'UR media', urmedia, valid)
+    measure = (metadata, thedate, 'UR media', urmedia, True)
     return measure
 
 

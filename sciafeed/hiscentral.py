@@ -21,6 +21,7 @@ PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'hiscentral_params.csv')
 LIMITING_PARAMETERS = {
 }
 WSDL_URLS = {
+    '01': "http://hydrolite.ddns.net/italia/hsl-pie/index.php/default/services/cuahsi_1_1.asmx?WSDL",
     '02': "http://hydrolite.ddns.net/italia/hsl-vda/index.php/default/services/cuahsi_1_1.asmx?WSDL",
     '03': "http://hydrolite.ddns.net/italia/hsl-lom/index.php/default/services/cuahsi_1_1.asmx?WSDL",
     '05': "http://hydrolite.ddns.net/italia/hsl-ven/index.php/default/services/cuahsi_1_1.asmx?WSDL",
@@ -64,7 +65,7 @@ REGION_IDS_MAP = {
     '19': "SICILIA",
     '20': "SARDEGNA",
     '21': "BOLZANO",
-    '22': "TRENTO",
+    # '22': "TRENTO",
 }
 
 

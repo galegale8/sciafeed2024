@@ -123,10 +123,12 @@ def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_tot, val_mx, data_mx)
     """
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    if not valid_values:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
     val_tot = None
     val_mx = None
     data_mx = None
@@ -156,6 +158,8 @@ def compute_cl_prec24(day_records):
     :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
     """
     valid_records = [d for d in day_records if d[4] and d[3] is not None]
+    if not valid_records:
+        return None
     return wet_distribution(valid_records)
 
 
@@ -178,10 +182,12 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    if not valid_values:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
     val_mx = None
     data_mx = None
     if valid_values:
@@ -209,14 +215,14 @@ def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
-    flag = force_flag
-    if not flag:
-        flag = compute_flag(day_records, at_least_perc)
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
     val_mx = None
     data_mx = None
     if not valid_records or not isinstance(valid_records[0][1], datetime):
-        return flag, val_mx, data_mx
+        return None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
     new_records = sum_records_by_hour_groups(valid_records, 6)
     if new_records:
         val_mx = max([r[3] for r in new_records])
@@ -243,6 +249,8 @@ def compute_cl_prec06(day_records):
     :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
     """
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    if not valid_records:
+        return None
     new_records = sum_records_by_hour_groups(valid_records, 6)
     return wet_distribution(new_records)
 
@@ -266,18 +274,17 @@ def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
+    valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    if not valid_records or not isinstance(valid_records[0][1], datetime):
+        return None
+    new_records = sum_records_by_hour_groups(valid_records, 12)
+    if not new_records:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    val_mx = None
-    data_mx = None
-    if not valid_records or not isinstance(valid_records[0][1], datetime):
-        return flag, val_mx, data_mx
-    new_records = sum_records_by_hour_groups(valid_records, 12)
-    if new_records:
-        val_mx = max([r[3] for r in new_records])
-        data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
+    val_mx = max([r[3] for r in new_records])
+    data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
     return flag, val_mx, data_mx
 
 
@@ -300,6 +307,8 @@ def compute_cl_prec12(day_records):
     :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
     """
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    if not valid_records:
+        return None
     new_records = sum_records_by_hour_groups(valid_records, 12)
     return wet_distribution(new_records)
 
@@ -367,7 +376,7 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
     val_md = None
     val_vr = None
     if not valid_values:
-        return flag, val_md, val_vr
+        return None
     val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
         val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
@@ -395,17 +404,17 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_x, data_x)
     """
-    flag = force_flag
-    if not flag:
-        flag = compute_temperature_flag(
-            day_records, perc_day=at_least_perc, perc_night=at_least_perc)
     val_md = None
     val_vr = None
     val_x = None
     data_x = None
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
     if not valid_records:
-        return flag, val_md, val_vr, val_x, data_x
+        return None
+    flag = force_flag
+    if not flag:
+        flag = compute_temperature_flag(
+            day_records, perc_day=at_least_perc, perc_night=at_least_perc)
     values = [r[3] for r in valid_records]
     val_md = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
@@ -436,17 +445,14 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_x, data_x)
     """
+    val_vr = None
+    valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    if not valid_records:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_temperature_flag(
             day_records, perc_day=at_least_perc, perc_night=at_least_perc)
-    val_md = None
-    val_vr = None
-    val_x = None
-    data_x = None
-    valid_records = [r for r in day_records if r[4] and r[3] is not None]
-    if not valid_records:
-        return flag, val_md, val_vr, val_x, data_x
     values = [r[3] for r in valid_records]
     val_md = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
@@ -483,13 +489,15 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
+    pmedia_values = [r[3] for r in day_records_pmedia if r[4] and r[3] is not None]
+    pmax_values = [r[3] for r in day_records_pmax if r[4] and r[3] is not None]
+    pmin_values = [r[3] for r in day_records_pmin if r[4] and r[3] is not None]
+    if not pmin_values and not pmax_values and not pmedia_values:
+        return None
     flag = force_flag
     if not flag:
         # flag computed from Pmedia
         flag = compute_flag(day_records_pmedia, at_least_perc)
-    pmedia_values = [r[3] for r in day_records_pmedia if r[4] and r[3] is not None]
-    pmax_values = [r[3] for r in day_records_pmax if r[4] and r[3] is not None]
-    pmin_values = [r[3] for r in day_records_pmin if r[4] and r[3] is not None]
     val_md = None
     val_vr = None
     val_mx = None
@@ -532,18 +540,14 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx, val_mn, val_tot)
     """
+    # 'values / 60' because outputs are in hours and input in minutes
+    valid_values = [r[3]/60 for r in day_records if r[4] and r[3] is not None]
+    val_vr = None
+    if not valid_values:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    # 'values / 60' because outputs are in hours and input in minutes
-    valid_values = [r[3]/60 for r in day_records if r[4] and r[3] is not None]
-    val_md = None
-    val_vr = None
-    val_mx = None
-    val_mn = None
-    val_tot = None
-    if not valid_values:
-        return flag, val_md, val_vr, val_mx, val_mn, val_tot
     val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
     val_mx = round(max(valid_values), ROUND_PRECISION)
     val_mn = round(min(valid_values), ROUND_PRECISION)
@@ -577,16 +581,15 @@ def compute_elio(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx)
     """
-    flag = force_flag
-    if not flag:
-        flag = compute_flag(day_records, at_least_perc)
     # 'values / 60' because outputs are in hours and input in minutes
     valid_values = [r[3]/60 for r in day_records if r[4] and r[3] is not None]
-    val_md = None
     val_vr = None
     val_mx = None
     if not valid_values:
-        return flag, val_md, val_vr, val_mx
+        return None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
     val_md = round(sum(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
         val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
@@ -618,17 +621,14 @@ def compute_radglob(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
+    # 'values *0.4843' because outputs are in W/m2 and input in cal/cm2
+    valid_values = [r[3]*0.4843 for r in day_records if r[4] and r[3] is not None]
+    val_vr = None
+    if not valid_values:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    # 'values *0.4843' because outputs are in W/m2 and input in cal/cm2
-    valid_values = [r[3]*0.4843 for r in day_records if r[4] and r[3] is not None]
-    val_md = None
-    val_vr = None
-    val_mx = None
-    val_mn = None
-    if not valid_values:
-        return flag, val_md, val_vr, val_mx, val_mn
     val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
     val_mx = round(max(valid_values), ROUND_PRECISION)
     val_mn = round(min(valid_values), ROUND_PRECISION)
@@ -665,13 +665,15 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, flag1, val_mx, val_mn)
     """
+    urmedia_values = [r[3] for r in day_records_urmedia if r[4] and r[3] is not None]
+    urmax_values = [r[3] for r in day_records_urmax if r[4] and r[3] is not None]
+    urmin_values = [r[3] for r in day_records_urmin if r[4] and r[3] is not None]
+    if not urmedia_values and not urmax_values and not urmin_values:
+        return None
     flag = force_flag
     if not flag:
         # flag computed from URmedia
         flag = compute_flag(day_records_urmedia, at_least_perc)
-    urmedia_values = [r[3] for r in day_records_urmedia if r[4] and r[3] is not None]
-    urmax_values = [r[3] for r in day_records_urmax if r[4] and r[3] is not None]
-    urmin_values = [r[3] for r in day_records_urmin if r[4] and r[3] is not None]
     val_md = None
     val_vr = None
     flag1 = (None, None)
@@ -714,13 +716,12 @@ def compute_vntmd(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, ff)
     """
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    if not valid_values:
+        return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
-    ff = None
-    if not valid_values:
-        return flag, ff
     ff = round(statistics.mean(valid_values), ROUND_PRECISION)
     return flag, ff
 
@@ -766,19 +767,18 @@ def compute_vntmxgg(day_ff_records, day_dd_records, at_least_perc=0.75, force_fl
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, ff, dd)
     """
+    valid_ff_records = [r for r in day_ff_records if r[4] and r[3] is not None]
+    if not valid_ff_records:
+        return None
     flag = force_flag
     if not flag:
         # TODO: ask how to compute the flag
         # flag = compute_wind_flag(day_ff_records, day_dd_records, at_least_perc)
         flag = compute_flag(day_ff_records, at_least_perc)
-    valid_ff_records = [r for r in day_ff_records if r[4] and r[3] is not None]
     dd_records_times = dict([(r[1], r[3]) for r in day_dd_records if r[4] and r[3] is not None])
-    ff = None
-    dd = None
-    if valid_ff_records:
-        ff = max([r[3] for r in valid_ff_records])
-        hour_of_max = [r[1] for r in valid_ff_records if r[3] == ff][0]
-        dd = dd_records_times.get(hour_of_max)
+    ff = max([r[3] for r in valid_ff_records])
+    hour_of_max = [r[1] for r in valid_ff_records if r[3] == ff][0]
+    dd = dd_records_times.get(hour_of_max)
     return flag, ff, dd
 
 
@@ -861,6 +861,8 @@ def compute_vnt(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=N
         flag = compute_flag(day_ff_records, at_least_perc)
     valid_ff_records = [m for m in day_ff_records if m[3] is not None and m[4]]
     valid_dd_records = [m for m in day_dd_records if m[3] is not None and m[4]]
+    if not valid_ff_records and not valid_dd_records:
+        return None
 
     # compute ff_hour_map: a map between DD record's time and corresponding FF record
     # dd_measures_complete: DD records that have the corresponding FF records
@@ -996,6 +998,9 @@ def compute_indicators(data, writers, table_map):
                 continue
             key_tuple = (table, station_date_str, station_date_str)
             indicators_row = day_indicators[table]
+            if len([i for i in indicators_row.values() if i is not None]) == 0:
+                # don't write empty rows
+                continue
             writer, _ = writers[table]
             indicators_row['cod_aggr'] = 4
             indicators_row['data_i'] = station_date_str

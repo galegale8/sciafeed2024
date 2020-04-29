@@ -1,9 +1,14 @@
 """
 This module contains functions and utilities that involve more components of sciafeed.
 """
+from os import listdir
+from os.path import isfile, join, splitext
+
 from sciafeed import checks
+from sciafeed import compute
 from sciafeed import export
 from sciafeed import parsing
+from sciafeed import utils
 
 
 def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks=True,
@@ -90,5 +95,36 @@ def compute_indicators(data_folder, indicators_folder=None, report_path=None):
     """
     msgs = []
     computed_indicators = dict()
-    # TODO
+    for file_name in listdir(data_folder):
+        csv_path = join(data_folder, file_name)
+        if not isfile(csv_path) or splitext(file_name.lower()) != '.csv':
+            continue
+        msg = "START OF ANALYSIS OF FILE %r" % csv_path
+        msgs.append(msg)
+        msgs.append('=' * len(msg))
+        msgs.append('')
+        try:
+            data = export.csv2data(csv_path)
+        except:
+            msg = 'CSV file not parsable'
+            msgs.append(msg)
+            msgs.append('')
+            continue
+
+        writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
+        comp_msgs, computed_indicators = compute.compute_indicators(
+            data, writers, compute.INDICATORS_TABLES)
+        msgs.extend(comp_msgs)
+        utils.close_csv_writers(writers)
+
+        msgs.append('')
+        msg = "END OF ANALYSIS OF FILE"
+        msgs.append(msg)
+        msgs.append('=' * len(msg))
+        msgs.append('')
+
+        if report_path:
+            with open(report_path, 'a') as fp:
+                for msg in msgs:
+                    fp.write(msg + '\n')
     return msgs, computed_indicators

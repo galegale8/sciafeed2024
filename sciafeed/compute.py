@@ -11,8 +11,11 @@ import itertools
 import operator
 import statistics
 
-ROUND_PRECISION = 4
+from sciafeed import utils
 
+ROUND_PRECISION = 1
+INDICATORS_TABLES = {
+}
 # -------------- GENERIC UTILITIES --------------
 
 
@@ -340,7 +343,7 @@ def compute_temperature_flag(input_records, perc_day=0.75, perc_night=0.75,
 def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "media e varianza della temperatura giornaliera".
-    It will fill the field 'tmdgg' of table 'sciapgg.ds__ts200'.
+    It will fill the field 'tmdgg' of table 'sciapgg.ds__t200'.
     It assumes day_records is of par_code='Tmedia'.
     It returns the tuple (flag, val_md, val_vr) where:
     ::
@@ -374,7 +377,7 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
 def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "massimo della temperatura giornaliera".
-    It will fill the field 'tmxgg' of table 'sciapgg.ds__ts200'.
+    It will fill the field 'tmxgg' of table 'sciapgg.ds__t200'.
     It assumes day_records is of par_code='Tmax' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
@@ -415,7 +418,7 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
 def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "minimo della temperatura giornaliera".
-    It will fill the field 'tmngg' of table 'sciapgg.ds__ts200'.
+    It will fill the field 'tmngg' of table 'sciapgg.ds__t200'.
     It assumes day_records is of par_code='Tmin' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
@@ -688,6 +691,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
             val_mn = min(urmedia_values)
     return flag, val_md, val_vr, flag1, val_mx, val_mn
 
+# TODO ask because sciapgg.ds__urel has more fields
 
 # ----------------     WIND     -----------------
 
@@ -885,3 +889,117 @@ def compute_vnt(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=N
     for i, sector_ff_records in enumerate(sectors_ff_records):
         ret_value.extend(wind_ff_distribution(sector_ff_records))
     return ret_value
+
+
+def compute_day_indicators(measures):
+    ret_value = dict()
+    measures = [m for m in measures if m[3] is not None and m[4]]
+
+    # PREC
+    prec_day_records = [m for m in measures if m[2] == 'PREC']
+    prec_flag = compute_flag(prec_day_records)
+    if prec_flag[0]:
+        ret_value['sciapgg.ds__preci'] = {
+            'prec01': compute_prec01(prec_day_records, force_flag=prec_flag),
+            'prec06': compute_prec06(prec_day_records, force_flag=prec_flag),
+            'prec12': compute_prec12(prec_day_records, force_flag=prec_flag),
+            'prec24': compute_prec24(prec_day_records, force_flag=prec_flag),
+            'cl_prec06': compute_cl_prec06(prec_day_records),
+            'cl_prec12': compute_cl_prec12(prec_day_records),
+            'cl_prec24': compute_cl_prec24(prec_day_records),
+        }
+
+    # TEMPERATURE
+    tmedia_day_records = [m for m in measures if m[2] == 'Tmedia']
+    tmin_day_records = [m for m in measures if m[2] == 'Tmin']
+    tmax_day_records = [m for m in measures if m[2] == 'Tmax']
+    if tmedia_day_records or tmin_day_records or tmax_day_records:
+        ret_value['sciapgg.ds__t200'] = dict()
+        if tmedia_day_records:
+            ret_value['sciapgg.ds__t200']['tmdgg'] = compute_tmdgg(tmedia_day_records)
+        if tmedia_day_records or tmin_day_records:
+            ret_value['sciapgg.ds__t200']['tmngg'] = compute_tmngg(
+                tmin_day_records or tmedia_day_records)
+        if tmedia_day_records or tmax_day_records:
+            ret_value['sciapgg.ds__t200']['tmxgg'] = compute_tmxgg(
+                tmax_day_records or tmedia_day_records)
+
+    # PRESSURE
+    pmedia_day_records = [m for m in measures if m[2] == 'Pmedia']
+    pmin_day_records = [m for m in measures if m[2] == 'Pmin']
+    pmax_day_records = [m for m in measures if m[2] == 'Pmax']
+    if pmedia_day_records or pmax_day_records or pmin_day_records:
+        ret_value['sciapgg.ds__press'] = {
+            'press': compute_press(pmedia_day_records, pmax_day_records, pmin_day_records)
+        }
+
+    # BAGNATURA FOGLIARE
+    bagna_day_records = [m for m in measures if m[2] == 'Bagnatura_f']
+    if bagna_day_records:
+        ret_value['sciapgg.ds__bagna'] = {
+            'bagna': compute_bagna(bagna_day_records),
+        }
+
+    # ELIOFANIA
+    elio_day_records = [m for m in measures if m[2] == 'INSOL']
+    elio00_day_records = [m for m in measures if m[2] == 'INSOL_00']
+    if elio_day_records or elio00_day_records:
+        ret_value['sciapgg.ds__elio'] = {
+            'elio': compute_elio(elio_day_records or elio00_day_records)
+        }
+
+    # RADIAZIONE SOLARE
+    radsol_day_records = [m for m in measures if m[2] == 'RADSOL']
+    if radsol_day_records:
+        ret_value['sciapgg.ds__radglob'] = {
+            'radglob': compute_radglob(radsol_day_records)
+        }
+
+    # UMIDITA' RELATIVA
+    urmedia_day_records = [m for m in measures if m[2] == 'UR media']
+    urmin_day_records = [m for m in measures if m[2] == 'URmin']
+    urmax_day_records = [m for m in measures if m[2] == 'URmax']
+    if urmedia_day_records or urmax_day_records or urmin_day_records:
+        ret_value['sciapgg.ds__urel'] = {
+            'ur': compute_ur(urmedia_day_records, urmax_day_records, urmin_day_records)
+        }
+
+    # VENTO
+    ff_day_records = [m for m in measures if m[2] == 'FF']
+    dd_day_records = [m for m in measures if m[2] == 'DD']
+    if ff_day_records:
+        ret_value['sciapgg.ds__vnt10'] = dict()
+        ret_value['sciapgg.ds__vnt10']['vntmd'] = compute_vntmd(ff_day_records)
+        if dd_day_records:
+            ret_value['sciapgg.ds__vnt10']['vntmxgg'] = compute_vntmxgg(
+                ff_day_records, dd_day_records)
+            ret_value['sciapgg.ds__vnt10']['vnt'] = compute_vnt(ff_day_records, dd_day_records)
+    return ret_value
+
+
+def compute_indicators(data, writers, table_map):
+    msgs = []
+    computed_indicators = {}
+    data_sorted = sorted(data, key=utils.different_data_record_info)
+    for ((cod_utente, cod_rete), station_date), measures_it in itertools.groupby(
+            data_sorted, key=utils.different_data_record_info):
+        # measures are of a station and of a date
+        measures = list(measures_it)
+        cod_staz = "%s--%s" % (cod_utente, cod_rete)  # TODO: to convert to id_staz
+        station_date_str = station_date.isoformat()
+        msg = "- computing day indicators for cod_staz=%s, day=%s" \
+              % (cod_staz, station_date_str)
+        msgs.append(msg)
+        day_indicators = compute_day_indicators(measures)
+        for table, columns in table_map.items():
+            if table not in day_indicators or table not in writers:
+                continue
+            key_tuple = (table, station_date_str, station_date_str)
+            indicators_row = day_indicators[table]
+            writer, _ = writers[table]
+            indicators_row['cod_aggr'] = 4
+            indicators_row['data_i'] = station_date_str
+            indicators_row['cod_staz'] = cod_staz
+            writer.writerow(day_indicators)
+            computed_indicators[key_tuple] = day_indicators
+    return msgs, computed_indicators

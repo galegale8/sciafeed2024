@@ -1,6 +1,7 @@
 """
 This modules provides generic utility functions of the SCIA FEED package
 """
+import csv
 from datetime import datetime, timedelta
 import logging
 import os.path
@@ -199,3 +200,23 @@ def different_data_record_info(data_record):
     metadata, row_date, par_code, par_value, par_flag = data_record
     station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
     return station_id, row_date
+
+
+def open_csv_writers(parent_folder, tables_map):
+    writers = dict()
+    for table, columns in tables_map.items():
+        csv_path = os.path.join(parent_folder, '%s.csv' % table)
+        if not os.path.exists(csv_path):
+            fp = open(csv_path, 'w')
+            writer = csv.DictWriter(fp, fieldnames=columns, delimiter=';')
+            writer.writeheader()
+        else:
+            fp = open(csv_path, 'a')
+            writer = csv.DictWriter(fp, fieldnames=columns, delimiter=';')
+        writers[table] = writer, fp
+    return writers
+
+
+def close_csv_writers(writers):
+    for _, fp in writers.values():
+        fp.close()

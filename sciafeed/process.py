@@ -73,3 +73,22 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks
                 fp.write(msg + '\n')
 
     return msgs, data
+
+
+def compute_indicators(data_folder, indicators_folder=None, report_path=None):
+    """
+    Read each file located inside `data_folder` and generate indicators
+    and a report of the processing.
+    If the path `indicators_folder` is defined, a file with the indicators
+    is created at the path.
+    Return the the report strings (list) and the computed indicators (dictionary).
+
+    :param data_folder: folder path containing input data
+    :param indicators_folder: path of the output data
+    :param report_path: path of the output file containing data
+    :return: (report_strings, computed_indicators)
+    """
+    msgs = []
+    computed_indicators = dict()
+    # TODO
+    return msgs, computed_indicators

@@ -104,3 +104,43 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
     ret_value = hiscentral.download_hiscentral(region_id, out_csv_folder, variables, locations)
     print('done')
     return ret_value
+
+
+@click.command()
+@click.option('--data_folder', '-d', type=click.Path(exists=True, dir_okay=True),
+              help="folder path where to get the data files")
+@click.option('--indicators_folder', '-i', type=click.Path(exists=False, dir_okay=True),
+              help="folder path of the output files")
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+def compute_indicators(data_folder, indicators_folder, report_path):
+    """
+    Compute daily indicators from data files located at folder `data_folder`,
+    and put results in the folder `indicators_folder`.
+    """
+    # print(data_folder, indicators_folder, report_path)
+    if report_path and exists(report_path):
+        print('wrong "report_path": the report must not exist or will be overwritten')
+        sys.exit(2)
+    if not data_folder:
+        print('"data_folder" is required')
+        sys.exit(2)
+    if not isdir(data_folder):
+        print('wrong "data_folder": this must be a folder')
+        sys.exit(2)
+    if indicators_folder:
+        if exists(indicators_folder):
+            if not isdir(indicators_folder):
+                print('wrong "indicators_folder": this must be a folder')
+                sys.exit(2)
+        else:
+            mkdir(indicators_folder)
+    else:
+        # this will be removed when we can insert in the database
+        print('"indicators_folder" is required')
+        sys.exit(2)
+    msgs, _ = process.compute_indicators(data_folder, indicators_folder, report_path)
+    if not report_path:
+        for msg in msgs:
+            print(msg)
+

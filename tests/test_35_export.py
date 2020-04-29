@@ -68,3 +68,20 @@ def test_export2csv(tmpdir):
     with open(out_filepath) as fp:
         rows = fp.readlines()
         assert rows == expected_rows
+
+
+def test_csv2data(tmpdir):
+    metadata = {'cod_utente': '70001', 'cod_rete': '11', 'source': 'afile/path', 'format':'arpa19'}
+    data = [
+        (metadata, datetime(2013, 1, 1, 0, 0), '1', 9.0, True),
+        (metadata, datetime(2013, 1, 1, 1, 0), '2', 355.0, False),
+        (metadata, datetime(2013, 1, 1, 2, 0), '3', 68.0, True),
+        (metadata, datetime(2013, 1, 1, 3, 0), '4', None, True),
+        (metadata, datetime(2013, 1, 1, 4, 0), '5', None, False),
+        (metadata, datetime(2013, 1, 1, 5, 0), '6', 22, False),
+    ]
+    csv_filepath = str(tmpdir.join('datafile.csv'))
+    export.export2csv(data, csv_filepath, omit_missing=False)
+
+    imported_data = export.csv2data(csv_filepath)
+    assert imported_data == data

@@ -42,12 +42,12 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
             if par_value is not None:
                 par_value = round(par_value, ROUND_PRECISION)
             cod_utente = metadata.get('cod_utente_prefix', '') + metadata.get('cod_utente', '')
+            ttime = isinstance(current_date, datetime) and current_date.strftime('%H:%M:%S') or ''
             row = {
                 'cod_utente': cod_utente,
                 'cod_rete': metadata.get('cod_rete', ''),
                 'date': current_date.strftime('%Y-%m-%d'),
-                'time': isinstance(current_date, datetime) and current_date.strftime('%H:%M:%S')
-                        or '',
+                'time': ttime,
                 'parameter': par_code,
                 'value': par_value,
                 'valid': par_flag and '1' or '0',
@@ -55,3 +55,33 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
                 'format': metadata.get('format', ''),
             }
             writer.writerow(row)
+
+
+def csv2data(csv_path):
+    """
+    inverse of function `export2csv`.
+
+    :param csv_path: file to the CSV containing the data
+    :return: the data object
+    """
+    data = []
+    with open(csv_path) as csv_in_file:
+        reader = csv.DictReader(csv_in_file, delimiter=';')
+        for row in reader:
+            metadata = {
+                'cod_utente': row['cod_utente'],
+                'cod_rete': row['cod_rete'],
+                'source': row['source'],
+                'format': row['format'],
+            }
+            if row['time']:
+                current_date = datetime.strptime("%sT%s" % (row['date'], row['time']),
+                                                 '%Y-%m-%dT%H:%M:%S')
+            else:
+                current_date = datetime.strptime("%sT00:00" % row['date'], '%Y-%m-%dT%H:%M').date()
+            par_code = row['parameter']
+            par_value = row['value'] != '' and float(row['value']) or None
+            par_flag = row['valid'] == '1' and True or False
+            measure = metadata, current_date, par_code, par_value, par_flag
+            data.append(measure)
+    return data

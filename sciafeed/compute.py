@@ -40,6 +40,18 @@ INDICATORS_TABLES = {
 # -------------- GENERIC UTILITIES --------------
 
 
+def group_same_day(data_record):
+    """
+    utility function to group all records with the same station
+    and of the same day
+    """
+    metadata, row_date, par_code, par_value, par_flag = data_record
+    station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
+    if isinstance(row_date, datetime):
+        row_day = row_date.date()
+    return station_id, row_day
+
+
 def sum_records_by_hour_groups(day_records, hours_interval):
     """
     Return a new set of records obtaining sum of values if they belong to the same
@@ -154,9 +166,10 @@ def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
     val_mx = None
     data_mx = None
     if valid_values:
-        val_tot = sum(valid_values)
+        val_tot = round(sum(valid_values), ROUND_PRECISION)
         val_mx = max(valid_values)
-        data_mx = [r[1] for r in day_records if r[3] == val_mx][0]
+        data_mx = [r[1] for r in day_records if r[3] == val_mx][0].isoformat()
+        val_mx = round(val_mx, ROUND_PRECISION)
     return flag, val_tot, val_mx, data_mx
 
 
@@ -213,7 +226,7 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     data_mx = None
     if valid_values:
         val_mx = max(valid_values)
-        data_mx = [r[1] for r in day_records if r[3] == val_mx][0]
+        data_mx = [r[1] for r in day_records if r[3] == val_mx][0].isoformat()
     return flag, val_mx, data_mx
 
 
@@ -247,7 +260,8 @@ def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     new_records = sum_records_by_hour_groups(valid_records, 6)
     if new_records:
         val_mx = max([r[3] for r in new_records])
-        data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
+        data_mx = [r[1] for r in new_records if r[3] == val_mx][0].isoformat()
+        val_mx = round(val_mx)
     return flag, val_mx, data_mx
 
 
@@ -305,7 +319,8 @@ def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
     val_mx = max([r[3] for r in new_records])
-    data_mx = [r[1] for r in new_records if r[3] == val_mx][0]
+    data_mx = [r[1] for r in new_records if r[3] == val_mx][0].isoformat()
+    val_mx = round(val_mx, ROUND_PRECISION)
     return flag, val_mx, data_mx
 
 
@@ -437,7 +452,8 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     if len(values) >= 2:
         val_vr = round(statistics.stdev(values), ROUND_PRECISION)
     val_x = max(values)
-    data_x = [r[1] for r in valid_records if r[3] == val_x][0]
+    data_x = [r[1] for r in valid_records if r[3] == val_x][0].isoformat()
+    val_x = round(val_x, ROUND_PRECISION)
     return flag, val_md, val_vr, val_x, data_x
 
 
@@ -475,7 +491,8 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     if len(values) >= 2:
         val_vr = round(statistics.stdev(values), ROUND_PRECISION)
     val_x = min(values)
-    data_x = [r[1] for r in valid_records if r[3] == val_x][0]
+    data_x = [r[1] for r in valid_records if r[3] == val_x][0].isoformat()
+    val_x = round(val_x)
     return flag, val_md, val_vr, val_x, data_x
 
 
@@ -521,8 +538,8 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
     val_mn = None
     if pmedia_values:
         val_md = round(statistics.mean(pmedia_values), ROUND_PRECISION)
-        val_mx = max(pmedia_values)
-        val_mn = min(pmedia_values)
+        val_mx = round(max(pmedia_values), ROUND_PRECISION)
+        val_mn = round(min(pmedia_values), ROUND_PRECISION)
         if len(pmedia_values) >= 2:
             val_vr = round(statistics.stdev(pmedia_values), ROUND_PRECISION)
     if pmax_values:
@@ -1010,7 +1027,7 @@ def compute_day_indicators(measures):
     return ret_value
 
 
-def compute_indicators(data, writers, table_map):
+def compute_and_store(data, writers, table_map):
     """
     Extract indicators from `data` object, write on CSV files with
     a structure that simulates the database tables.
@@ -1029,13 +1046,13 @@ def compute_indicators(data, writers, table_map):
     """
     msgs = []
     computed_indicators = {}
-    data_sorted = sorted(data, key=utils.different_data_record_info)
-    for ((cod_utente, cod_rete), station_date), measures_it in itertools.groupby(
-            data_sorted, key=utils.different_data_record_info):
+    data_sorted = sorted(data, key=group_same_day)
+    for ((cod_utente, cod_rete), station_day), measures_it in itertools.groupby(
+            data_sorted, key=group_same_day):
         # measures are of a station and of a date
         measures = list(measures_it)
         cod_staz = "%s--%s" % (cod_utente, cod_rete)  # TODO: to convert to id_staz
-        station_date_str = station_date.isoformat()
+        station_date_str = station_day.strftime('%Y-%m-%d')
         msg = "- computing day indicators for cod_staz=%s, day=%s" \
               % (cod_staz, station_date_str)
         msgs.append(msg)
@@ -1052,6 +1069,6 @@ def compute_indicators(data, writers, table_map):
             indicators_row['cod_aggr'] = 4
             indicators_row['data_i'] = station_date_str
             indicators_row['cod_staz'] = cod_staz
-            writer.writerow(day_indicators)
+            writer.writerow(indicators_row)
             computed_indicators[key_tuple] = day_indicators
     return msgs, computed_indicators

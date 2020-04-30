@@ -107,7 +107,7 @@ def test_compute_prec24():
     # good set
     day_records = create_samples('PREC')
     flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.75)
-    assert (flag, val_tot, val_mx, data_mx) == ((24, 1), 276, 23, datetime(2020, 1, 1, 23, 0))
+    assert (flag, val_tot, val_mx, data_mx) == ((24, 1), 276, 23, '2020-01-01T23:00:00')
 
     # partially good
     day_records = [
@@ -137,11 +137,11 @@ def test_compute_prec24():
         (sample_metadata, datetime(2020, 1, 1, 23, 0), 'PREC', 23, True),
     ]
     flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.75)
-    assert (flag, val_tot, val_mx, data_mx) == ((18, 1), 261, 23, datetime(2020, 1, 1, 23, 0))
+    assert (flag, val_tot, val_mx, data_mx) == ((18, 1), 261, 23, '2020-01-01T23:00:00')
 
     # partially bad (higher percentage)
     flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.80)
-    assert (flag, val_tot, val_mx, data_mx) == ((18, 0), 261, 23, datetime(2020, 1, 1, 23, 0))
+    assert (flag, val_tot, val_mx, data_mx) == ((18, 0), 261, 23, '2020-01-01T23:00:00')
 
     # good but missing too many
     day_records = [
@@ -153,7 +153,7 @@ def test_compute_prec24():
         (sample_metadata, datetime(2020, 1, 1, 5, 0), 'PREC', 5, True),
     ]
     flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.80)
-    assert (flag, val_tot, val_mx, data_mx) == ((6, 0), 15, 5, datetime(2020, 1, 1, 5, 0))
+    assert (flag, val_tot, val_mx, data_mx) == ((6, 0), 15, 5, '2020-01-01T05:00:00')
 
     # empty
     day_records = []
@@ -195,7 +195,7 @@ def test_compute_cl_prec24():
 def test_compute_prec01():
     day_records = create_samples('PREC')
     flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.75)
-    assert (flag, val_mx, data_mx) == ((24, 1), 23, datetime(2020, 1, 1, 23, 0))
+    assert (flag, val_mx, data_mx) == ((24, 1), 23, '2020-01-01T23:00:00')
 
     # good but missing too many
     day_records = [
@@ -207,16 +207,16 @@ def test_compute_prec01():
         (sample_metadata, datetime(2020, 1, 1, 5, 0), 'PREC', 5, True),
     ]
     flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.80)
-    assert (flag, val_mx, data_mx) == ((6, 0), 5, datetime(2020, 1, 1, 5, 0))
+    assert (flag, val_mx, data_mx) == ((6, 0), 5, '2020-01-01T05:00:00')
     # with low tolerance
     flag, val_mx, data_mx = compute.compute_prec01(day_records, at_least_perc=0.10)
-    assert (flag, val_mx, data_mx) == ((6, 1), 5, datetime(2020, 1, 1, 5, 0))
+    assert (flag, val_mx, data_mx) == ((6, 1), 5, '2020-01-01T05:00:00')
 
 
 def test_compute_prec06():
     day_records = create_samples('PREC')
     flag, val_mx, data_mx = compute.compute_prec06(day_records, at_least_perc=0.75)
-    assert (flag, val_mx, data_mx) == ((24, 1), 123, datetime(2020, 1, 1, 18, 0))
+    assert (flag, val_mx, data_mx) == ((24, 1), 123, '2020-01-01T18:00:00')
 
 
 def test_compute_cl_prec06():
@@ -228,7 +228,7 @@ def test_compute_cl_prec06():
 def test_compute_prec12():
     day_records = create_samples('PREC')
     flag, val_mx, data_mx = compute.compute_prec12(day_records, at_least_perc=0.75)
-    assert (flag, val_mx, data_mx) == ((24, 1), 210, datetime(2020, 1, 1, 12, 0))
+    assert (flag, val_mx, data_mx) == ((24, 1), 210, '2020-01-01T12:00:00')
 
 
 def test_compute_cl_prec12():
@@ -275,15 +275,13 @@ def test_compute_tmdgg():
 def test_compute_tmxgg():
     input_records = create_samples('Tmax')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmxgg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 23,
-                                                     datetime(2020, 1, 1, 23, 0))
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 23, '2020-01-01T23:00:00')
 
 
 def test_compute_tmngg():
     input_records = create_samples('Tmin')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmngg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 0,
-                                                     datetime(2020, 1, 1, 0, 0))
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 0, '2020-01-01T00:00:00')
 
 
 def test_compute_press():
@@ -1128,10 +1126,10 @@ def test_compute_day_indicators():
             'cl_prec06': (0, 0, 0, 0, 0, 3),
             'cl_prec12': (0, 0, 0, 0, 0, 2),
             'cl_prec24': (0, 0, 5, 10, 3, 0),
-            'prec01': ((18, 0), 23, datetime(2020, 1, 1, 23, 0)),
-            'prec06': ((18, 0), 123, datetime(2020, 1, 1, 18, 0)),
-            'prec12': ((18, 0), 210, datetime(2020, 1, 1, 12, 0)),
-            'prec24': ((18, 0), 261, 23, datetime(2020, 1, 1, 23, 0))
+            'prec01': ((18, 0), 23, '2020-01-01T23:00:00'),
+            'prec06': ((18, 0), 123, '2020-01-01T18:00:00'),
+            'prec12': ((18, 0), 210, '2020-01-01T12:00:00'),
+            'prec24': ((18, 0), 261, 23, '2020-01-01T23:00:00')
         },
         'sciapgg.ds__radglob': {'radglob': ((9, 0), 21.8, 14.4, 41.5, 3.4)},
         'sciapgg.ds__urel': {'ur': ((11, 0), 39.8, 24.8, (None, None), 97.9, 6.1)},
@@ -1144,8 +1142,8 @@ def test_compute_day_indicators():
         },
         'sciapgg.ds__t200': {
             'tmdgg': ((6, 0), 2.5, 1.9),
-            'tmngg': ((6, 0), -2.5, 1.9, -5, datetime(2020, 1, 1, 14, 0)),
-            'tmxgg': ((6, 0), 3.3, 2.2, 6, datetime(2020, 1, 1, 14, 0))
+            'tmngg': ((6, 0), -2.5, 1.9, -5, '2020-01-01T14:00:00'),
+            'tmxgg': ((6, 0), 3.3, 2.2, 6, '2020-01-01T14:00:00')
         },
         'sciapgg.ds__press': {'press': ((11, 0), 26.7, 15.4, 49.6, 4.2)},
     }

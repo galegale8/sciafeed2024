@@ -373,7 +373,6 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
         flag = compute_temperature_flag(
             day_records, perc_day=at_least_perc, perc_night=at_least_perc)
     valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
-    val_md = None
     val_vr = None
     if not valid_values:
         return None
@@ -404,10 +403,7 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_x, data_x)
     """
-    val_md = None
     val_vr = None
-    val_x = None
-    data_x = None
     valid_records = [r for r in day_records if r[4] and r[3] is not None]
     if not valid_records:
         return None
@@ -895,12 +891,25 @@ def compute_vnt(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=N
 
 
 def compute_day_indicators(measures):
+    """
+    Compute all indicators extracting values from the input measures.
+    It assumes measures are all of a single station and day.
+    Return the computed values in a dictionary of kind:
+    ::
+
+        {'table1': {column11: value11, column12: value12, ...},
+         'table2': {column21: value21, column22: value22, ...},
+         ...}
+
+    :param measures: input measures
+    :return: dictionaries of tables where to put indicators.
+    """
     ret_value = dict()
     measures = [m for m in measures if m[3] is not None and m[4]]
 
     # PREC
     prec_day_records = [m for m in measures if m[2] == 'PREC']
-    prec_flag = compute_flag(prec_day_records)
+    prec_flag = compute_flag(prec_day_records, at_least_perc=0.9)
     if prec_flag[0]:
         ret_value['sciapgg.ds__preci'] = {
             'prec01': compute_prec01(prec_day_records, force_flag=prec_flag),
@@ -981,6 +990,22 @@ def compute_day_indicators(measures):
 
 
 def compute_indicators(data, writers, table_map):
+    """
+    Extract indicators from `data` object, write on CSV files with
+    a structure that simulates the database tables.
+    Return the list of reporting messages and the dictionaries of computed indicators.
+    `table_map` is the structure of db tables for indicators,
+    of kind:
+    ::
+        {table1: [column1, column2, ...], table2: [column1, column2, ...], ...}
+
+    `writers` is a dictionary of CSV writers, as returned by function utils.open_csv_writers.
+
+    :param data: list of measures
+    :param writers: dictionary of CSV writers
+    :param table_map: dictionary of columns of the tables where to insert the indicators
+    :return:
+    """
     msgs = []
     computed_indicators = {}
     data_sorted = sorted(data, key=utils.different_data_record_info)

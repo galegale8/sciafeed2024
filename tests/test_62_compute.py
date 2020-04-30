@@ -157,8 +157,8 @@ def test_compute_prec24():
 
     # empty
     day_records = []
-    flag, val_tot, val_mx, data_mx = compute.compute_prec24(day_records, at_least_perc=0.80)
-    assert (flag, val_tot, val_mx, data_mx) == ((0, 0), None, None, None)
+    res = compute.compute_prec24(day_records, at_least_perc=0.80)
+    assert res is None
 
 
 def test_compute_cl_prec24():
@@ -269,20 +269,20 @@ def test_compute_temperature_flag():
 def test_compute_tmdgg():
     input_records = create_samples('Tmedia')
     flag, val_md, val_vr = compute.compute_tmdgg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr) == ((24, 1), 11.5, 7.0711)
+    assert (flag, val_md, val_vr) == ((24, 1), 11.5, 7.1)
 
 
 def test_compute_tmxgg():
     input_records = create_samples('Tmax')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmxgg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.0711, 23,
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 23,
                                                      datetime(2020, 1, 1, 23, 0))
 
 
 def test_compute_tmngg():
     input_records = create_samples('Tmin')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmngg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.0711, 0,
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 0,
                                                      datetime(2020, 1, 1, 0, 0))
 
 
@@ -293,7 +293,7 @@ def test_compute_press():
 
     flag, val_md, val_vr, val_mx, val_mn = compute.compute_press(
         day_records_pmedia, day_records_pmax, day_records_pmin)
-    assert (flag, val_md, val_vr, val_mx, val_mn) == ((24, 1), 11.5, 7.0711, 23, 0)
+    assert (flag, val_md, val_vr, val_mx, val_mn) == ((24, 1), 11.5, 7.1, 23, 0)
 
 
 def test_compute_bagna():
@@ -326,7 +326,7 @@ def test_compute_bagna():
     ]
     flag, val_md, val_vr, val_mx, val_mn, val_tot = compute.compute_bagna(day_records)
     assert (flag, val_md, val_vr, val_mx, val_mn, val_tot) == \
-           ((11, 0), 0.4449, 0.2563, 0.8272, 0.0701, 4.8936)
+           ((11, 0), 0.4, 0.3, 0.8, 0.1, 4.9)
 
 
 def test_compute_elio():
@@ -359,7 +359,7 @@ def test_compute_elio():
     ]
     flag, val_md, val_vr, val_mx = compute.compute_elio(day_records)
     # NOTE: val_md is the SUM
-    assert (flag, val_md, val_vr, val_mx) == ((9, 0), 4.4147, 0.2693, None)
+    assert (flag, val_md, val_vr, val_mx) == ((9, 0), 4.4, 0.3, None)
 
 
 def test_compute_radglob():
@@ -391,7 +391,7 @@ def test_compute_radglob():
         (metadata, datetime(2020, 1, 1, 23, 0), 'RADSOL', 11.4268, False),
     ]
     flag, val_md, val_vr, val_mx, val_mn = compute.compute_radglob(day_records)
-    assert (flag, val_md, val_vr, val_mx, val_mn) == ((9, 0), 21.8431, 14.4367, 41.5178, 3.3662)
+    assert (flag, val_md, val_vr, val_mx, val_mn) == ((9, 0), 21.8, 14.4, 41.5, 3.4)
 
 
 def test_compute_ur():
@@ -477,7 +477,7 @@ def test_compute_ur():
     flag, val_md, val_vr, flag1, val_mx, val_mn = compute.compute_ur(
         day_records_urmedia, day_records_urmax, day_records_urmin)
     assert (flag, val_md, val_vr, flag1, val_mx, val_mn) == \
-           ((11, 0), 39.7866, 24.7727, (None, None), 97.9166, 6.0608)
+           ((11, 0), 39.8, 24.8, (None, None), 97.9, 6.1)
 
 
 def test_compute_vntmd():
@@ -509,7 +509,7 @@ def test_compute_vntmd():
         (metadata, datetime(2020, 1, 1, 23, 0), 'FF', 2.6536, True)
     ]
     flag, ff = compute.compute_vntmd(day_records, at_least_perc=0.75, force_flag=None)
-    assert (flag, ff) == ((18, 1), 52.0266)
+    assert (flag, ff) == ((18, 1), 52.0)
 
 
 def test_compute_wind_flag():
@@ -627,7 +627,7 @@ def test_compute_vntmxgg():
         (metadata, datetime(2020, 1, 1, 23, 0), 'DD', 175.8149, True)
     ]
     flag, ff, dd = compute.compute_vntmxgg(day_ff_records, day_dd_records)
-    assert (flag, ff, dd) == ((18, 1), 99.828, None)
+    assert (flag, ff, dd) == ((18, 1), 99.8, None)
 
 
 def test_wind_ff_distribution():

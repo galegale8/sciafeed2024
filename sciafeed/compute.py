@@ -684,13 +684,13 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
         if len(urmedia_values) >= 2:
             val_vr = round(statistics.stdev(urmedia_values), ROUND_PRECISION)
         if urmax_values:
-            val_mx = max(urmax_values)
+            val_mx = round(max(urmax_values), ROUND_PRECISION)
         else:
-            val_mx = max(urmedia_values)
+            val_mx = round(max(urmedia_values), ROUND_PRECISION)
         if urmin_values:
-            val_mn = min(urmin_values)
+            val_mn = round(min(urmin_values), ROUND_PRECISION)
         else:
-            val_mn = min(urmedia_values)
+            val_mn = round(min(urmedia_values), ROUND_PRECISION)
     return flag, val_md, val_vr, flag1, val_mx, val_mn
 
 # TODO ask because sciapgg.ds__urel has more fields
@@ -779,6 +779,7 @@ def compute_vntmxgg(day_ff_records, day_dd_records, at_least_perc=0.75, force_fl
     ff = max([r[3] for r in valid_ff_records])
     hour_of_max = [r[1] for r in valid_ff_records if r[3] == ff][0]
     dd = dd_records_times.get(hour_of_max)
+    ff = round(ff, ROUND_PRECISION)
     return flag, ff, dd
 
 

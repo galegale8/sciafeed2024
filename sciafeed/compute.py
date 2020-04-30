@@ -505,9 +505,9 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
         if len(pmedia_values) >= 2:
             val_vr = round(statistics.stdev(pmedia_values), ROUND_PRECISION)
     if pmax_values:
-        val_mx = max(pmax_values)
+        val_mx = round(max(pmax_values), ROUND_PRECISION)
     if pmin_values:
-        val_mn = min(pmin_values)
+        val_mn = round(min(pmin_values), ROUND_PRECISION)
     return flag, val_md, val_vr, val_mx, val_mn
 
 

@@ -1,7 +1,8 @@
 
-from datetime import datetime
-
-from os.path import join
+import csv
+from io import TextIOWrapper
+from os import mkdir
+from os.path import exists, join
 
 import xlrd
 
@@ -112,3 +113,38 @@ def test_folder2props():
     ]:
         eff_result = utils.folder2props(folder_name)
         assert eff_result == exp_result
+
+
+def test_csv_writers(tmpdir):
+    parent_folder = str(tmpdir.join('parent_folder'))
+    mkdir(parent_folder)
+    tables_map = {
+        'table1': ['col11', 'col12', 'col13'],
+        'table2': ['col21', 'col22', 'col23'],
+    }
+    writers = utils.open_csv_writers(parent_folder, tables_map)
+    for key, cols in tables_map.items():
+        csv_path = join(parent_folder, '%s.csv' % key)
+        assert exists(csv_path)
+        assert key in writers
+        writer, fp = writers[key]
+        assert isinstance(writer, csv.DictWriter)
+        assert writer.fieldnames == cols
+        assert isinstance(fp, TextIOWrapper)
+        assert fp.name == csv_path
+        assert fp.mode == 'w'
+        assert not fp.closed
+
+    utils.close_csv_writers(writers)
+    for key, cols in tables_map.items():
+        csv_path = join(parent_folder, '%s.csv' % key)
+        writer, fp = writers[key]
+        assert fp.closed
+        with open(csv_path) as csv_file:
+            assert csv_file.read() == ';'.join(cols) + '\n'
+
+    writers = utils.open_csv_writers(parent_folder, tables_map)
+    for key, _ in tables_map.items():
+        writer, fp = writers[key]
+        assert fp.mode == 'a'
+    utils.close_csv_writers(writers)

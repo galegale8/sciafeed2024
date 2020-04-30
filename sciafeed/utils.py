@@ -181,7 +181,7 @@ def parse_date(thedate, patterns):
     return ret_value
 
 
-def create_random_samples(par_code, hour_step=1, values_range=(-100, 100)):
+def create_random_samples(par_code, hour_step=1, values_range=(-100, 100)):  # pragma: no cover
     metadata = {'a metadata': 'a value'}
     start_time = datetime(2020, 1, 1, 0, 0)
     ret_value = []

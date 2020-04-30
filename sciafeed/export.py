@@ -68,6 +68,10 @@ def csv2data(csv_path):
     with open(csv_path) as csv_in_file:
         reader = csv.DictReader(csv_in_file, delimiter=';')
         for row in reader:
+            if row['value'] != '':
+                par_value = float(row['value'])
+            else:
+                par_value = None
             metadata = {
                 'cod_utente': row['cod_utente'],
                 'cod_rete': row['cod_rete'],
@@ -80,7 +84,7 @@ def csv2data(csv_path):
             else:
                 current_date = datetime.strptime("%sT00:00" % row['date'], '%Y-%m-%dT%H:%M').date()
             par_code = row['parameter']
-            par_value = row['value'] != '' and float(row['value']) or None
+            par_value = par_value
             par_flag = row['valid'] == '1' and True or False
             measure = metadata, current_date, par_code, par_value, par_flag
             data.append(measure)

@@ -97,7 +97,7 @@ def compute_indicators(data_folder, indicators_folder=None, report_path=None):
     computed_indicators = dict()
     for file_name in listdir(data_folder):
         csv_path = join(data_folder, file_name)
-        if not isfile(csv_path) or splitext(file_name.lower()) != '.csv':
+        if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
             continue
         msg = "START OF ANALYSIS OF FILE %r" % csv_path
         msgs.append(msg)
@@ -112,7 +112,7 @@ def compute_indicators(data_folder, indicators_folder=None, report_path=None):
             continue
 
         writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
-        comp_msgs, computed_indicators = compute.compute_indicators(
+        comp_msgs, computed_indicators = compute.compute_and_store(
             data, writers, compute.INDICATORS_TABLES)
         msgs.extend(comp_msgs)
         utils.close_csv_writers(writers)

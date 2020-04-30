@@ -15,6 +15,27 @@ from sciafeed import utils
 
 ROUND_PRECISION = 1
 INDICATORS_TABLES = {
+    'sciapgg.ds__bagna': ['data_i', 'cod_staz', 'cod_aggr', 'bagna'],
+    'sciapgg.ds__elio': ['data_i', 'cod_staz', 'cod_aggr', 'elio'],
+    'sciapgg.ds__preci': ['data_i', 'cod_staz', 'cod_aggr', 'prec24',
+                          'cl_prec24', 'prec01', 'prec06', 'cl_prec06',
+                          'prec12', 'cl_prec12', 'ggneve', 'storm', 'ggstorm'],
+    'sciapgg.ds__press': ['data_i', 'cod_staz', 'cod_aggr', 'press'],
+    'sciapgg.ds__radglob': ['data_i', 'cod_staz', 'cod_aggr', 'radglob'],
+    'sciapgg.ds__t200': ['data_i', 'cod_staz', 'cod_aggr', 'tmxgg',
+                         'cl_tmxgg', 'tmngg', 'cl_tmngg', 'tmdgg',
+                         'tmdgg1', 'deltagg', 'day_gelo', 'cl_tist',
+                         't00', 't01', 't02', 't03', 't04', 't05',
+                         't06', 't07', 't08', 't09', 't10', 't11',
+                         't12', 't13', 't14', 't15', 't16', 't17',
+                         't18', 't19', 't20', 't21', 't22', 't23'],
+    'sciapgg.ds__urel': ['data_i', 'cod_staz', 'cod_aggr', 'ur', 'ur00',
+                         'ur01', 'ur02', 'ur03', 'ur04', 'ur05', 'ur06',
+                         'cl_ur06', 'ur07', 'ur08', 'ur09', 'ur10', 'ur11',
+                         'ur12', 'cl_ur12', 'ur13', 'ur14', 'ur15', 'ur16',
+                         'ur17', 'ur18', 'ur19', 'ur20', 'ur21', 'ur22', 'ur23'],
+    'sciapgg.ds__vnt10': ['data_i', 'cod_staz', 'cod_aggr', 'vntmxgg',
+                          'vnt', 'prs_ff', 'prs_dd', 'vntmd']
 }
 # -------------- GENERIC UTILITIES --------------
 
@@ -478,7 +499,7 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
 
     If `force_flag` is not None, returned flag is `force_flag`.
 
-    :param day_records_pmedia: list of `data` objects of Pmedia
+    :param day_records_pmedia: list of `data` objects of P
     :param day_records_pmax: list of `data` objects of Pmax
     :param day_records_pmin: list of `data` objects of Pmin
     :param at_least_perc: minimum percentage of valid data for the validation flag
@@ -492,7 +513,7 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
         return None
     flag = force_flag
     if not flag:
-        # flag computed from Pmedia
+        # flag computed from P
         flag = compute_flag(day_records_pmedia, at_least_perc)
     val_md = None
     val_vr = None
@@ -654,9 +675,9 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
 
     If `force_flag` is not None, returned flag is `force_flag`.
 
-    :param day_records_urmedia: list of input `data` objects with par_code=URmedia
-    :param day_records_urmax: list of input `data` objects with par_code=URmax
-    :param day_records_urmin: list of input `data` objects with par_code=URmin
+    :param day_records_urmedia: list of input `data` objects with par_code=UR media
+    :param day_records_urmax: list of input `data` objects with par_code=UR max
+    :param day_records_urmin: list of input `data` objects with par_code=UR min
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, flag1, val_mx, val_mn)
@@ -668,7 +689,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
         return None
     flag = force_flag
     if not flag:
-        # flag computed from URmedia
+        # flag computed from UR media
         flag = compute_flag(day_records_urmedia, at_least_perc)
     val_md = None
     val_vr = None
@@ -937,7 +958,7 @@ def compute_day_indicators(measures):
                 tmax_day_records or tmedia_day_records)
 
     # PRESSURE
-    pmedia_day_records = [m for m in measures if m[2] == 'Pmedia']
+    pmedia_day_records = [m for m in measures if m[2] == 'P']
     pmin_day_records = [m for m in measures if m[2] == 'Pmin']
     pmax_day_records = [m for m in measures if m[2] == 'Pmax']
     if pmedia_day_records or pmax_day_records or pmin_day_records:
@@ -969,8 +990,8 @@ def compute_day_indicators(measures):
 
     # UMIDITA' RELATIVA
     urmedia_day_records = [m for m in measures if m[2] == 'UR media']
-    urmin_day_records = [m for m in measures if m[2] == 'URmin']
-    urmax_day_records = [m for m in measures if m[2] == 'URmax']
+    urmin_day_records = [m for m in measures if m[2] == 'UR min']
+    urmax_day_records = [m for m in measures if m[2] == 'UR max']
     if urmedia_day_records or urmax_day_records or urmin_day_records:
         ret_value['sciapgg.ds__urel'] = {
             'ur': compute_ur(urmedia_day_records, urmax_day_records, urmin_day_records)

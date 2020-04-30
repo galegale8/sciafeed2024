@@ -287,7 +287,7 @@ def test_compute_tmngg():
 
 
 def test_compute_press():
-    day_records_pmedia = create_samples('Pmedia')
+    day_records_pmedia = create_samples('P')
     day_records_pmax = create_samples('Pmax')
     day_records_pmin = create_samples('Pmin')
 
@@ -1047,30 +1047,30 @@ def test_compute_day_indicators():
         (metadata, datetime(2020, 1, 1, 12, 0), 'Tmin', -3, True),
         (metadata, datetime(2020, 1, 1, 13, 0), 'Tmin', -4, True),
         (metadata, datetime(2020, 1, 1, 14, 0), 'Tmin', -5, True),
-        (metadata, datetime(2020, 1, 1, 0, 0), 'Pmedia', 46.6998, True),
-        (metadata, datetime(2020, 1, 1, 1, 0), 'Pmedia', 19.3586, True),
-        (metadata, datetime(2020, 1, 1, 2, 0), 'Pmedia', 32.8168, False),
-        (metadata, datetime(2020, 1, 1, 3, 0), 'Pmedia', 49.6327, True),
-        (metadata, datetime(2020, 1, 1, 4, 0), 'Pmedia', 5.8928, False),
-        (metadata, datetime(2020, 1, 1, 5, 0), 'Pmedia', 1.8212, False),
-        (metadata, datetime(2020, 1, 1, 6, 0), 'Pmedia', 22.0986, False),
-        (metadata, datetime(2020, 1, 1, 7, 0), 'Pmedia', 45.9589, False),
-        (metadata, datetime(2020, 1, 1, 8, 0), 'Pmedia', 26.5065, True),
-        (metadata, datetime(2020, 1, 1, 9, 0), 'Pmedia', 20.6426, True),
-        (metadata, datetime(2020, 1, 1, 10, 0), 'Pmedia', 54.9259, False),
-        (metadata, datetime(2020, 1, 1, 11, 0), 'Pmedia', 6.737, True),
-        (metadata, datetime(2020, 1, 1, 12, 0), 'Pmedia', 45.4702, True),
-        (metadata, datetime(2020, 1, 1, 13, 0), 'Pmedia', 42.287, False),
-        (metadata, datetime(2020, 1, 1, 14, 0), 'Pmedia', 4.2066, True),
-        (metadata, datetime(2020, 1, 1, 15, 0), 'Pmedia', 21.8372, True),
-        (metadata, datetime(2020, 1, 1, 16, 0), 'Pmedia', 20.4227, True),
-        (metadata, datetime(2020, 1, 1, 17, 0), 'Pmedia', 22.0616, False),
-        (metadata, datetime(2020, 1, 1, 18, 0), 'Pmedia', 48.8321, False),
-        (metadata, datetime(2020, 1, 1, 19, 0), 'Pmedia', 32.1013, True),
-        (metadata, datetime(2020, 1, 1, 20, 0), 'Pmedia', 45.4906, False),
-        (metadata, datetime(2020, 1, 1, 21, 0), 'Pmedia', 4.2239, False),
-        (metadata, datetime(2020, 1, 1, 22, 0), 'Pmedia', 57.1591, False),
-        (metadata, datetime(2020, 1, 1, 23, 0), 'Pmedia', 11.9748, False),
+        (metadata, datetime(2020, 1, 1, 0, 0), 'P', 46.6998, True),
+        (metadata, datetime(2020, 1, 1, 1, 0), 'P', 19.3586, True),
+        (metadata, datetime(2020, 1, 1, 2, 0), 'P', 32.8168, False),
+        (metadata, datetime(2020, 1, 1, 3, 0), 'P', 49.6327, True),
+        (metadata, datetime(2020, 1, 1, 4, 0), 'P', 5.8928, False),
+        (metadata, datetime(2020, 1, 1, 5, 0), 'P', 1.8212, False),
+        (metadata, datetime(2020, 1, 1, 6, 0), 'P', 22.0986, False),
+        (metadata, datetime(2020, 1, 1, 7, 0), 'P', 45.9589, False),
+        (metadata, datetime(2020, 1, 1, 8, 0), 'P', 26.5065, True),
+        (metadata, datetime(2020, 1, 1, 9, 0), 'P', 20.6426, True),
+        (metadata, datetime(2020, 1, 1, 10, 0), 'P', 54.9259, False),
+        (metadata, datetime(2020, 1, 1, 11, 0), 'P', 6.737, True),
+        (metadata, datetime(2020, 1, 1, 12, 0), 'P', 45.4702, True),
+        (metadata, datetime(2020, 1, 1, 13, 0), 'P', 42.287, False),
+        (metadata, datetime(2020, 1, 1, 14, 0), 'P', 4.2066, True),
+        (metadata, datetime(2020, 1, 1, 15, 0), 'P', 21.8372, True),
+        (metadata, datetime(2020, 1, 1, 16, 0), 'P', 20.4227, True),
+        (metadata, datetime(2020, 1, 1, 17, 0), 'P', 22.0616, False),
+        (metadata, datetime(2020, 1, 1, 18, 0), 'P', 48.8321, False),
+        (metadata, datetime(2020, 1, 1, 19, 0), 'P', 32.1013, True),
+        (metadata, datetime(2020, 1, 1, 20, 0), 'P', 45.4906, False),
+        (metadata, datetime(2020, 1, 1, 21, 0), 'P', 4.2239, False),
+        (metadata, datetime(2020, 1, 1, 22, 0), 'P', 57.1591, False),
+        (metadata, datetime(2020, 1, 1, 23, 0), 'P', 11.9748, False),
         (metadata, datetime(2020, 1, 1, 0, 0), 'Pmax', 46.6998, True),
         (metadata, datetime(2020, 1, 1, 1, 0), 'Pmax', 19.3586, True),
         (metadata, datetime(2020, 1, 1, 2, 0), 'Pmax', 32.8168, False),
@@ -1134,7 +1134,7 @@ def test_compute_day_indicators():
             'prec24': ((18, 0), 261, 23, datetime(2020, 1, 1, 23, 0))
         },
         'sciapgg.ds__radglob': {'radglob': ((9, 0), 21.8, 14.4, 41.5, 3.4)},
-        'sciapgg.ds__urel': {'ur': ((11, 0), 39.8, 24.8, (None, None), 81.0, 5.4)},
+        'sciapgg.ds__urel': {'ur': ((11, 0), 39.8, 24.8, (None, None), 97.9, 6.1)},
         'sciapgg.ds__vnt10': {
             'vnt': [(18, 1), 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1150,3 +1150,8 @@ def test_compute_day_indicators():
         'sciapgg.ds__press': {'press': ((11, 0), 26.7, 15.4, 49.6, 4.2)},
     }
 
+
+def test_compute_indicators(tmpdir):
+    #table_map = compute.INDICATORS_TABLES.copy()
+    pass
+    #compute.compute_indicators(data, writers, table_map)

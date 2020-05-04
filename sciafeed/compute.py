@@ -1060,7 +1060,7 @@ def compute_and_store(data, writers, table_map):
         for table, columns in table_map.items():
             if table not in day_indicators or table not in writers:
                 continue
-            key_tuple = (table, station_date_str, station_date_str)
+            key_tuple = (table, station_date_str, cod_staz)
             indicators_row = day_indicators[table]
             if len([i for i in indicators_row.values() if i is not None]) == 0:
                 # don't write empty rows

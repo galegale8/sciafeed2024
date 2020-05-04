@@ -1,6 +1,7 @@
 
 from datetime import datetime
 from os.path import exists, join
+import os
 
 from sciafeed import process, arpa19
 
@@ -374,3 +375,35 @@ def test_make_report(tmpdir):
     ]
     for err_msg in err_msgs:
         assert err_msg in msgs
+
+
+def test_compute_indicators(tmpdir):
+    data_folder = join(TEST_DATA_PATH, 'indicators', 'input')
+    indicators_folder = str(tmpdir.join('indicators_out'))
+    dumped_result_exp_file = join(TEST_DATA_PATH, 'indicators', 'expected', 'result.txt')
+    os.mkdir(indicators_folder)
+    report_path = str(tmpdir.join('report.txt'))
+    msgs, computed_indicators = process.compute_indicators(
+        data_folder, indicators_folder, report_path)
+    with open(dumped_result_exp_file) as fp:
+        dumped_result_exp = fp.read()
+        assert str(computed_indicators) == dumped_result_exp
+    assert msgs[0] == "START OF ANALYSIS OF FILE '%s'" % join(
+        data_folder, 'loc01_00009_201801010100_201801011000.dat.csv')
+    assert msgs[2:] == [
+        '',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-01',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-02',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-03',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-04',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-05',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-06',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-07',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-08',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-09',
+        '- computing day indicators for cod_staz=9--38, day=2018-01-10',
+        '',
+        'END OF ANALYSIS OF FILE',
+        '=======================',
+        ''
+    ]

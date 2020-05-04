@@ -19,7 +19,7 @@ def test_make_report(tmpdir):
     # creating only a report
     out_filepath = str(tmpdir.join('report1.txt'))
     assert not exists(out_filepath)
-    result = runner.invoke(entry_points.make_report, [in_filepath, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
     assert result.output == ""
     assert exists(out_filepath)
@@ -45,7 +45,7 @@ def test_make_report(tmpdir):
     # creating only a report
     out_filepath = str(tmpdir.join('report2.txt'))
     assert not exists(out_filepath)
-    result = runner.invoke(entry_points.make_report, [in_filepath, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
     assert result.output == ""
     assert exists(out_filepath)
@@ -71,7 +71,7 @@ def test_make_report(tmpdir):
     # creating only a report
     out_filepath = str(tmpdir.join('report3.txt'))
     assert not exists(out_filepath)
-    result = runner.invoke(entry_points.make_report, [in_filepath, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
     assert result.output == ""
     assert exists(out_filepath)
@@ -97,7 +97,7 @@ def test_make_report(tmpdir):
     # creating only a report
     out_filepath = str(tmpdir.join('report4.txt'))
     assert not exists(out_filepath)
-    result = runner.invoke(entry_points.make_report, [in_filepath, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
     assert result.output == ""
     assert exists(out_filepath)
@@ -148,7 +148,7 @@ def test_make_reports(tmpdir):
     # run with report on file
     out_filepath = str(tmpdir.join('report.txt'))
     assert not exists(out_filepath)
-    result = runner.invoke(entry_points.make_reports, [in_folder, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_reports, [in_folder, '-r', out_filepath])
     assert result.exit_code == 0
     filenames_sorted = sorted(files_to_parse, key=operator.itemgetter(1))
     expected_output = '\n'.join(["processing file %r" % f[1] for f in filenames_sorted]) + '\n'
@@ -162,9 +162,9 @@ def test_make_reports(tmpdir):
         assert line in lines
 
     # try to overwrite the report
-    result = runner.invoke(entry_points.make_reports, [in_folder, '-o', out_filepath])
+    result = runner.invoke(entry_points.make_reports, [in_folder, '-r', out_filepath])
     assert result.exit_code != 0
-    expected_output = 'wrong "out_filepath": the report must not exist or will be overwritten\n'
+    expected_output = 'wrong "report_filepath": the report must not exist or will be overwritten\n'
     assert result.output == expected_output
 
     # run with data files

@@ -11,7 +11,7 @@ from sciafeed import parsing
 from sciafeed import utils
 
 
-def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks=True,
+def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_checks=True,
                 parameters_filepath=None, limiting_params=None):
     """
     Read a file located at `in_filepath` and generate a report on the parsing.
@@ -20,7 +20,7 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks
     Return the list of report strings and the data parsed.
 
     :param in_filepath: input file
-    :param out_filepath: path of the output report
+    :param report_filepath: path of the output report
     :param outdata_filepath: path of the output file containing data
     :param do_checks: True if must do checks, False otherwise
     :param parameters_filepath: path to the CSV file containing info about stored parameters
@@ -72,8 +72,8 @@ def make_report(in_filepath, out_filepath=None, outdata_filepath=None, do_checks
     msgs.append('=' * len(msg))
     msgs.append('')
 
-    if out_filepath:
-        with open(out_filepath, 'a') as fp:
+    if report_filepath:
+        with open(report_filepath, 'a') as fp:
             for msg in msgs:
                 fp.write(msg + '\n')
 

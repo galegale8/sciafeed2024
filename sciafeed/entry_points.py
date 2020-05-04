@@ -13,7 +13,7 @@ from sciafeed import process
 
 @click.command()
 @click.argument('in_filepath', type=click.Path(exists=True, dir_okay=False))
-@click.option('--out_filepath', '-o', type=click.Path(exists=False, dir_okay=False),
+@click.option('--report_filepath', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--outdata_filepath', '-d', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output data file")
@@ -25,7 +25,7 @@ def make_report(**kwargs):
     Optionally, it can also export parsed data.
     """
     msgs, _ = process.make_report(**kwargs)
-    if not kwargs['out_filepath']:
+    if not kwargs['report_filepath']:
         for msg in msgs:
             print(msg)
     if kwargs['outdata_filepath']:
@@ -34,7 +34,7 @@ def make_report(**kwargs):
 
 @click.command()
 @click.argument('in_folder', type=click.Path(exists=True, dir_okay=True))
-@click.option('--out_filepath', '-o', type=click.Path(exists=False, dir_okay=False),
+@click.option('--report_filepath', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--outdata_folder', '-d', type=click.Path(exists=False, dir_okay=True),
               help="folder path where to put the output data files")
@@ -45,8 +45,8 @@ def make_reports(**kwargs):
     """
     in_folder = kwargs['in_folder']
     outdata_folder = kwargs['outdata_folder']
-    if kwargs['out_filepath'] and exists(kwargs['out_filepath']):
-        print('wrong "out_filepath": the report must not exist or will be overwritten')
+    if kwargs['report_filepath'] and exists(kwargs['report_filepath']):
+        print('wrong "report_filepath": the report must not exist or will be overwritten')
         sys.exit(2)
         # return
     if outdata_folder and not exists(outdata_folder):
@@ -67,9 +67,9 @@ def make_reports(**kwargs):
         current_msgs, _ = process.make_report(
             in_filepath,
             outdata_filepath=outdata_filepath,
-            out_filepath=kwargs['out_filepath']
+            report_filepath=kwargs['report_filepath']
         )
-        if not kwargs['out_filepath']:
+        if not kwargs['report_filepath']:
             for msg in current_msgs:
                 print(msg)
 

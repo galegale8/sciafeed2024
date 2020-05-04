@@ -44,10 +44,10 @@ def group_same_day(data_record):
     utility function to group all records with the same station
     and of the same day
     """
-    metadata, row_date, par_code, par_value, par_flag = data_record
+    metadata, row_day, par_code, par_value, par_flag = data_record
     station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
-    if isinstance(row_date, datetime):
-        row_day = row_date.date()
+    if isinstance(row_day, datetime):
+        row_day = row_day.date()
     return station_id, row_day
 
 

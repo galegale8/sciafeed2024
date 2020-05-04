@@ -65,6 +65,8 @@ def sum_records_by_hour_groups(day_records, hours_interval):
         return []
     metadata = day_records[0][0]
     day = day_records[0][1]
+    if not isinstance(day, datetime):
+        return day_records
     par_code = day_records[0][2]
     start_time = datetime(day.year, day.month, day.day, 0, 0)
     new_records = []

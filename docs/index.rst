@@ -1,6 +1,6 @@
 SCIA-FEED technical code documentation
 ======================================
-The following is the technical code documentation of the SCIA-FEED python package,
+The following is the technical code documentation of the SCIA-FEED python package v.1.0,
 tool for downloading, validating, computing and inserting climate indicators into the
 SCIA PostgreSQL database.
 

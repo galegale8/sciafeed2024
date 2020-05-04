@@ -5,7 +5,7 @@ from sciafeed import arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa,
 
 
 FORMATS = [(getattr(mod, 'FORMAT_LABEL'), mod) for mod in (
-        arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino)]
+    arpa19, arpa21, arpaer, arpafvg, bolzano, hiscentral, noaa, rmn, trentino)]
 
 
 def guess_format(filepath):
@@ -54,14 +54,14 @@ def parse(filepath, parameters_filepath=None, format_label=None):
     Try to extract data from a file located at `filepath`. Data returned is of kind:
     ::
 
-    [(metadata, date obj, par_code, par_value, par_flag), ....]
+        [(metadata, date obj, par_code, par_value, par_flag), ....]
 
     Return also the list of tuples (err_indx, err_msg) of the formatting errors found.
 
     :param filepath: the file path where to extract data
     :param parameters_filepath: path to the template of the format to be used
     :param format_label: the name of the format
-    :return:data, found_errors
+    :return: data, found_errors
     """
     if not format_label:
         _, format_module = guess_format(filepath)

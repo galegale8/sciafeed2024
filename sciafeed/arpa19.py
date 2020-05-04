@@ -53,8 +53,7 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
     Return a dictionary of type:
     ::
 
-        {   param_code: [min_value, max_value]
-        }
+        { param_code: [min_value, max_value], ...}
 
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param delimiter: CSV delimiter

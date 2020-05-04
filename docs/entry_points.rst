@@ -10,3 +10,6 @@ entry_points
 
 .. click:: sciafeed.entry_points:download_hiscentral
    :prog: download_hiscentral
+
+.. click:: sciafeed.entry_points:compute_indicators
+   :prog: compute_indicators

@@ -1,6 +1,6 @@
 """
-This module contains functions and utilities that extracts information from a `data` record
-or from a set of `data` records.
+This module contains functions and utilities that extracts information from a set of `data`
+records.
 `data` is a tuple of kind:
 ::
 
@@ -11,7 +11,6 @@ import itertools
 import operator
 import statistics
 
-from sciafeed import utils
 
 ROUND_PRECISION = 1
 INDICATORS_TABLES = {
@@ -844,11 +843,11 @@ def wind_dd_partition(input_records):
     It returns the list [c1, c2, c3, c4, c5,...c16] where:
     ::
 
-    * c1: records with DD in ]0, 22.5]
-    * c2: records with DD in ]22.5, 45]
-    * c3: records with DD in ]45, 67.5]
-    ...
-    * c16: records with DD in ]337, 360]
+        * c1: records with DD in ]0, 22.5]
+        * c2: records with DD in ]22.5, 45]
+        * c3: records with DD in ]45, 67.5]
+        ...
+        * c16: records with DD in ]337, 360]
 
     It assumes input records are all of DD, same station, valid and with not null values.
 
@@ -1035,6 +1034,7 @@ def compute_and_store(data, writers, table_map):
     `table_map` is the structure of db tables for indicators,
     of kind:
     ::
+
         {table1: [column1, column2, ...], table2: [column1, column2, ...], ...}
 
     `writers` is a dictionary of CSV writers, as returned by function utils.open_csv_writers.

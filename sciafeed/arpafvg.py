@@ -17,7 +17,7 @@ FORMAT_LABEL = 'ARPA-FVG'
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing details on the arpafvg stored parameters.
+    Load a CSV file containing details on the ARPA-FVG stored parameters.
     Return a dictionary of type:
     ::
 
@@ -44,12 +44,11 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
 
 def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing thresholds of the arpafvg stored parameters.
+    Load a CSV file containing thresholds of the ARPA-FVG stored parameters.
     Return a dictionary of type:
     ::
 
-        {   param_code: [min_value, max_value]
-        }
+        { param_code: [min_value, max_value], ...}
 
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param delimiter: CSV delimiter
@@ -71,10 +70,10 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
 def parse_filename(filename: str):
     """
     Return (<code of the station>, <start datetime object>, <end datetime object>)
-    corresponding to the arpafvg input file named `filename`.
+    corresponding to the ARPA-FVG input file named `filename`.
     The function assumes the filename is validated (see `validate_filename`).
 
-    :param filename: the name of the arpafvg file
+    :param filename: the name of the ARPA-FVG file
     :return: the tuple (<code>, <start date>, <end date>)
     """
     name, ext = splitext(filename)
@@ -94,10 +93,10 @@ def parse_filename(filename: str):
 
 def validate_filename(filename: str):
     """
-    Check the name of the input arpafvg file named `filename`
+    Check the name of the input ARPA-FVG file named `filename`
     and returns the description string of the error (if found).
 
-    :param filename: the name of the arpafvg file
+    :param filename: the name of the ARPA-FVG file
     :return: the string describing the error
     """
     err_msg = ''
@@ -132,14 +131,14 @@ def validate_filename(filename: str):
 
 def parse_row(row, parameters_map, metadata=None):
     """
-    Parse a row of a arpafvg file, and return the parsed data. Data structure is as a list:
+    Parse a row of a ARPA-FVG file, and return the parsed data. Data structure is as a list:
     ::
 
       [(metadata, datetime object, par_code, par_value, flag), ...]
 
     The function assumes the row as validated (see function `validate_row_format`).
 
-    :param row: a row of the arpafvg file
+    :param row: a row of the ARPA-FVG file
     :param parameters_map: dictionary of information about stored parameters at each position
     :param metadata: default metadata if not provided in the row
     :return: (datetime object, latitude, prop_dict)
@@ -165,11 +164,11 @@ def parse_row(row, parameters_map, metadata=None):
 
 def validate_row_format(row):
     """
-    It checks a row of an arpafvg file for validation against the format,
+    It checks a row of an ARPA-FVG file for validation against the format,
     and returns the description of the error (if found).
     This validation is needed to be able to parse the row by the function `parse_row`.
 
-    :param row: the arpafvg file row to validate
+    :param row: the ARPA-FVG file row to validate
     :return: the string describing the error
     """
     err_msg = ''
@@ -196,7 +195,7 @@ def validate_row_format(row):
 
 def rows_generator(filepath, parameters_map, metadata):
     """
-    A generator of rows of an arpafvg file containing data. Each value returned
+    A generator of rows of an ARPA-FVG file containing data. Each value returned
     is a tuple (index of the row, row).
 
     :param filepath: the file path of the input file
@@ -236,11 +235,11 @@ def extract_metadata(filepath, parameters_filepath):
 # entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Open an arpafvg file and validate it against the format.
+    Open an ARPA-FVG file and validate it against the format.
     Return the list of tuples (row index, error message) of the errors found.
     row_index=0 is used only for global formatting errors.
 
-    :param filepath: path to the arpafvg file
+    :param filepath: path to the ARPA-FVG file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [..., (row index, error message), ...]
     """
@@ -296,7 +295,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 # entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Read an arpafvg file located at `filepath` and returns the data stored inside and the list
+    Read an ARPA-FVG file located at `filepath` and returns the data stored inside and the list
     of error messages eventually found.
     Data structure is as a list:
     ::
@@ -305,7 +304,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 
     The list of error messages is returned as the function `validate_format` does.
 
-    :param filepath: path to the arpafvg file
+    :param filepath: path to the ARPA-FVG file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: (data, found_errors)
     """""

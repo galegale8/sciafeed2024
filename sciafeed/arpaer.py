@@ -3,7 +3,7 @@ This module contains the functions and utilities to parse an ARPA-Emilia Romagna
 """
 import copy
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 import json
 import os
 from os.path import abspath, basename, dirname, join, splitext
@@ -114,9 +114,9 @@ def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_fi
     """
     Query the ARPAER database and return the results as a list of dictionaries.
     The dictionaries are loaded JSON (for the used json format, see
-    http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json )
+    http://www.raspibo.org/wiki/index.php/Gruppo_Meteo/RFC-rmap#Json ).
     The bcode_filters are a dictionary of BCODES to filter, of kind:
-    {bcode: {'trange': ..., 'level': ...}, ...}
+    {bcode: {'trange': ..., 'level': ...}, ...}.
     The 'trange' and 'level' can be exact match, but you can use the 'any' value
     using the marker arpaer.JSON_ANY_MARKER .
 
@@ -264,7 +264,7 @@ def validate_filename(filename: str):
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing details on the arpaer stored parameters.
+    Load a CSV file containing details on the ARPA-ER stored parameters.
     Return a dictionary of type:
     ::
 
@@ -294,7 +294,7 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
 
 def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing thresholds of the arpaer stored parameters.
+    Load a CSV file containing thresholds of the ARPA-ER stored parameters.
     Return a dictionary of type:
     ::
 

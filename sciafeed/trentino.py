@@ -16,7 +16,7 @@ FORMAT_LABEL = 'TRENTINO'
 
 def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing details on the trentino stored parameters.
+    Load a CSV file containing details on the TRENTINO stored parameters.
     Return a dictionary of type:
     ::
 
@@ -42,12 +42,11 @@ def load_parameter_file(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
 
 def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter=';'):
     """
-    Load a CSV file containing thresholds of the trentino stored parameters.
+    Load a CSV file containing thresholds of the TRENTINO stored parameters.
     Return a dictionary of type:
     ::
 
-        {   param_code: [min_value, max_value]
-        }
+        { param_code: [min_value, max_value], ...}
 
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param delimiter: CSV delimiter
@@ -68,10 +67,10 @@ def load_parameter_thresholds(parameters_filepath=PARAMETERS_FILEPATH, delimiter
 
 def parse_filename(filename: str):
     """
-    Return the code of the station corresponding to the trentino input file named `filename`.
+    Return the code of the station corresponding to the TRENTINO input file named `filename`.
     The function assumes the filename is validated (see `validate_filename`).
 
-    :param filename: the name of the trentino file
+    :param filename: the name of the TRENTINO file
     :return: the code of the station
     """
     code, ext = splitext(filename)
@@ -80,10 +79,10 @@ def parse_filename(filename: str):
 
 def validate_filename(filename: str):
     """
-    Check the name of the input trentino file named `filename`
+    Check the name of the input TRENTINO file named `filename`
     and returns the description string of the error (if found).
 
-    :param filename: the name of the trentino file
+    :param filename: the name of the TRENTINO file
     :return: the string describing the error
     """
     err_msg = ''
@@ -95,12 +94,12 @@ def validate_filename(filename: str):
 
 def guess_fieldnames(filepath, parameters_map):
     """
-    Parse a trentino file to guess the right CSV header, the station code and some
+    Parse a TRENTINO file to guess the right CSV header, the station code and some
     extra station properties.
     Station properties is a dictionary witk keys ['cod_utente', 'desc', 'lat', 'lon', height'].
     The measured parameters are taken from the parameters_map dictionary.
 
-    :param filepath: path to the input trentino file
+    :param filepath: path to the input TRENTINO file
     :param parameters_map: dictionary of information about stored parameters at each position
     :return: the tuple (list of fieldnames, station_code, extra_station_props)
     """
@@ -147,7 +146,7 @@ def guess_fieldnames(filepath, parameters_map):
 
 def parse_row(row, parameters_map, metadata=None):
     """
-    Parse a row of a trentino file, and return the parsed data. Data structure is as a list:
+    Parse a row of a TRENTINO file, and return the parsed data. Data structure is as a list:
     ::
 
       [(metadata, datetime object, par_code, par_value, flag), ...]
@@ -155,7 +154,7 @@ def parse_row(row, parameters_map, metadata=None):
     The function assumes the row as validated (see function `validate_row_format`).
     Flag is True (valid data) or False (not valid).
 
-    :param row: a row dictionary of the trentino file as parsed by csv.DictReader
+    :param row: a row dictionary of the TRENTINO file as parsed by csv.DictReader
     :param parameters_map: dictionary of information about stored parameters at each position
     :param metadata: default metadata if not provided in the row
     :return: (datetime object, prop_dict)
@@ -180,11 +179,11 @@ def parse_row(row, parameters_map, metadata=None):
 
 def validate_row_format(row):
     """
-    It checks a row of a trentino file for validation against the format,
+    It checks a row of a TRENTINO file for validation against the format,
     and returns the description of the error (if found).
     This validation is needed to be able to parse the row by the function `parse_row`.
 
-    :param row: a row dictionary of the trentino file as parsed by csv.DictReader
+    :param row: a row dictionary of the TRENTINO file as parsed by csv.DictReader
     :return: the string describing the error
     """
     err_msg = ''
@@ -232,7 +231,7 @@ def rows_generator(filepath, parameters_map, metadata):
 # entry point candidate
 def extract_metadata(filepath, parameters_filepath):
     """
-    Extract generic metadata information from a file `filepath` of format trentino.
+    Extract generic metadata information from a file `filepath` of format TRENTINO.
     Return the dictionary of the metadata extracted.
     The function assumes the file is validated against the format (see function
     `guess_fieldnames`).
@@ -255,11 +254,11 @@ def extract_metadata(filepath, parameters_filepath):
 # entry point candidate
 def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Open a trentino file and validate it against the format.
+    Open a TRENTINO file and validate it against the format.
     Return the list of tuples (row index, error message) of the errors found.
     row_index=0 is used only for global formatting errors.
 
-    :param filepath: path to the trentino file
+    :param filepath: path to the TRENTINO file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: [..., (row index, error message), ...]
     """
@@ -306,7 +305,7 @@ def validate_format(filepath, parameters_filepath=PARAMETERS_FILEPATH):
 # entry point candidate
 def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     """
-    Read a trentino file located at `filepath` and returns the data stored inside and the list
+    Read a TRENTINO file located at `filepath` and returns the data stored inside and the list
     of error messages eventually found. 
     Data structure is as a list:
     ::
@@ -315,7 +314,7 @@ def parse(filepath, parameters_filepath=PARAMETERS_FILEPATH):
     
     The list of error messages is returned as the function `validate_format` does.
 
-    :param filepath: path to the trentino file
+    :param filepath: path to the TRENTINO file
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :return: (data, found_errors)
     """""

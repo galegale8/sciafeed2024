@@ -1149,7 +1149,8 @@ def test_compute_day_indicators():
     }
 
 
-def test_compute_indicators(tmpdir):
+def test_compute_and_store(tmpdir):
+    # TODO
     #table_map = compute.INDICATORS_TABLES.copy()
     pass
-    #compute.compute_indicators(data, writers, table_map)
+    #compute.compute_and_store(data, writers, table_map)

@@ -84,6 +84,8 @@ The documentation is readable from docs/html/index.html by a browser (for exampl
 To generate the distribution file of the technical code documentation,
 for example the file 'ispra-2019-scia-del-006-v.1.0.zip':
 
+.. code:: bash
+
     sed -i 's+'"$PWD"'+INSTALL_DIR+g' docs/html/*.html
     ln -s ./index.html docs/html/ispra-2019-scia-del-006-v.1.0.html
     cd docs

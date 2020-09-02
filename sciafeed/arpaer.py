@@ -3,19 +3,21 @@ This module contains the functions and utilities to parse an ARPA-Emilia Romagna
 """
 import copy
 import csv
-from datetime import timedelta
+from datetime import datetime, timedelta
 import json
 import os
 from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 
 import requests
+from googleapiclient.discovery import build
 
-from sciafeed import TEMPLATES_PATH
+from sciafeed import TEMPLATES_PATH, this_path
+from sciafeed import gdrive_utils
 from sciafeed import utils
 
 JSON_ANY_MARKER = '999999'
-
+HISTORICAL_GDRIVE_FOLDER_ID = '0B7KLnPu6vjdPRjZzNWFReTd0MDQ'
 # the name of the 'resource' table, where to find data: it can be taken from the link of
 # of `dati recenti' from the URL
 # `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
@@ -34,6 +36,56 @@ LIMITING_PARAMETERS = {}
 FORMAT_LABEL = 'ARPA-ER'
 
 # ##### start of online interface utilities #####
+
+
+def historical_download(start_date, end_date, output_folder, ungzip=True):
+    """
+    Download the historical files containing data of a time interval [`start_date`, `end_date`].
+    The files are downloaded in the folder `output_folder`.
+    Return the list of paths of downloaded files.
+
+    :param start_date: start datetime of the data interval
+    :param end_date: end datetime of the data interval
+    :param output_folder: the output folder
+    :param ungzip: True if uncompress the .gz archives
+    :return: the list of output file paths
+    """
+    pattern = "meteo-%Y-%m.json.gz"
+    # note: also to list google drive public files must be authenticated!
+    credentials_folder = join(this_path, 'credentials')
+    historical_files = gdrive_utils.get_gdrive_filelist(
+        HISTORICAL_GDRIVE_FOLDER_ID,
+        credentials_folder
+    )
+    historical_times = [datetime.strptime(d, pattern) for d in historical_files]
+    historical_start = min(historical_times)
+    historical_end = max(historical_times)
+    historical_end += timedelta(31)
+    historical_end = datetime(historical_end.year, historical_end.month, 1) - timedelta(1)
+    if end_date < historical_start or start_date > historical_end:
+        print('interval out of historical range')
+        return []
+    # FIXME: manage partial covered interval
+    current_date = start_date
+    files_to_download = dict()
+    while current_date <= end_date:
+        filename = current_date.strftime(pattern)
+        if filename not in files_to_download:
+            files_to_download[filename] = historical_files[filename]
+        current_date += timedelta(1)
+    outputs = []
+    for file_name, file_id in files_to_download.items():
+        destination_path = join(output_folder, file_name)
+        output_item = destination_path
+        print('downloading %s to %s' % (file_name, output_folder))
+        gdrive_utils.download_gdrive_public_file(file_id, destination_path)
+        if ungzip:
+            output_path = destination_path[:-3]
+            output_item = output_path
+            print('unzipping %s' % file_name)
+            utils.extract_gz(destination_path, output_path, rm_source=True)
+        outputs.append(output_item)
+    return outputs
 
 
 def build_sql(table_name, start=None, end=None, limit=None, only_bcodes=None, **kwargs):
@@ -217,7 +269,6 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcod
     db_results = get_db_results(start, end, limit=limit, timeout=timeout, only_bcodes=only_bcodes,
                                 bcodes_filters=bcodes_filters, **kwargs)
     save_db_results(save_path, db_results)
-
 
 # ##### end of online interface utilities #####
 

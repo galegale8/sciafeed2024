@@ -3,8 +3,11 @@ This modules provides generic utility functions of the SCIA FEED package
 """
 import csv
 from datetime import datetime, timedelta
+import gzip
+import os
 import os.path
 import random
+import shutil
 
 import xlrd
 
@@ -172,3 +175,18 @@ def open_csv_writers(parent_folder, tables_map):
 def close_csv_writers(writers):
     for _, fp in writers.values():
         fp.close()
+
+
+def extract_gz(input_path, output_path, rm_source=False):
+    """
+    Unzip a .gz file located in `input_path` into a file located at `output_path`
+
+    :param input_path: gz archive file
+    :param output_path: unzipped archive
+    :param rm_source: if True, remove input file when done
+    """
+    with gzip.open(input_path, 'rb') as f_in:
+        with open(output_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    if rm_source and input_path != output_path:
+        os.remove(input_path)

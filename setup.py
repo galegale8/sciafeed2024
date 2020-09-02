@@ -23,6 +23,9 @@ install_requires = [
     'sqlalchemy==1.3.16',
     'psycopg2==2.8.5',
     'zeep==3.4.0',
+    'google-api-python-client',
+    # 'google-auth-httplib2',
+    'google-auth-oauthlib',
 ]
 
 setup(

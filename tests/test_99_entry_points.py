@@ -189,13 +189,13 @@ def test_make_reports(tmpdir):
     assert "file %r has unknown format" % unknown_filepath in result.output
 
 
-def test_compute_indicators(tmpdir):
+def test_compute_daily_indicators(tmpdir):
     runner = CliRunner()
     data_folder = join(TEST_DATA_PATH, 'indicators', 'input')
     expected_folder = join(TEST_DATA_PATH, 'indicators', 'expected')
     indicators_folder = str(tmpdir.join('indicators_out'))
     report_path = join(indicators_folder, 'report.txt')
-    result = runner.invoke(entry_points.compute_indicators,
+    result = runner.invoke(entry_points.compute_daily_indicators,
                            ['-d', data_folder, '-i', indicators_folder, '-r', report_path])
     assert result.exit_code == 0
     for fname in listdir(expected_folder):

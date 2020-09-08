@@ -1032,14 +1032,13 @@ def compute_and_store(data, writers, table_map):
     """
     Extract indicators from `data` object, write on CSV files with
     a structure that simulates the database tables.
-    Return the list of reporting messages and the dictionaries of computed indicators.
-    `table_map` is the structure of db tables for indicators,
-    of kind:
+    `writers` is a dictionary of CSV writers, as returned by function utils.open_csv_writers.
+    `table_map` is the dictionary of db tables for indicators, of kind:
     ::
 
         {table1: [column1, column2, ...], table2: [column1, column2, ...], ...}
 
-    `writers` is a dictionary of CSV writers, as returned by function utils.open_csv_writers.
+    Return the list of reporting messages and the dictionaries of computed indicators.
 
     :param data: list of measures
     :param writers: dictionary of CSV writers

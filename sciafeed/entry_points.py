@@ -113,7 +113,7 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
               help="folder path of the output files")
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
-def compute_indicators(data_folder, indicators_folder, report_path):
+def compute_daily_indicators(data_folder, indicators_folder, report_path):
     """
     Compute daily indicators from data files located at folder `data_folder`,
     and put results in the folder `indicators_folder`.
@@ -139,7 +139,7 @@ def compute_indicators(data_folder, indicators_folder, report_path):
         # this will be removed when we can insert in the database
         print('"indicators_folder" is required')
         sys.exit(2)
-    msgs, _ = process.compute_indicators(data_folder, indicators_folder, report_path)
+    msgs, _ = process.compute_daily_indicators(data_folder, indicators_folder, report_path)
     if not report_path:
         for msg in msgs:
             print(msg)

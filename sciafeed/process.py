@@ -15,7 +15,7 @@ def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_che
                 parameters_filepath=None, limiting_params=None):
     """
     Read a file located at `in_filepath` and generate a report on the parsing.
-    If `out_filepath` is defined, the report string is written on a file.
+    If `report_filepath` is defined, the report string is written on a file.
     If the path `outdata_filepath` is defined, a file with the data parsed is created at the path.
     Return the list of report strings and the data parsed.
 
@@ -80,7 +80,7 @@ def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_che
     return msgs, data
 
 
-def compute_indicators(data_folder, indicators_folder=None, report_path=None):
+def compute_daily_indicators(data_folder, indicators_folder=None, report_path=None):
     """
     Read each file located inside `data_folder` and generate indicators
     and a report of the processing.

@@ -323,10 +323,11 @@ def parse_row(row, parameters_map, metadata=None, missing_value_marker=MISSING_V
         metadata = metadata.copy()
     date_obj = datetime.strptime(row['time'], "%Y-%m-%d").date()
     data = []
-    param_code = metadata.get('par_code')
-    props = parameters_map.get(param_code)
+    param_name = metadata.get('par_name')
+    props = parameters_map.get(param_name)
     if not props:
         return []
+    param_code = props.get('par_code')
     param_value = row['DataValue'].strip()
     if param_value not in ('-', '', MISSING_VALUE_MARKER):
         param_value = props['convertion'](float(param_value.replace(',', '.')))
@@ -400,7 +401,7 @@ def extract_metadata(filepath, parameters_filepath):
     else:
         par_code = parameters_map[par_name]['par_code']
     ret_value = {'cod_utente': cod_utente, 'par_code': par_code, 'source': source,
-                 'format': FORMAT_LABEL}
+                 'format': FORMAT_LABEL, 'par_name': par_name}
     folder_name = dirname(source)
     ret_value.update(utils.folder2props(folder_name))
     return ret_value

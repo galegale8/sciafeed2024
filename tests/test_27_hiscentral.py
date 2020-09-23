@@ -115,7 +115,7 @@ def test_extract_metadata():
     metadata = hiscentral.extract_metadata(filepath, parameters_filepath)
     assert metadata == {'cod_utente': '990', 'par_code': 'Tmax',
                         'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv',
-                        'format': 'HISCENTRAL'}
+                        'format': 'HISCENTRAL', 'par_name': 'Tmax'}
 
 
 def test_parse_row():
@@ -131,7 +131,7 @@ def test_parse_row():
         'QualityControlLevelCode': '1'
     }
     parameters_filepath = join(TEST_DATA_PATH, 'hiscentral', 'hiscentral_params.csv')
-    metadata = {'par_code': 'Tmax'}
+    metadata = {'par_code': 'Tmax', 'par_name': 'Tmax'}
     parameters_map = hiscentral.load_parameter_file(parameters_filepath=parameters_filepath)
     expected = [
         (metadata, date(2000, 7, 1), 'Tmax', 28.0, True),
@@ -218,7 +218,7 @@ def test_parse():
     filepath = join(TEST_DATA_PATH, 'hiscentral', 'serie_990-reg.abruzzoTmax.csv')
     parameters_filepath = join(TEST_DATA_PATH, 'hiscentral', 'hiscentral_params.csv')
     metadata = {'cod_utente': '990', 'par_code': 'Tmax', 'format': 'HISCENTRAL',
-                'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv'}
+                'source': 'hiscentral/serie_990-reg.abruzzoTmax.csv', 'par_name': 'Tmax'}
     expected_data = [
         (metadata, date(2000, 7, 1), 'Tmax', 28.0, True),
         (metadata, date(2000, 7, 2), 'Tmax', 31.0, True),

@@ -29,7 +29,7 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
     :param omit_missing: if False, include also values marked as missing
     """
     fieldnames = ['cod_utente', 'cod_rete', 'date', 'time', 'parameter', 'value', 'valid',
-                  'source', 'format']
+                  'source', 'format', 'lat', 'lon']
     with open(out_filepath, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
@@ -53,6 +53,8 @@ def export2csv(data, out_filepath, omit_parameters=(), omit_missing=True):
                 'valid': par_flag and '1' or '0',
                 'source': metadata.get('source', ''),
                 'format': metadata.get('format', ''),
+                'lat': metadata.get('lat', ''),
+                'lon': metadata.get('lon', ''),
             }
             writer.writerow(row)
 
@@ -77,6 +79,8 @@ def csv2data(csv_path):
                 'cod_rete': row['cod_rete'],
                 'source': row['source'],
                 'format': row['format'],
+                'lat': row['lat'],
+                'lon': row['lon'],
             }
             if row['time']:
                 current_date = datetime.strptime("%sT%s" % (row['date'], row['time']),
@@ -91,25 +95,26 @@ def csv2data(csv_path):
     return data
 
 
-def stations2csv(stations, stations_path):
+def stations2csv(stations, stations_path, extra_fields=[]):
     """
     Export the list of information about stations into a CSV located at `stations_path`.
+    The CSV fields are the one of anag__stazioni + extra_fields.
+    Each station is a dictionary with labels (not ids) of the station property.
 
     :param stations: list of dictionaries of informations about stations
     :param stations_path: path of the output CSV
+    :param extra_fields: list of extra fields to add to the CSV
     """
-    # TODO
-    pass
-
-
-def csv2stations2(stations_path):
-    """
-    Export the list of information about stations into a CSV located at `stations_path`.
-    Returns a list of log messages of operations done.
-
-    :param stations: list of dictionaries of informations about stations
-    :param stations_path: path of the output CSV
-    :return: a list of log messages of operations done
-    """
-    # TODO
-    return []
+    fieldnames = ['id_staz', 'nome', 'lon', 'lat', 'quota', 'cod_utente', 'cod_rete', 'cod_entep',
+                  'cod_entef', 'cod_enteg', 'cod_tipostaz', 'cod_classestaz', 'cod_orariostaz',
+                  'cod_statostaz', 'cod_istat', 'cod_naz', 'cod_reg', 'cod_prov',
+                  'indirizzo', 'codice_wmo', 'codice_icao', 'tipo_synop', 'h_pozz',
+                  'sup_isobarica', 'data_inizio', 'data_fine', 'note', 'local_user',
+                  'flag_mare', 'altezza_anemometro', 'flag_area_climatica', 'distanzamare']
+    fieldnames += extra_fields
+    with open(stations_path, 'w') as csv_out_file:
+        writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
+        writer.writeheader()
+        for station in stations:
+            row = {k: station.get(k, '') for k in fieldnames}
+            writer.writerow(row)

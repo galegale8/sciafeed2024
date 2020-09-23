@@ -7,7 +7,8 @@ USER = 'scia'
 PASSWORD = 'scia'
 ADDRESS = 'localhost'
 PORT = '5432'
-DB_NAME = 'sciadevridotto'
+DB_NAME = 'sciapg'
+
 DEFAULT_DB_URI = "postgresql://%s:%s@%s:%s/%s" % (USER, PASSWORD, ADDRESS, PORT, DB_NAME)
 ENGINE = None
 
@@ -79,3 +80,20 @@ def get_table_columns(table_name):
     except:
         return []
     return [c.name for c in table_obj.columns]
+
+
+def find_new_stations(data_folder, dburi, stations_path, report_path=None):
+    """
+    Find stations from a set of CSV files inside a folder `data_folder`, that are not
+    present in the database and creates a CSV with the list.
+
+    :param data_folder: folder path where CSV files are in
+    :param dburi: db connection URI
+    :param stations_path: path of the CSV with the stations not found.
+    :param report_path: file path of the report of the operations done.
+    :return: ([list of report messages], [list of not found stations])
+    """
+    # TODO
+    msgs = []
+    not_found_stations = []
+    return msgs, not_found_stations

@@ -89,3 +89,27 @@ def csv2data(csv_path):
             measure = metadata, current_date, par_code, par_value, par_flag
             data.append(measure)
     return data
+
+
+def stations2csv(stations, stations_path):
+    """
+    Export the list of information about stations into a CSV located at `stations_path`.
+
+    :param stations: list of dictionaries of informations about stations
+    :param stations_path: path of the output CSV
+    """
+    # TODO
+    pass
+
+
+def csv2stations2(stations_path):
+    """
+    Export the list of information about stations into a CSV located at `stations_path`.
+    Returns a list of log messages of operations done.
+
+    :param stations: list of dictionaries of informations about stations
+    :param stations_path: path of the output CSV
+    :return: a list of log messages of operations done
+    """
+    # TODO
+    return []

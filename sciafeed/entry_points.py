@@ -7,8 +7,11 @@ import sys
 
 import click
 
+from sciafeed import export
 from sciafeed import hiscentral
 from sciafeed import process
+from sciafeed import querying
+from sciafeed import upsert
 
 
 @click.command()
@@ -144,3 +147,55 @@ def compute_daily_indicators(data_folder, indicators_folder, report_path):
         for msg in msgs:
             print(msg)
 
+
+@click.command()
+@click.option('--data_folder', '-d', type=click.Path(exists=True, dir_okay=True),
+              help="folder path where to get the data files")
+@click.option('--dburi', '-d', default=querying.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % querying.DEFAULT_DB_URI)
+@click.option('--stations_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the CSV with the new stations found")
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+def find_new_stations(data_folder, dburi, stations_path, report_path):
+    if report_path and exists(report_path):
+        print('wrong "report_path": the report must not exist or will be overwritten')
+        sys.exit(2)
+    if not data_folder:
+        print('"data_folder" is required')
+        sys.exit(2)
+    if not isdir(data_folder):
+        print('wrong "data_folder": this must be a folder')
+        sys.exit(2)
+    if not stations_path:
+        print('"stations_path" is required')
+        sys.exit(2)
+    msgs1, not_found_stations = querying.find_new_stations(
+        data_folder, dburi, stations_path, report_path)
+    msgs2 = export.stations2csv(not_found_stations, stations_path)
+    msgs = msgs1 + msgs2
+    if not report_path:
+        for msg in msgs:
+            print(msg)
+
+
+@click.command()
+@click.option('--dburi', '-d', default=querying.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % querying.DEFAULT_DB_URI)
+@click.option('--stations_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the CSV with the new stations found")
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+def upsert_stations(dburi, stations_path, report_path):
+    if report_path and exists(report_path):
+        print('wrong "report_path": the report must not exist or will be overwritten')
+        sys.exit(2)
+    if not stations_path:
+        print('"stations_path" is required')
+        sys.exit(2)
+    msgs, upserted_ids = upsert.upsert_stations(dburi, stations_path, report_path)
+    if not report_path:
+        for msg in msgs:
+            print(msg)

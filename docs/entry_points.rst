@@ -13,3 +13,9 @@ entry_points
 
 .. click:: sciafeed.entry_points:compute_daily_indicators
    :prog: compute_daily_indicators
+
+.. click:: sciafeed.entry_points:find_new_stations
+   :prog: find_new_stations
+
+.. click:: sciafeed.entry_points:upsert_stations
+   :prog: upsert_stations

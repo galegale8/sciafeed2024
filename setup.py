@@ -51,6 +51,8 @@ setup(
             'make_reports = sciafeed.entry_points:make_reports',
             'download_hiscentral = sciafeed.entry_points:download_hiscentral',
             'compute_daily_indicators = sciafeed.entry_points:compute_daily_indicators',
+            'find_new_stations = sciafeed.entry_points:find_new_stations',
+            'upsert_stations = sciafeed.entry_points:upsert_stations',
         ],
     },
 )

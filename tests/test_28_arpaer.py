@@ -502,7 +502,7 @@ def test_parse_row():
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
     parameters_map = arpaer.load_parameter_file(parameters_filepath)
 
-    metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 4504139, 'lon': 958959,
+    metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 45.04139, 'lon': 9.58959,
                 'network': 'agrmet'}
     expected = [
         (metadata, datetime(2020, 2, 5, 23, 0), 'PREC', 0.0, True),
@@ -532,7 +532,7 @@ def test_validate_format():
 def test_parse():
     filepath = join(TEST_DATA_PATH, 'arpaer', 'results.json')
     parameters_filepath = join(TEST_DATA_PATH, 'arpaer', 'arpaer_params.csv')
-    metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 4504139, 'lon': 958959,
+    metadata = {'cod_utente': "San Nicolo'", 'is_fixed': True, 'lat': 45.04139, 'lon': 9.58959,
                 'network': 'agrmet', 'source': 'arpaer/results.json', 'format': 'ARPA-ER'}
     expected_data = [
         (metadata, datetime(2020, 2, 5, 23, 0), 'PREC', 0.0, True),

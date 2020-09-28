@@ -406,11 +406,11 @@ def validate_row_format(row):
     try:
         station_data = row['data'][0]['vars']
         station_data['B01019']['v']
-        row['lat']
-        row['lon']
+        float(row['lat'])
+        float(row['lon'])
         row['network']
         row['ident']
-    except KeyError:
+    except (KeyError, TypeError, ValueError):
         err_msg = 'information of the station is not parsable'
         return err_msg
     # date format: try 2 formats
@@ -449,8 +449,8 @@ def parse_row(row, parameters_map, metadata=None):
         metadata = metadata.copy()
     station_data = row['data'][0]['vars']
     metadata['cod_utente'] = station_data['B01019']['v']
-    metadata['lat'] = row['lat']
-    metadata['lon'] = row['lon']
+    metadata['lat'] = float(row['lat']) / 100000.
+    metadata['lon'] = float(row['lon']) / 100000.
     metadata['network'] = row['network']
     metadata['is_fixed'] = row['ident'] is None
     patterns = ['%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S']

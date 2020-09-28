@@ -162,11 +162,8 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)
-    if not data_folder:
-        print('"data_folder" is required')
-        sys.exit(2)
     if not isdir(data_folder):
-        print('wrong "data_folder": this must be a folder')
+        print('wrong "DATA_FOLDER": must be a folder')
         sys.exit(2)
     if not stations_path:
         print('"stations_path" is required')
@@ -181,14 +178,13 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
 
 
 @click.command()
+@click.argument('stations_path', type=click.Path(exists=True, dir_okay=False))
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
                    "default is %s" % db_utils.DEFAULT_DB_URI)
-@click.option('--stations_path', '-s', type=click.Path(exists=False, dir_okay=False),
-              help="file path of the CSV with the new stations found")
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
-def upsert_stations(dburi, stations_path, report_path):
+def upsert_stations(stations_path, dburi, report_path):
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)

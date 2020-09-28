@@ -12,26 +12,6 @@ from sciafeed import db_utils
 from sciafeed import export
 
 
-def extract_station_id(conn, metadata):  # pragma: no cover
-    """
-    Return the station ID from the station properties.
-    Currently it assumes that station_props containing the keys 'cod_rete' and 'cod_utente'.
-
-    :param conn: db connection object
-    :param metadata: dictionary of metadata extracted from data
-    :return: the station ID (or None if not found)
-    """
-    cod_rete = metadata.get('cod_rete')
-    cod_utente = metadata.get('cod_utente') + metadata.get('cod_utente_prefix', '')
-    if cod_rete and cod_utente:
-        sql = "SELECT id_staz FROM sciapgm.anag__stazioni WHERE cod_utente='%s' AND cod_rete='%s'"\
-               % (cod_utente, cod_rete)
-        results = conn.execute(sql).fetchall()
-        if len(results) == 1:
-            return results[0][0]
-    return None
-
-
 @functools.lru_cache(maxsize=None)
 def get_db_station(conn, anag_table, id_staz=None, cod_utente=None, cod_rete=None):
     """
@@ -71,12 +51,10 @@ def find_new_stations(data_folder, dburi):
     engine = db_utils.ensure_engine(dburi)
     meta = MetaData()
     anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=engine,
-                       schema='sciapgm')
+                       schema='dailypdbadmclima')  # schema='sciapgm'
     conn = engine.connect()
     all_stations = dict()
     new_stations = dict()
-    from datetime import datetime
-    print(datetime.now())
     num_records = 0
     with conn.begin():
         total_to_see = listdir(data_folder)
@@ -114,5 +92,4 @@ def find_new_stations(data_folder, dburi):
     msg1 = "Found %i distinct stations" % num_all_stations
     msg2 = "Number of NEW stations: %i" % num_new_stations
     msgs = [msg0, msg1, msg2] + msgs
-    print(datetime.now())
     return msgs, new_stations

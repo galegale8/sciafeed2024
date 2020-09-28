@@ -37,7 +37,8 @@ def test_make_report(tmpdir):
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
         assert len(lines) == 36
-        assert lines[0] == 'cod_utente;cod_rete;date;time;parameter;value;valid;source;format\n'
+        assert lines[0] == \
+               'cod_utente;cod_rete;date;time;parameter;value;valid;source;format;lat;lon\n'
 
     # ------------  arpa21 ------------
     in_filepath = join(TEST_DATA_PATH, 'arpa21', 'loc01_00201_201201010000_201301010100.dat')
@@ -63,7 +64,8 @@ def test_make_report(tmpdir):
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
         assert len(lines) == 57
-        assert lines[0] == 'cod_utente;cod_rete;date;time;parameter;value;valid;source;format\n'
+        assert lines[0] == \
+               'cod_utente;cod_rete;date;time;parameter;value;valid;source;format;lat;lon\n'
 
     # ------------  arpafvg ------------
     in_filepath = join(TEST_DATA_PATH, 'arpafvg', 'loc01_00001_2018010101_2019010101.dat')
@@ -89,7 +91,8 @@ def test_make_report(tmpdir):
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
         assert len(lines) == 46
-        assert lines[0] == 'cod_utente;cod_rete;date;time;parameter;value;valid;source;format\n'
+        assert lines[0] == \
+               'cod_utente;cod_rete;date;time;parameter;value;valid;source;format;lat;lon\n'
 
     # ------------  rmn ------------
     in_filepath = join(TEST_DATA_PATH, 'rmn', 'ancona_right.csv')
@@ -115,7 +118,8 @@ def test_make_report(tmpdir):
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
         assert len(lines) == 36
-        assert lines[0] == 'cod_utente;cod_rete;date;time;parameter;value;valid;source;format\n'
+        assert lines[0] == \
+               'cod_utente;cod_rete;date;time;parameter;value;valid;source;format;lat;lon\n'
 
 
 def test_make_reports(tmpdir):

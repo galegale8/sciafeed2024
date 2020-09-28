@@ -7,6 +7,7 @@ import sys
 
 import click
 
+from sciafeed import db_utils
 from sciafeed import export
 from sciafeed import hiscentral
 from sciafeed import process
@@ -149,12 +150,11 @@ def compute_daily_indicators(data_folder, indicators_folder, report_path):
 
 
 @click.command()
-@click.option('--data_folder', '-d', type=click.Path(exists=True, dir_okay=True),
-              help="folder path where to get the data files")
-@click.option('--dburi', '-d', default=querying.DEFAULT_DB_URI,
+@click.argument('data_folder', type=click.Path(exists=True, dir_okay=True))
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
-                   "default is %s" % querying.DEFAULT_DB_URI)
-@click.option('--stations_path', '-r', type=click.Path(exists=False, dir_okay=False),
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--stations_path', '-s', type=click.Path(exists=False, dir_okay=False),
               help="file path of the CSV with the new stations found")
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
@@ -171,9 +171,9 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     if not stations_path:
         print('"stations_path" is required')
         sys.exit(2)
-    msgs1, not_found_stations = querying.find_new_stations(
-        data_folder, dburi, stations_path, report_path)
-    msgs2 = export.stations2csv(not_found_stations, stations_path)
+    msgs1, not_found_stations = querying.find_new_stations(data_folder, dburi)
+    export.stations2csv(not_found_stations, stations_path, extra_fields=['source'])
+    msgs2 = ['Exported new stations on CSV %r' % stations_path]
     msgs = msgs1 + msgs2
     if not report_path:
         for msg in msgs:
@@ -181,10 +181,10 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
 
 
 @click.command()
-@click.option('--dburi', '-d', default=querying.DEFAULT_DB_URI,
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
-                   "default is %s" % querying.DEFAULT_DB_URI)
-@click.option('--stations_path', '-r', type=click.Path(exists=False, dir_okay=False),
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--stations_path', '-s', type=click.Path(exists=False, dir_okay=False),
               help="file path of the CSV with the new stations found")
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")

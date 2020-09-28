@@ -38,6 +38,9 @@ def configure(db_uri=None):
     ENGINE = engine_from_config(db_config)
 
 
+configure()
+
+
 def ensure_engine(db_uri='sqlite:///:memory:'):
     """
     Return a sqlalchemy engine object. If not configured,
@@ -69,7 +72,7 @@ def get_table_columns(table_name):
 
 
 @functools.lru_cache(maxsize=None)
-def lookup_table_desc(conn, table, id_field, id_value, desc_field):
+def lookup_table_desc(conn, id_field, id_value, desc_field):
     """
     return the value of the field `desc_field` of a table `table` where field `id_field`=`id_value`
 
@@ -80,10 +83,8 @@ def lookup_table_desc(conn, table, id_field, id_value, desc_field):
     :param desc_field: field used to get the attribute from the record filtered
     :return: the field `desc_field` where `id_field`=`id_value`
     """
-    s = select([table.c.desc_field]).where(id_field == id_value)
-    sql = "SELECT %s FROM %s WHERE %s='%s'" % (desc_field, table, id_field, id_value)
-    results = conn.execute(sql).fetchall()
-    if not results:
-        return None
-    else:
+    clause = id_field == id_value
+    results = conn.execute(select([desc_field]).where(clause)).fetchall()
+    if results:
         return results[0][0]
+    return None

@@ -13,6 +13,8 @@ This module contains the functions and utilities to check climatologic data.
 """
 import itertools
 
+from sciafeed import db_utils
+from sciafeed import querying
 from sciafeed import utils
 
 
@@ -111,3 +113,49 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
         new_measure = (metadata, row_date, par_code, par_value, par_flag)
         data_modified.append(new_measure)
     return err_msgs, data_modified
+
+
+def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12):
+    """
+    Check "controllo valori ripetuti = 0" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param len_threshold: lenght of the consecutive zeros to find
+    :param flag: the value of the flag to set for found records
+    :return:
+    """
+    msgs = []
+    if var == 'PREC':
+        results = querying.select_prec_records(conn, stations_ids)
+    else:
+        raise NotImplementedError('check1 implemented only for variable PREC')
+    msg = "Starting check 'controllo valori ripetuti = 0' for variable %s (len=%s)" \
+          % (var, len_threshold)
+    msgs.append(msg)
+    block_index = 0
+    block_records = []
+    to_be_resetted = []
+    i = 0
+    for i, result in enumerate(results):
+        if result.prec24.val_tot == 0 and result.prec24.flag[1] >= 1:
+            block_index += 1
+            block_records.append(result)
+            if block_index == len_threshold:
+                to_be_resetted.extend(block_records)
+            elif block_index > len_threshold:
+                to_be_resetted.append(result)
+        else:
+            block_index = 0
+            block_records = []
+    msg = "Checked %i records" % i
+    msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_prec_flags(conn, to_be_resetted, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs

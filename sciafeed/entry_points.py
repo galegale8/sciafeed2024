@@ -159,6 +159,16 @@ def compute_daily_indicators(data_folder, indicators_folder, report_path):
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 def find_new_stations(data_folder, dburi, stations_path, report_path):
+    """
+    Examine stations on data included in folder `data_folder` and creates a CSV with the new
+    stations not found in the database.
+
+    :param data_folder:
+    :param dburi:
+    :param stations_path:
+    :param report_path:
+    :return:
+    """
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)
@@ -175,6 +185,10 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     if not report_path:
         for msg in msgs:
             print(msg)
+    else:
+        with open(report_path, 'a') as fp:
+            for msg in msgs:
+                fp.write(msg + '\n')
 
 
 @click.command()
@@ -195,3 +209,31 @@ def upsert_stations(stations_path, dburi, report_path):
     if not report_path:
         for msg in msgs:
             print(msg)
+    else:
+        with open(report_path, 'a') as fp:
+            for msg in msgs:
+                fp.write(msg + '\n')
+
+
+@click.command()
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--station_where', '-w',
+              help="""SQL where condition on stations (for example: "cod_rete='15'"). 
+                      If omitted, checks all stations""")
+def check_chain(dburi, report_path, station_where):
+    if report_path and exists(report_path):
+        print('wrong "report_path": the report must not exist or will be overwritten')
+        sys.exit(2)
+    stations_ids = querying.get_stations_by_where(dburi, station_where)
+    msgs = process.check_chain(dburi, stations_ids)
+    if not report_path:
+        for msg in msgs:
+            print(msg)
+    else:
+        with open(report_path, 'a') as fp:
+            for msg in msgs:
+                fp.write(msg + '\n')

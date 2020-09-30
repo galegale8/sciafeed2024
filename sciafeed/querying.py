@@ -5,7 +5,7 @@ import functools
 from os import listdir
 from os.path import isfile, join, splitext
 
-from sqlalchemy.sql import select, and_
+from sqlalchemy.sql import select, and_, literal
 from sqlalchemy import MetaData, Table
 
 from sciafeed import db_utils
@@ -93,3 +93,43 @@ def find_new_stations(data_folder, dburi):
     msg2 = "Number of NEW stations: %i" % num_new_stations
     msgs = [msg0, msg1, msg2] + msgs
     return msgs, new_stations
+
+
+def get_stations_by_where(dburi, station_where):
+    """
+    Return a list of id_staz from a 'where' string condition.
+
+    :param dburi: postgresql connection URI
+    :param station_where: a where SQL condition
+    :return: the list of id_staz
+    """
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    if not station_where.strip():
+        return None
+    assert ';' not in station_where
+    assert 'insert' not in station_where.lower()
+    assert 'update' not in station_where.lower()
+    assert '"' not in station_where
+    sql = "SELECT id_staz FROM dailypdbadmclima.anag__stazioni WHERE %s" % station_where
+    results = [r[0] for r in conn.execute(sql).fetchall()]
+    return results
+
+
+def select_prec_records(conn, stations_ids=None):
+    """
+    Select all the records of the table dailypdbadmclima.ds__preci.
+    If  stations_ids is not None, filter also for station ids.
+
+    :param conn: db connection object
+    :param stations_ids: list of station ids (if None: no filter by station)
+    :return: the iterable of the results
+    """
+    meta = MetaData()
+    table = Table('ds__preci', meta, autoload=True, autoload_with=conn.engine,
+                  schema='dailypdbadmclima')
+    clause = literal(True)
+    if stations_ids:
+        clause = table.c.cod_staz in stations_ids
+    results = conn.execute(select([table]).where(clause)).order_by('data_i')
+    return results

@@ -7,12 +7,11 @@ from sqlalchemy.sql import select
 from sqlalchemy import engine_from_config, MetaData, Table
 
 
-USER = 'siniscalchi'
-PASSWORD = ''
-ADDRESS = 'localhost'
+USER = 'scia'
+PASSWORD = 'scia'
+ADDRESS = ''
 PORT = '5432'
-# DB_NAME = 'sciapg'
-DB_NAME = 'sciadevridotto'
+DB_NAME = 'sciapg'
 
 DEFAULT_DB_URI = "postgresql://%s:%s@%s:%s/%s" % (USER, PASSWORD, ADDRESS, PORT, DB_NAME)
 ENGINE = None

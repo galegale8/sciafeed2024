@@ -118,3 +118,33 @@ def stations2csv(stations, stations_path, extra_fields=[]):
         for station_key, station in stations.items():
             row = {k: station.get(k, '') for k in fieldnames}
             writer.writerow(row)
+
+
+def csv2items(csv_path, required_fields=(), ignore_fields=()):
+    """
+    Get a CSV located at `csv_path` and return a list of dictionaries according to the CSV rows.
+    If some required fields are missing, raise an error.
+
+    :param csv_path: CSV path
+    :param required_fields: list of required fields (if black, raise ValueError)
+    :param ignore_fields: list of fields to ignore
+    :return: a list of of dictionaries according to the CSV rows
+    """
+    items = []
+    with open(csv_path) as csv_in_file:
+        reader = csv.DictReader(csv_in_file, delimiter=';')
+        for i, row in enumerate(reader):
+            item = dict()
+            for field_name, field_value in row.items():
+                if field_name in ignore_fields:
+                    continue
+                value = field_value.strip()
+                if value == '':
+                    item[field_name] = None
+                    if field_name in required_fields:
+                        raise ValueError("Line %i of %r: required field %r is missing"
+                                         % (i, csv_path, field_name))
+                else:
+                    item[field_name] = value
+            items.append(item)
+    return items

@@ -193,13 +193,14 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 def upsert_stations(stations_path, dburi, report_path):
+    """
+    Massive import of stations from a CSV file. If a station already exists, its values are
+    updated correspondingly.
+    """
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)
-    if not stations_path:
-        print('"stations_path" is required')
-        sys.exit(2)
-    msgs, upserted_ids = upsert.upsert_stations(dburi, stations_path, report_path)
+    msgs, _, _ = upsert.upsert_stations(dburi, stations_path)
     if not report_path:
         for msg in msgs:
             print(msg)

@@ -1054,9 +1054,9 @@ def compute_and_store(data, writers, table_map):
         measures = list(measures_it)
         cod_staz = "%s--%s" % (cod_utente, cod_rete)  # TODO: to convert to id_staz
         station_date_str = station_day.strftime('%Y-%m-%d')
-        msg = "- computing day indicators for cod_staz=%s, day=%s" \
-              % (cod_staz, station_date_str)
-        msgs.append(msg)
+        # msg = "- computing day indicators for cod_staz=%s, day=%s" \
+        #        % (cod_staz, station_date_str)
+        # msgs.append(msg)
         day_indicators = compute_day_indicators(measures)
         for table, columns in table_map.items():
             if table not in day_indicators or table not in writers:

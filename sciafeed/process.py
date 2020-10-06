@@ -101,14 +101,14 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
         csv_path = join(data_folder, file_name)
         if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
             continue
-        msg = "START OF ANALYSIS OF FILE %r" % csv_path
+        msg = "ANALYSIS OF FILE %r" % csv_path
         msgs.append(msg)
-        msgs.append('=' * len(msg))
-        msgs.append('')
+        # msgs.append('=' * len(msg))
+        # msgs.append('')
         try:
             data = export.csv2data(csv_path)
         except:
-            msg = 'CSV file not parsable'
+            msg = 'CSV file %r not parsable' % csv_path
             msgs.append(msg)
             msgs.append('')
             continue
@@ -116,17 +116,17 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
         comp_msgs, computed_indicators = compute.compute_and_store(
             data, writers, compute.INDICATORS_TABLES)
         msgs.extend(comp_msgs)
-        msgs.append('')
-        msg = "END OF ANALYSIS OF FILE"
-        msgs.append(msg)
-        msgs.append('=' * len(msg))
-        msgs.append('')
+        # msgs.append('')
+        # msg = "END OF ANALYSIS OF FILE"
+        # msgs.append(msg)
+        # msgs.append('=' * len(msg))
+        # msgs.append('')
 
         if report_path:
             with open(report_path, 'a') as fp:
                 for msg in msgs:
                     fp.write(msg + '\n')
-                    
+
     utils.close_csv_writers(writers)
     return msgs, computed_indicators
 

@@ -13,26 +13,22 @@ from sciafeed import export
 
 
 @functools.lru_cache(maxsize=None)
-def get_db_station(conn, anag_table, id_staz=None, cod_utente=None, cod_rete=None):
+def get_db_station(conn, anag_table, **kwargs):
     """
-    Get a station object from the database, by one of its primary keys
+    Get a station object from the database, by its properties
 
     :param conn: db connection object
     :param anag_table: table object of the stations
-    :param id_staz: id of the station
-    :param cod_utente: cod_utente of the station
-    :param cod_rete: cod_rete of the station
+    :param kwargs: dictionary of column values
     :return: the station object (if found), otherwise None
     """
-    if cod_rete and cod_utente:
-        clause = and_(anag_table.c.cod_utente == cod_utente, anag_table.c.cod_rete == cod_rete)
-    elif id_staz:
-        clause = anag_table.c.id_staz == id_staz
-    else:
-        raise ValueError(
-            "Not possible to find a station without id_staz or without (cod_rete, cod_utente)")
+    clause = literal(True)
+    for col_name, col_value in kwargs.items():
+        column = getattr(anag_table.c, col_name)
+        if col_value is not None:
+            clause = and_(clause, column == col_value)
     results = conn.execute(select([anag_table]).where(clause)).fetchall()
-    if results:
+    if results and len(results) == 1:
         return results[0]
     return None
 
@@ -71,18 +67,20 @@ def find_new_stations(data_folder, dburi):
                 station_key = (record_md['cod_utente'], record_md['cod_rete'])
                 if station_key in all_stations:
                     continue
-                db_station = get_db_station(
-                    conn, anag_table, cod_utente=record_md['cod_utente'],
-                    cod_rete=record_md['cod_rete'])
+                station_props = {
+                    'cod_rete': record_md['cod_rete']
+                }
+                if record_md['format'] != 'ARPA-ER':
+                    station_props['cod_utente'] = record_md['cod_utente']
+                else:  # workaround to manage Emilia Romagna: try to find by name
+                    station_props['nome'] = record_md['cod_utente']
+                db_station = get_db_station(conn, anag_table, **station_props)
                 all_stations[station_key] = db_station
                 if not db_station:  # NOT FOUND in the database
-                    new_station = {
-                        'cod_utente': record_md['cod_utente'],
-                        'cod_rete': record_md['cod_rete'],
-                        'source': record_md['source'],
-                        'lat': record_md['lat'],
-                        'lon': record_md['lon'],
-                    }
+                    new_station = station_props
+                    new_station['source'] = record_md['source']
+                    new_station['lat'] = record_md['lat']
+                    new_station['lon'] = record_md['lon']
                     new_stations[station_key] = new_station
                     msg = " - new station: cod_utente=%r, cod_rete=%r" % station_key
                     msgs.append(msg)

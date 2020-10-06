@@ -262,7 +262,7 @@ def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     if new_records:
         val_mx = max([r[3] for r in new_records])
         data_mx = [r[1] for r in new_records if r[3] == val_mx][0].isoformat()
-        val_mx = round(val_mx)
+        val_mx = round(val_mx, ROUND_PRECISION)
     return flag, val_mx, data_mx
 
 
@@ -428,9 +428,9 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     ::
 
     * flag: (ndati, wht)
-    * val_md: media giornaliera
+    * val_md: valore massimo giornaliero
     * val_vr: varianza
-    * val_x: valore massimo giornaliero
+    * val_x: media giornaliera
     * data_x: data del valore massimo giornaliero
 
     If `force_flag` is not None, returned flag is `force_flag`.
@@ -449,12 +449,12 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
         flag = compute_temperature_flag(
             day_records, perc_day=at_least_perc, perc_night=at_least_perc)
     values = [r[3] for r in valid_records]
-    val_md = round(statistics.mean(values), ROUND_PRECISION)
+    val_x = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
         val_vr = round(statistics.stdev(values), ROUND_PRECISION)
-    val_x = max(values)
-    data_x = [r[1] for r in valid_records if r[3] == val_x][0].isoformat()
-    val_x = round(val_x, ROUND_PRECISION)
+    val_md = max(values)
+    data_x = [r[1] for r in valid_records if r[3] == val_md][0].isoformat()
+    val_md = round(val_md, ROUND_PRECISION)
     return flag, val_md, val_vr, val_x, data_x
 
 
@@ -467,9 +467,9 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     ::
 
     * flag: (ndati, wht)
-    * val_md: media giornaliera
+    * val_md: valore minimo giornaliero
     * val_vr: varianza
-    * val_x: valore minimo giornaliero
+    * val_x: media giornaliera
     * data_x: data del valore minimo giornaliero
 
     If `force_flag` is not None, returned flag is `force_flag`.
@@ -488,12 +488,12 @@ def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
         flag = compute_temperature_flag(
             day_records, perc_day=at_least_perc, perc_night=at_least_perc)
     values = [r[3] for r in valid_records]
-    val_md = round(statistics.mean(values), ROUND_PRECISION)
+    val_x = round(statistics.mean(values), ROUND_PRECISION)
     if len(values) >= 2:
         val_vr = round(statistics.stdev(values), ROUND_PRECISION)
-    val_x = min(values)
-    data_x = [r[1] for r in valid_records if r[3] == val_x][0].isoformat()
-    val_x = round(val_x)
+    val_md = min(values)
+    data_x = [r[1] for r in valid_records if r[3] == val_md][0].isoformat()
+    val_md = round(val_md, ROUND_PRECISION)
     return flag, val_md, val_vr, val_x, data_x
 
 

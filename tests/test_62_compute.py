@@ -275,13 +275,13 @@ def test_compute_tmdgg():
 def test_compute_tmxgg():
     input_records = create_samples('Tmax')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmxgg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 23, '2020-01-01T23:00:00')
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 23, 7.1, 11.5, '2020-01-01T23:00:00')
 
 
 def test_compute_tmngg():
     input_records = create_samples('Tmin')
     flag, val_md, val_vr, val_x, data_x = compute.compute_tmngg(input_records, at_least_perc=0.75)
-    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 11.5, 7.1, 0, '2020-01-01T00:00:00')
+    assert (flag, val_md, val_vr, val_x, data_x) == ((24, 1), 0, 7.1, 11.5, '2020-01-01T00:00:00')
 
 
 def test_compute_press():
@@ -1142,8 +1142,8 @@ def test_compute_day_indicators():
         },
         'sciapgg.ds__t200': {
             'tmdgg': ((6, 0), 2.5, 1.9),
-            'tmngg': ((6, 0), -2.5, 1.9, -5, '2020-01-01T14:00:00'),
-            'tmxgg': ((6, 0), 3.3, 2.2, 6, '2020-01-01T14:00:00')
+            'tmngg': ((6, 0), -5, 1.9, -2.5, '2020-01-01T14:00:00'),
+            'tmxgg': ((6, 0), 6, 2.2, 3.3, '2020-01-01T14:00:00')
         },
         'sciapgg.ds__press': {'press': ((11, 0), 26.7, 15.4, 49.6, 4.2)},
     }

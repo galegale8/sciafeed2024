@@ -388,22 +388,6 @@ def test_compute_daily_indicators(tmpdir):
     with open(dumped_result_exp_file) as fp:
         dumped_result_exp = fp.read()
         assert str(computed_indicators) == dumped_result_exp
-    assert msgs[0] == "START OF ANALYSIS OF FILE '%s'" % join(
+    assert msgs[0] == "ANALYSIS OF FILE '%s'" % join(
         data_folder, 'loc01_00009_201801010100_201801011000.dat.csv')
-    assert msgs[2:] == [
-        '',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-01',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-02',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-03',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-04',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-05',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-06',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-07',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-08',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-09',
-        '- computing day indicators for cod_staz=9--38, day=2018-01-10',
-        '',
-        'END OF ANALYSIS OF FILE',
-        '=======================',
-        ''
-    ]
+    assert msgs[2:] == []

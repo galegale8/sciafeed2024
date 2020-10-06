@@ -96,6 +96,7 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
     """
     msgs = []
     computed_indicators = dict()
+    writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
     for file_name in listdir(data_folder):
         csv_path = join(data_folder, file_name)
         if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
@@ -112,12 +113,9 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
             msgs.append('')
             continue
 
-        writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
         comp_msgs, computed_indicators = compute.compute_and_store(
             data, writers, compute.INDICATORS_TABLES)
         msgs.extend(comp_msgs)
-        utils.close_csv_writers(writers)
-
         msgs.append('')
         msg = "END OF ANALYSIS OF FILE"
         msgs.append(msg)
@@ -128,6 +126,8 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
             with open(report_path, 'a') as fp:
                 for msg in msgs:
                     fp.write(msg + '\n')
+                    
+    utils.close_csv_writers(writers)
     return msgs, computed_indicators
 
 

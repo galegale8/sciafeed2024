@@ -101,8 +101,13 @@ def reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1):
     """
     sqls = []
     sql_prec = """
-        UPDATE dailypdbanpacarica.ds__preci SET ((prec24).flag).wht = %s 
-        WHERE ((prec24).flag).wht < %s""" % (set_flag, flag_threshold)
+      UPDATE dailypdbanpacarica.ds__preci SET ( 
+      ((prec24).flag).wht,
+      ((prec01).flag).wht,
+      ((prec06).flag).wht,
+      ((prec12).flag).wht
+      ) = (%s, %s, %s, %s)
+      WHERE ((prec24).flag).wht < %s""" % (set_flag, set_flag, set_flag, set_flag, flag_threshold)
     sqls.append(sql_prec)
     if stations_ids:
         sql_prec += "AND cod_staz IN %s" % repr(tuple(stations_ids))
@@ -122,7 +127,8 @@ def reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1):
 def set_prec_flags(conn, records, set_flag):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
-    of the table dailypdbanpacarica.ds__preci
+    of the table dailypdbanpacarica.ds__preci.
+    It assumes each record has attributes data_i and cod_staz
 
     :param conn: db connection object
     :param records: iterable of the records
@@ -130,6 +136,36 @@ def set_prec_flags(conn, records, set_flag):
     """
     for record in records:
         sql = """
-            UPDATE dailypdbanpacarica.ds__preci SET ((prec24).flag).wht = %s 
-            WHERE data_i = %s and cod_staz = %s""" % (set_flag, record.data_i, record.cod_staz)
+            UPDATE dailypdbanpacarica.ds__preci SET (
+            ((prec24).flag).wht,
+            ((prec01).flag).wht,
+            ((prec06).flag).wht,
+            ((prec12).flag).wht
+            ) = (%s, %s, %s, %s)
+            WHERE data_i = %s AND cod_staz = %s""" \
+              % (set_flag, set_flag, set_flag, set_flag, record.data_i, record.cod_staz)
+        conn.execute(sql)
+
+
+def set_temp_flags(conn, records, var, set_flag):
+    """
+    Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
+    of the table dailypdbanpacarica.ds__preci.
+    It assumes each record has attributes data_i and cod_staz
+
+    :param conn: db connection object
+    :param records: iterable of the records
+    :param var: 'Tmax' or 'Tmin'
+    :param set_flag: value of the flag
+    """
+    var2dbfield_map = {
+        'Tmax': 'tmxgg',
+        'Tmin': 'tmngg',
+    }
+    db_field = var2dbfield_map[var]
+    for record in records:
+        sql = """
+            UPDATE dailypdbanpacarica.ds__t200 SET ((%s).flag).wht = %s
+            WHERE data_i = %s AND cod_staz = %s""" \
+              % (db_field, set_flag, record.data_i, record.cod_staz)
         conn.execute(sql)

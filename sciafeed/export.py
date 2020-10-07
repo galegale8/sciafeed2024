@@ -95,7 +95,7 @@ def csv2data(csv_path):
     return data
 
 
-def stations2csv(stations, stations_path, extra_fields=[]):
+def stations2csv(stations, stations_path, extra_fields=()):
     """
     Export the list of information about stations into a CSV located at `stations_path`.
     The CSV fields are the one of anag__stazioni + extra_fields.

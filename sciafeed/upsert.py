@@ -1,5 +1,4 @@
 
-from sqlalchemy.sql import select, and_, literal
 from sqlalchemy import MetaData, Table
 
 from sciafeed import db_utils
@@ -28,7 +27,8 @@ def upsert_stations(dburi, stations_path):
     insert_obj = anag_table.insert()
     conn = engine.connect()
     try:
-        stations = export.csv2items(stations_path,
+        stations = export.csv2items(
+            stations_path,
             ['nome', 'cod_utente', 'cod_rete', 'cod_entep', 'cod_entef', 'cod_enteg'],
             ignore_fields=['source'])
     except ValueError as err:
@@ -71,6 +71,7 @@ def upsert_from_csv_table(dburi, csv_table_path, report_path=None):
     #   if update:
     #      find the list of values not None of the record to be updated
     #        (to avoid to set None the not-null fields for the existing records)
+    #        (avoid in general to set values None, in case do not insert the record at all)
     #      create and execute the update sql
     #   else:  (insert)
     #      create the insert sql from the csv row and execute it

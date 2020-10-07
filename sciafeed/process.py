@@ -131,13 +131,13 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
     return msgs, computed_indicators
 
 
-def check_chain(dburi, stations_ids=None):
+def check_chain(dburi, stations_ids=None, report_fp=None):
     """
     Start a chain of checks on records of the database from a set of monitoring stations selected.
 
     :param dburi: db connection URI
     :param stations_ids: primary keys of the stations (if None: no filtering by stations)
-    :return: the list of report messages
+    :param report_fp: report file pointer
     """
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
@@ -147,12 +147,35 @@ def check_chain(dburi, stations_ids=None):
     # NOTE: 'Tmin' -> check on ds__t200.tmngg(val_md) and set flag on ds__t200.tmngg(val_md)
     # NOTE: consider consecutive values,not consecutive days
 
-    msgs += db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
+    report_fp.write('* initial resetting of flags' + '\n')
+    db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
 
-    msgs += checks.check1(conn, stations_ids, 'PREC', len_threshold=180, flag=-12)
-    msgs += checks.check2(conn, stations_ids, 'PREC', len_threshold=20, flag=-13)
-    msgs += checks.check2(conn, stations_ids, 'Tmax', len_threshold=20, flag=-13)
-    msgs += checks.check2(conn, stations_ids, 'Tmin', len_threshold=20, flag=-13)
+    report_fp.write('* start check1 for PREC' + '\n')
+    msgs1 = checks.check1(conn, stations_ids, 'PREC', len_threshold=180, flag=-12)
+    for msg in msgs1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check2 for PREC' + '\n')
+    msgs2_1 = checks.check2(conn, stations_ids, 'PREC', len_threshold=20, flag=-13,
+                            exclude_values=[0, ])
+    for msg in msgs2_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check2 for Tmax' + '\n')
+    msgs2_2 = checks.check2(conn, stations_ids, 'Tmax', len_threshold=20, flag=-13)
+    for msg in msgs2_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check2 for Tmin' + '\n')
+    msgs2_3 = checks.check2(conn, stations_ids, 'Tmin', len_threshold=20, flag=-13)
+    for msg in msgs2_3:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    # from here on: TODO
     msgs += checks.check3(conn, stations_ids, 'Tmax', len_threshold=5, flag=-14)
     msgs += checks.check3(conn, stations_ids, 'Tmin', len_threshold=5, flag=-14)
     msgs += checks.check4(conn, stations_ids, 'PREC', flag=-15, min_not_null=5)

@@ -115,7 +115,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     return err_msgs, data_modified
 
 
-def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12):
+def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12, use_records=None):
     """
     Check "controllo valori ripetuti = 0" for the `var`.
 
@@ -124,22 +124,27 @@ def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12):
     :param var: name of the variable to check
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :return:
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
     """
     msgs = []
-    if var == 'PREC':
-        results = querying.select_prec_records(conn, stations_ids)
-    else:
-        raise NotImplementedError('check1 implemented only for variable PREC')
-    msg = "Starting check 'controllo valori ripetuti = 0' for variable %s (len=%s)" \
+    results = use_records
+    if var != 'PREC':
+        raise NotImplementedError('check1 not implemented for variable %s' % var)
+    if not use_records:
+        sql_fields = "cod_staz, data_i, (prec24).val_tot"
+        results = querying.select_prec_records(conn, sql_fields, stations_ids, flag_threshold=1)
+    msg = "'controllo valori ripetuti = 0' for variable %s (len=%s)" \
           % (var, len_threshold)
     msgs.append(msg)
     block_index = 0
     block_records = []
     to_be_resetted = []
     i = 0
+    prev_staz = None
     for i, result in enumerate(results):
-        if result.prec24.val_tot == 0 and result.prec24.flag[1] >= 1:
+        current_staz = result.cod_staz
+        if current_staz == prev_staz and result.val_tot == 0:
             block_index += 1
             block_records.append(result)
             if block_index == len_threshold:
@@ -149,6 +154,7 @@ def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12):
         else:
             block_index = 0
             block_records = []
+        prev_staz = current_staz
     msg = "Checked %i records" % i
     msgs.append(msg)
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
@@ -156,6 +162,78 @@ def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12):
     msg = "Resetting flags to value %s..." % flag
     msgs.append(msg)
     db_utils.set_prec_flags(conn, to_be_resetted, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None,
+           exclude_values=()):
+    """
+    Check "controllo valori ripetuti" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param len_threshold: lenght of the consecutive zeros to find
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :param exclude_values: query excludes not none values in this iterable
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'PREC':
+            sql_fields = "cod_staz, data_i, (prec24).val_tot"
+            results = querying.select_prec_records(
+                conn, sql_fields, stations_ids, exclude_values=exclude_values)
+            field_to_check = 'val_tot'
+        elif var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmxgg', sql_fields, stations_ids, exclude_values=exclude_values)
+            field_to_check = 'val_md'
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmngg', sql_fields, stations_ids, exclude_values=exclude_values)
+            field_to_check = 'val_md'
+        else:
+            raise NotImplementedError('check1 not implemented for variable %s' % var)
+    msg = "'controllo valori ripetuti' for variable %s (len=%s)" \
+          % (var, len_threshold)
+    msgs.append(msg)
+    block_index = 0
+    block_records = []
+    to_be_resetted = []
+    i = 0
+    prev_staz = None
+    prev_value = None
+    for i, result in enumerate(results):
+        current_staz = result.cod_staz
+        current_value = result[field_to_check]
+        if current_staz == prev_staz and current_value == prev_value:
+            block_index += 1
+            block_records.append(result)
+            if block_index == len_threshold:
+                to_be_resetted.extend(block_records)
+            elif block_index > len_threshold:
+                to_be_resetted.append(result)
+        else:
+            block_index = 0
+            block_records = []
+        prev_staz = current_staz
+    msg = "Checked %i records" % i
+    msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    if var in ['Tmax', 'Tmin']:
+        db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    else:
+        db_utils.set_prec_flags(conn, to_be_resetted, flag)
     msg = "Check completed"
     msgs.append(msg)
     return msgs

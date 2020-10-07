@@ -224,11 +224,10 @@ def check_chain(dburi, report_path, station_where):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)
     stations_ids = querying.get_stations_by_where(dburi, station_where)
-    msgs = process.check_chain(dburi, stations_ids)
-    if not report_path:
-        for msg in msgs:
-            print(msg)
-    else:
-        with open(report_path, 'a') as fp:
-            for msg in msgs:
-                fp.write(msg + '\n')
+    with open(report_path, 'w') as report_fp:
+        line = 'START CHECK CHAIN'
+        report_fp.write(line + '\n')
+        report_fp.write('='*len(line) + '\n')
+        report_fp.write('' + '\n')
+        process.check_chain(dburi, stations_ids, report_fp)
+        report_fp.write('END CHECK CHAIN')

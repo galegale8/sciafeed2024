@@ -114,20 +114,71 @@ def get_stations_by_where(dburi, station_where):
     return results
 
 
-def select_prec_records(conn, stations_ids=None):
+def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypdbanpacarica',
+                        flag_threshold=1, exclude_values=(), exclude_null=True):
     """
-    Select all the records of the table dailypdbadmclima.ds__preci.
+    Select all the records of the table dailypdbadmclima.ds__preci order by station, date.
     If  stations_ids is not None, filter also for station ids.
+    By default, only not NULL values and flagged as valid are queried.
 
     :param conn: db connection object
+    :param sql_fields: sql string of field selection
     :param stations_ids: list of station ids (if None: no filter by station)
+    :param schema: database schema to consider
+    :param flag_threshold: if not None, consider where prec24.flag >= this threshold
+    :param exclude_values: query excludes not none values in this iterable
+    :param exclude_null: if True, excludes NULL values
     :return: the iterable of the results
     """
-    meta = MetaData()
-    table = Table('ds__preci', meta, autoload=True, autoload_with=conn.engine,
-                  schema='dailypdbadmclima')
-    clause = literal(True)
+    sql = "SELECT %s FROM %s.ds__preci" % (sql_fields, schema)
+    where_clauses = []
     if stations_ids:
-        clause = table.c.cod_staz in stations_ids
-    results = conn.execute(select([table]).where(clause)).order_by('data_i')
+        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+    if flag_threshold is not None:
+        where_clauses.append('((prec24).flag).wht >= %s' % flag_threshold)
+    if exclude_values:
+        where_clauses.append('(prec24).val_tot NOT IN (%s)' % repr(list(exclude_values))[1:-1])
+    if exclude_null:
+        where_clauses.append('(prec24).val_tot IS NOT NULL')
+    if where_clauses:
+        sql += ' WHERE %s' % (' AND '.join(where_clauses))
+    sql += ' ORDER BY cod_staz, data_i'
+    results = conn.execute(sql)
+    return results
+
+
+def select_temp_records(conn, field, sql_fields='*', stations_ids=None,
+                        schema='dailypdbanpacarica', flag_threshold=1, exclude_values=(),
+                        exclude_null=True):
+    """
+    Select all the records of the table dailypdbadmclima.ds__t200 order by station, date.
+    If  stations_ids is not None, filter also for station ids.
+    By default, only not NULL values and flagged as valid are queried, but additional
+    parameters can change the filtering.
+
+    :param conn: db connection object
+    :param field: field name, i.e. 'tmxgg' or 'tmngg'
+    :param sql_fields: sql string of field selection
+    :param stations_ids: list of station ids (if None: no filter by station)
+    :param schema: database schema to consider
+    :param flag_threshold: if not None, consider where prec24.flag >= this threshold
+    :param exclude_values: query excludes not none values in this iterable
+    :param exclude_null: if True, excludes NULL values
+    :return: the iterable of the results
+    """
+    sql = "SELECT %s FROM %s.ds__t200" % (sql_fields, schema)
+    where_clauses = []
+    if stations_ids:
+        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+    if flag_threshold is not None:
+        where_clauses.append('((%s).flag).wht >= %s' % (field, flag_threshold))
+    if exclude_values:
+        where_clauses.append('(%s).val_md NOT IN (%s)'
+                             % (field, repr(list(exclude_values))[1:-1]))
+    if exclude_null:
+        where_clauses.append('(%s).val_md IS NOT NULL' % field)
+    if where_clauses:
+        sql += ' WHERE %s' % (' AND '.join(where_clauses))
+    sql += ' ORDER BY cod_staz, data_i'
+    results = conn.execute(sql)
     return results

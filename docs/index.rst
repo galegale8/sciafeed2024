@@ -15,14 +15,18 @@ SCIA PostgreSQL database.
    bolzano
    checks
    compute
+   db_utils
    entry_points
    export
+   gdrive_utils
    hiscentral
    noaa
    parsing
    process
+   querying
    rmn
    trentino
+   upsert
    utils
 
 Indices and tables

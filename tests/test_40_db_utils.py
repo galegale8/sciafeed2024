@@ -29,9 +29,7 @@ def test_get_table_columns():
     assert result == expected_result
 
 
-def test_reset_flags():
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+def test_reset_flags(conn):
     # with filtering on stations
     stations_ids = [1, 2, 3]
     flag_threshold = -5
@@ -83,9 +81,7 @@ class DummyRecord():
         setattr(self, field, val)
 
 
-def test_set_prec_flags():
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+def test_set_prec_flags(conn):
     records = [
         DummyRecord(1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 'val_tot'),
         DummyRecord(2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 'val_tot'),
@@ -121,9 +117,7 @@ def test_set_prec_flags():
     assert executed == expected
 
 
-def test_set_temp_flags():
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+def test_set_temp_flags(conn):
     records = [
         DummyRecord(1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 'val_md'),
         DummyRecord(2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 'val_md'),

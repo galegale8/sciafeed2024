@@ -47,7 +47,7 @@ def find_new_stations(data_folder, dburi):
     engine = db_utils.ensure_engine(dburi)
     meta = MetaData()
     anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=engine,
-                       schema='dailypdbadmclima')  # schema='sciapgm'
+                       schema='dailypdbadmclima')
     conn = engine.connect()
     all_stations = dict()
     new_stations = dict()
@@ -90,10 +90,11 @@ def find_new_stations(data_folder, dburi):
     msg1 = "Found %i distinct stations" % num_all_stations
     msg2 = "Number of NEW stations: %i" % num_new_stations
     msgs = [msg0, msg1, msg2] + msgs
+    conn.close()
     return msgs, new_stations
 
 
-def get_stations_by_where(dburi, station_where):
+def get_stations_by_where(dburi, station_where=None):
     """
     Return a list of id_staz from a 'where' string condition.
 
@@ -101,16 +102,19 @@ def get_stations_by_where(dburi, station_where):
     :param station_where: a where SQL condition
     :return: the list of id_staz
     """
+    if not station_where or not station_where.strip():
+        where_sql = ''
+    else:
+        where_sql = "WHERE %s" % station_where
+    assert ';' not in where_sql
+    assert 'insert' not in where_sql.lower()
+    assert 'update' not in where_sql.lower()
+    assert '"' not in where_sql
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
-    if not station_where.strip():
-        return None
-    assert ';' not in station_where
-    assert 'insert' not in station_where.lower()
-    assert 'update' not in station_where.lower()
-    assert '"' not in station_where
-    sql = "SELECT id_staz FROM dailypdbadmclima.anag__stazioni WHERE %s" % station_where
+    sql = "SELECT id_staz FROM dailypdbadmclima.anag__stazioni %s" % where_sql
     results = [r[0] for r in conn.execute(sql).fetchall()]
+    conn.close()
     return results
 
 

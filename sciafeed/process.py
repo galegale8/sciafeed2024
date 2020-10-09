@@ -207,8 +207,13 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
+    report_fp.write('* start check5 for Tmax and Tmin' + '\n')
+    msgs5 = checks.check5(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
+    for msg in msgs5:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
     # from here on: TODO
-    msgs += checks.check5(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
     msgs += checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
     msgs += checks.check7(conn, stations_ids, 'PREC', min=800, flag=-21)
     msgs += checks.check7(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)

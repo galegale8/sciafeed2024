@@ -151,7 +151,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     return results
 
 
-def select_temp_records(conn, field, sql_fields='*', stations_ids=None,
+def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
                         schema='dailypdbanpacarica', flag_threshold=1, exclude_values=(),
                         exclude_null=True):
     """
@@ -161,7 +161,7 @@ def select_temp_records(conn, field, sql_fields='*', stations_ids=None,
     parameters can change the filtering.
 
     :param conn: db connection object
-    :param field: field name, i.e. 'tmxgg' or 'tmngg'
+    :param fields: list of field names, i.e. 'tmxgg' or 'tmngg', where to apply filters
     :param sql_fields: sql string of field selection
     :param stations_ids: list of station ids (if None: no filter by station)
     :param schema: database schema to consider
@@ -175,12 +175,16 @@ def select_temp_records(conn, field, sql_fields='*', stations_ids=None,
     if stations_ids:
         where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
     if flag_threshold is not None:
-        where_clauses.append('((%s).flag).wht >= %s' % (field, flag_threshold))
+        for field in fields:
+            where_clauses.append('((%s).flag).wht >= %s' % (field, flag_threshold))
     if exclude_values:
-        where_clauses.append('(%s).val_md NOT IN (%s)'
-                             % (field, repr(list(exclude_values))[1:-1]))
+        for field in fields:
+            where_clauses.append('(%s).val_md NOT IN (%s)'
+                                 % (field, repr(list(exclude_values))[1:-1]))
     if exclude_null:
-        where_clauses.append('(%s).val_md IS NOT NULL' % field)
+        for field in fields:
+            where_clauses.append('(%s).val_md IS NOT NULL' % field)
+
     if where_clauses:
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     sql += ' ORDER BY cod_staz, data_i'

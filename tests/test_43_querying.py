@@ -101,9 +101,9 @@ def test_select_prec_records(conn):
 
 
 def test_select_temp_records(conn):
-    field = 'tmxgg'
+    fields = ['tmxgg']
     stations_ids = [1, 2, 3]
-    records = querying.select_temp_records(conn, field, stations_ids=stations_ids)
+    records = querying.select_temp_records(conn, fields, stations_ids=stations_ids)
     results = [r for r in records]
     assert len(results) == 17806
     assert len(results[0]) == 36
@@ -119,7 +119,7 @@ def test_select_temp_records(conn):
     sql_fields = "cod_staz, data_i, (tmxgg).val_md"
     exclude_values = (23.6, 8.2)
     records = querying.select_temp_records(
-        conn, field, sql_fields=sql_fields, stations_ids=stations_ids,
+        conn, fields, sql_fields=sql_fields, stations_ids=stations_ids,
         exclude_values=exclude_values)
     results = [r for r in records]
     assert len(results) == 17673
@@ -127,9 +127,9 @@ def test_select_temp_records(conn):
     assert results[0] == (1, datetime(2001, 5, 19, 0, 0), Decimal('22'))
     assert results[-1] == (3, datetime(2019, 12, 30, 0, 0), Decimal('1.8'))
 
-    field = 'tmngg'
+    fields = ['tmngg']
     sql_fields = "cod_staz, data_i, (tmngg).val_md"
-    records = querying.select_temp_records(conn, field, sql_fields=sql_fields,
+    records = querying.select_temp_records(conn, fields, sql_fields=sql_fields,
                                            stations_ids=stations_ids)
     results = [r for r in records]
     assert len(results) == 17801

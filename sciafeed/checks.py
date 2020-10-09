@@ -192,12 +192,12 @@ def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None
         elif var == 'Tmax':
             sql_fields = "cod_staz, data_i, (tmxgg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmxgg', sql_fields, stations_ids, exclude_values=exclude_values)
+                conn, ['tmxgg'], sql_fields, stations_ids, exclude_values=exclude_values)
             field_to_check = 'val_md'
         elif var == 'Tmin':
             sql_fields = "cod_staz, data_i, (tmngg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmngg', sql_fields, stations_ids, exclude_values=exclude_values)
+                conn, ['tmngg'], sql_fields, stations_ids, exclude_values=exclude_values)
             field_to_check = 'val_md'
         else:
             raise NotImplementedError('check2 not implemented for variable %s' % var)
@@ -224,6 +224,7 @@ def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None
             block_index = 0
             block_records = []
         prev_staz = current_staz
+        prev_value = current_value
     msg = "Checked %i records" % i
     msgs.append(msg)
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
@@ -257,11 +258,11 @@ def check3(conn, stations_ids, var, min_not_null=None, flag=-14, use_records=Non
         if var == 'Tmax':
             sql_fields = "cod_staz, data_i, (tmxgg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmxgg', sql_fields, stations_ids)
+                conn, ['tmxgg'], sql_fields, stations_ids)
         elif var == 'Tmin':
             sql_fields = "cod_staz, data_i, (tmngg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmngg', sql_fields, stations_ids)
+                conn, ['tmngg'], sql_fields, stations_ids)
         else:
             raise NotImplementedError('check3 not implemented for variable %s' % var)
     msg = "'controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)' " \
@@ -319,11 +320,11 @@ def check4(conn, stations_ids, var, min_not_null=None, flag=-17, use_records=Non
         if var == 'Tmax':
             sql_fields = "cod_staz, data_i, (tmxgg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmxgg', sql_fields, stations_ids)
+                conn, ['tmxgg'], sql_fields, stations_ids)
         elif var == 'Tmin':
             sql_fields = "cod_staz, data_i, (tmngg).val_md"
             results = querying.select_temp_records(
-                conn, 'tmngg', sql_fields, stations_ids)
+                conn, ['tmngg'], sql_fields, stations_ids)
         else:
             raise NotImplementedError('check4 not implemented for variable %s' % var)
     msg = "'controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)' " \
@@ -361,6 +362,58 @@ def check4(conn, stations_ids, var, min_not_null=None, flag=-17, use_records=Non
         db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     else:
         db_utils.set_prec_flags(conn, to_be_resetted, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check5(conn, stations_ids, vars, len_threshold=10, flag=-19, use_records=None):
+    """
+    Check "controllo TMAX=TMIN" for the `vars`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param vars: name of the variable to check
+    :param len_threshold: lenght of the consecutive zeros to find
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if sorted(vars) != ['Tmax', 'Tmin']:
+            raise NotImplementedError("check4 not implemented for variables != ['Tmax', 'Tmin']")
+        sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
+        results = querying.select_temp_records(conn, ['tmngg'], sql_fields, stations_ids)
+    msg = "'controllo TMAX=TMIN' for variables %s (len=%s)" % (repr(vars), len_threshold)
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    to_be_resetted = []
+    for station, station_records in itertools.groupby(results, group_by_station):
+        block_index = 0
+        block_records = []
+        for station_record in station_records:
+            if station_record[2] == station_record[3]:
+                block_index += 1
+                block_records.append(station_record)
+                if block_index == len_threshold:
+                    to_be_resetted.extend(block_records)
+                elif block_index > len_threshold:
+                    to_be_resetted.append(station_record)
+            else:
+                block_index = 0
+                block_records = []
+
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
     msg = "Check completed"
     msgs.append(msg)
     return msgs

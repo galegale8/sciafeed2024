@@ -200,7 +200,7 @@ def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None
                 conn, 'tmngg', sql_fields, stations_ids, exclude_values=exclude_values)
             field_to_check = 'val_md'
         else:
-            raise NotImplementedError('check1 not implemented for variable %s' % var)
+            raise NotImplementedError('check2 not implemented for variable %s' % var)
     msg = "'controllo valori ripetuti' for variable %s (len=%s)" \
           % (var, len_threshold)
     msgs.append(msg)
@@ -226,6 +226,133 @@ def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None
         prev_staz = current_staz
     msg = "Checked %i records" % i
     msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    if var in ['Tmax', 'Tmin']:
+        db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    else:
+        db_utils.set_prec_flags(conn, to_be_resetted, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check3(conn, stations_ids, var, min_not_null=None, flag=-14, use_records=None):
+    """
+    Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param min_not_null: lenght of the consecutive zeros to find
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmxgg', sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmngg', sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check3 not implemented for variable %s' % var)
+    msg = "'controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)' " \
+          "for variable %s" % var
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    def group_by_year(record):
+        return record.data_i.year
+
+    def group_by_month(record):
+        return record.data_i.month
+
+    to_be_resetted = []
+    for station, station_records in itertools.groupby(results, group_by_station):
+        for year, year_records in itertools.groupby(station_records, group_by_year):
+            year_dict = dict()
+            for month, month_records in itertools.groupby(year_records, group_by_month):
+                month_values = {g[1].day: g[2] for g in month_records if g[2] is not None}
+                if month_values in year_dict.values():
+                    if min_not_null is None or len(month_values.values()) >= min_not_null:
+                        to_be_resetted += list(month_records)
+                year_dict[month] = month_values
+
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    if var in ['Tmax', 'Tmin']:
+        db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    else:
+        db_utils.set_prec_flags(conn, to_be_resetted, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check4(conn, stations_ids, var, min_not_null=None, flag=-17, use_records=None):
+    """
+    Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param min_not_null: lenght of the consecutive zeros to find
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmxgg', sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, 'tmngg', sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check4 not implemented for variable %s' % var)
+    msg = "'controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)' " \
+          "for variable %s" % var
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    def group_by_year(record):
+        return record.data_i.year, record.data_i.month
+
+    def group_by_month(record):
+        return record.data_i.month
+
+    to_be_resetted = []
+    for station, station_records in itertools.groupby(results, group_by_station):
+        months_dict = dict()
+        for year, year_records in itertools.groupby(station_records, group_by_year):
+            for month, month_records in itertools.groupby(year_records, group_by_month):
+                if month not in months_dict:
+                    months_dict[month] = []
+                month_values = {g[1].day: g[2] for g in month_records if g[2] is not None}
+                if month_values in months_dict[month]:
+                    if min_not_null is None or len(month_values.values()) >= min_not_null:
+                        to_be_resetted += list(month_records)
+                else:
+                    months_dict[month].append(month_values)
+
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
     msgs.append(msg)
     msg = "Resetting flags to value %s..." % flag

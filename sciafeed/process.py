@@ -142,10 +142,6 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
     msgs = []
-    # NOTE: 'PREC' -> check on ds__preci.prec24 and set flag of prec24, prec01, prec06, prec12
-    # NOTE: 'Tmax' -> check on ds__t200.tmxgg(val_md) and set flag on ds__t200.tmxgg(val_md)
-    # NOTE: 'Tmin' -> check on ds__t200.tmngg(val_md) and set flag on ds__t200.tmngg(val_md)
-    # NOTE: consider consecutive values,not consecutive days
 
     report_fp.write('* initial resetting of flags' + '\n')
     db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
@@ -175,39 +171,67 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
+    report_fp.write('* start check3 for PREC' + '\n')
+    msgs3_1 = checks.check3(conn, stations_ids, 'PREC', flag=-15, min_not_null=5)
+    for msg in msgs3_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check3 for Tmax' + '\n')
+    msgs3_2 = checks.check3(conn, stations_ids, 'Tmax', flag=-15)
+    for msg in msgs3_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check3 for Tmin' + '\n')
+    msgs3_3 = checks.check3(conn, stations_ids, 'Tmin', flag=-15)
+    for msg in msgs3_3:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check4 for PREC' + '\n')
+    msgs4_1 = checks.check4(conn, stations_ids, 'PREC', flag=-17, min_not_null=5)
+    for msg in msgs4_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check4 for Tmax' + '\n')
+    msgs4_2 = checks.check4(conn, stations_ids, 'Tmax', flag=-17)
+    for msg in msgs4_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check4 for Tmin' + '\n')
+    msgs4_3 = checks.check4(conn, stations_ids, 'Tmin', flag=-17)
+    for msg in msgs4_3:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
     # from here on: TODO
-    msgs += checks.check3(conn, stations_ids, 'Tmax', len_threshold=5, flag=-14)
-    msgs += checks.check3(conn, stations_ids, 'Tmin', len_threshold=5, flag=-14)
-    msgs += checks.check4(conn, stations_ids, 'PREC', flag=-15, min_not_null=5)
-    msgs += checks.check4(conn, stations_ids, 'Tmax', flag=-15)
-    msgs += checks.check4(conn, stations_ids, 'Tmin', flag=-15)
-    msgs += checks.check5(conn, stations_ids, 'PREC', flag=-17, min_not_null=5)
-    msgs += checks.check5(conn, stations_ids, 'Tmax', flag=-17)
-    msgs += checks.check5(conn, stations_ids, 'Tmin', flag=-17)
-    msgs += checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
-    msgs += checks.check7(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
-    msgs += checks.check8(conn, stations_ids, 'PREC', min=800, flag=-21)
-    msgs += checks.check8(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)
-    msgs += checks.check8(conn, stations_ids, 'Tmin', min=-40, max=40, flag=-21)
-    msgs += checks.check9(conn, stations_ids, 'PREC', max_threshold=300,
+    msgs += checks.check5(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
+    msgs += checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
+    msgs += checks.check7(conn, stations_ids, 'PREC', min=800, flag=-21)
+    msgs += checks.check7(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)
+    msgs += checks.check7(conn, stations_ids, 'Tmin', min=-40, max=40, flag=-21)
+    msgs += checks.check8(conn, stations_ids, 'PREC', max_threshold=300,
                           split_policy=(False, None), flag=-23)
-    msgs += checks.check9(conn, stations_ids, 'Tmax', max_threshold=10,
+    msgs += checks.check8(conn, stations_ids, 'Tmax', max_threshold=10,
                           split_policy=(True, 'top'), flag=-23)
-    msgs += checks.check9(conn, stations_ids, 'Tmin', max_threshold=10,
+    msgs += checks.check8(conn, stations_ids, 'Tmin', max_threshold=10,
                           split_policy=(True, 'bottom'), flag=-24)
-    msgs += checks.check10(conn, stations_ids, 'Tmax', num_dev_std=6,
+    msgs += checks.check9(conn, stations_ids, 'Tmax', num_dev_std=6,
                            window_days=15, min_num=100, flag=-25)
-    msgs += checks.check10(conn, stations_ids, 'Tmin', num_dev_std=6,
+    msgs += checks.check9(conn, stations_ids, 'Tmin', num_dev_std=6,
                            window_days=15, min_num=100, flag=-25)
-    msgs += checks.check11(conn, stations_ids, 'PREC', num_dev_std=9*0.95,
+    msgs += checks.check10(conn, stations_ids, 'PREC', num_dev_std=9*0.95,
                            window_days=29, min_num=20, flag=-25)
-    msgs += checks.check12(conn, stations_ids, 'PREC', num_dev_std=5*0.95,
+    msgs += checks.check11(conn, stations_ids, 'PREC', num_dev_std=5*0.95,
                            window_days=29, min_num=20, flag=-26)
-    msgs += checks.check13(conn, stations_ids, 'Tmax', max_up=18, window_days=3, flag=-27)
-    msgs += checks.check13(conn, stations_ids, 'Tmin', max_up=18, window_days=3, flag=-27)
-    msgs += checks.check14(conn, stations_ids, ['Tmax', 'Tmin'], min_diff=5, flag=-29)
-    msgs += checks.check15(conn, stations_ids, ['Tmax', 'Tmin'], window_days=3, jump=35,
+    msgs += checks.check12(conn, stations_ids, 'Tmax', max_up=18, window_days=3, flag=-27)
+    msgs += checks.check12(conn, stations_ids, 'Tmin', max_up=18, window_days=3, flag=-27)
+    msgs += checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], min_diff=5, flag=-29)
+    msgs += checks.check14(conn, stations_ids, ['Tmax', 'Tmin'], window_days=3, jump=35,
                            policy=(max, 'greater'), flag=-31)
-    msgs += checks.check15(conn, stations_ids, ['Tmin', 'Tmax'], window_days=3, jump=-35,
+    msgs += checks.check14(conn, stations_ids, ['Tmin', 'Tmax'], window_days=3, jump=-35,
                            policy=(min, 'lower'), flag=-31)
 

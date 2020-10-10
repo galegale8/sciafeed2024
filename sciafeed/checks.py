@@ -11,6 +11,7 @@ This module contains the functions and utilities to check climatologic data.
 - par_value: the parameter value
 - flag: a boolean flag to consider valid or not the value
 """
+from datetime import datetime, timedelta
 import itertools
 import statistics
 
@@ -637,6 +638,73 @@ def check8(conn, stations_ids, var, threshold=None, split=False, flag_sup=-23, f
             msg = "Resetting flags to value %s..." % flag
             msgs.append(msg)
             db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check9(conn, stations_ids, var, num_dev_std=6, window_days=15, min_num=100, flag=-25,
+           use_records=None):
+    """
+    Check "controllo z-score checks temperatura" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param num_dev_std: times of the standard deviation to be considered in the check
+    :param window_days: the time window to consider (in days)
+    :param min_num: the minimum size of the values to be found inside the window
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not (window_days % 2):
+        raise ValueError('window_days must be odd')
+    if not use_records:
+        if var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmxgg'], sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmngg'], sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check9 not implemented for variable %s' % var)
+    msg = "'controllo z-score checks temperatura' for variable %s " % var
+    msgs.append(msg)
+
+    to_be_resetted = []
+    half_window = (window_days - 1) // 2
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    for station, station_records in itertools.groupby(results, group_by_station):
+        check_date = datetime(2000, 1, 1)  # first of a leap year
+        for i in range(366):
+            reference_days = [check_date + timedelta(n)
+                              for n in range(-half_window, half_window+1)]
+            day_month_tuples = [(day.day, day.month) for day in reference_days]
+            sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
+            if len(sample_records) >= min_num:
+                sample_values = [r[2] for r in sample_records]
+                average = statistics.mean(sample_values)
+                dev_std_limit = statistics.stdev(sample_values) * num_dev_std
+                check_records = querying.filter_by_day_patterns(
+                    sample_records, [check_date.month, check_date.day])
+                for check_record in check_records:
+                    if abs(check_record[2] - average) > dev_std_limit:
+                        to_be_resetted.append(check_record)
+            check_date += timedelta(1)
+
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     msg = "Check completed"
     msgs.append(msg)
     return msgs

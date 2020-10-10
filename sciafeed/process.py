@@ -213,17 +213,51 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
+    report_fp.write('* start check6 for Tmax and Tmin' + '\n')
+    msgs6 = checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
+    for msg in msgs6:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check7 for PREC' + '\n')
+    msgs7_1 = checks.check7(conn, stations_ids, 'PREC', min=800, flag=-21)
+    for msg in msgs7_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check7 for Tmax' + '\n')
+    msgs7_2 = checks.check7(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)
+    for msg in msgs7_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check7 for Tmin' + '\n')
+    msgs7_3 = checks.check7(conn, stations_ids, 'Tmin', min=-40, max=40, flag=-21)
+    for msg in msgs7_3:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check8 for PREC' + '\n')
+    msgs8_1 = checks.check8(conn, stations_ids, 'PREC', threshold=300, split=False, flag_sup=-23)
+    for msg in msgs8_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check8 for Tmax' + '\n')
+    msgs8_2 = checks.check8(conn, stations_ids, 'Tmax', threshold=10, split=True,
+                            flag_sup=-23, flag_inf=-24)
+    for msg in msgs8_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check8 for Tmin' + '\n')
+    msgs8_3 = checks.check8(conn, stations_ids, 'Tmin', threshold=10, split=True,
+                            flag_sup=-23, flag_inf=-24)
+    for msg in msgs8_3:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
     # from here on: TODO
-    msgs += checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
-    msgs += checks.check7(conn, stations_ids, 'PREC', min=800, flag=-21)
-    msgs += checks.check7(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)
-    msgs += checks.check7(conn, stations_ids, 'Tmin', min=-40, max=40, flag=-21)
-    msgs += checks.check8(conn, stations_ids, 'PREC', max_threshold=300,
-                          split_policy=(False, None), flag=-23)
-    msgs += checks.check8(conn, stations_ids, 'Tmax', max_threshold=10,
-                          split_policy=(True, 'top'), flag=-23)
-    msgs += checks.check8(conn, stations_ids, 'Tmin', max_threshold=10,
-                          split_policy=(True, 'bottom'), flag=-24)
     msgs += checks.check9(conn, stations_ids, 'Tmax', num_dev_std=6,
                            window_days=15, min_num=100, flag=-25)
     msgs += checks.check9(conn, stations_ids, 'Tmin', num_dev_std=6,

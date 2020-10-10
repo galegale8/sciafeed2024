@@ -12,6 +12,7 @@ This module contains the functions and utilities to check climatologic data.
 - flag: a boolean flag to consider valid or not the value
 """
 import itertools
+import statistics
 
 from sciafeed import db_utils
 from sciafeed import querying
@@ -367,13 +368,13 @@ def check4(conn, stations_ids, var, min_not_null=None, flag=-17, use_records=Non
     return msgs
 
 
-def check5(conn, stations_ids, vars, len_threshold=10, flag=-19, use_records=None):
+def check5(conn, stations_ids, variables, len_threshold=10, flag=-19, use_records=None):
     """
-    Check "controllo TMAX=TMIN" for the `vars`.
+    Check "controllo TMAX=TMIN" for the `variables`.
 
     :param conn: db connection object
     :param stations_ids: list of stations id where to do the check
-    :param vars: name of the variable to check
+    :param variables: list of names of the variables to check
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param use_records: force check on these records (used for test)
@@ -382,10 +383,10 @@ def check5(conn, stations_ids, vars, len_threshold=10, flag=-19, use_records=Non
     msgs = []
     results = use_records
     if not use_records:
-        if sorted(vars) != ['Tmax', 'Tmin']:
-            raise NotImplementedError("check4 not implemented for variables != ['Tmax', 'Tmin']")
+        if sorted(variables) != ['Tmax', 'Tmin']:
+            raise NotImplementedError("check5 not implemented for variables != ['Tmax', 'Tmin']")
         sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
-        results = querying.select_temp_records(conn, ['tmngg'], sql_fields, stations_ids)
+        results = querying.select_temp_records(conn, ['tmngg', 'tmxgg'], sql_fields, stations_ids)
     msg = "'controllo TMAX=TMIN' for variables %s (len=%s)" % (repr(vars), len_threshold)
     msgs.append(msg)
 
@@ -414,6 +415,228 @@ def check5(conn, stations_ids, vars, len_threshold=10, flag=-19, use_records=Non
     msgs.append(msg)
     db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
     db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check6(conn, stations_ids, variables, flag=-20, use_records=None):
+    """
+    Check "controllo TMAX=TMIN=0" for the `variables`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param variables: list of names of the variables to check
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if sorted(variables) != ['Tmax', 'Tmin']:
+            raise NotImplementedError("check6 not implemented for variables != ['Tmax', 'Tmin']")
+        sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
+        results = querying.select_temp_records(conn, ['tmngg', 'tmxgg'], sql_fields, stations_ids)
+    msg = "'controllo TMAX=TMIN=0' for variables %s " % repr(variables)
+    msgs.append(msg)
+
+    to_be_resetted = []
+    i = 0
+    for i, station_record in enumerate(results):
+        if station_record[2] == station_record[3] == 0:
+            to_be_resetted.append(station_record)
+
+    msg = "Checked %i records" % i
+    msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check7(conn, stations_ids, var, min_threshold=None, max_threshold=None, flag=-21,
+           use_records=None):
+    """
+    Check "controllo world excedence" for the `variables`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param min_threshold: minimum value in the check
+    :param max_threshold: maximum value in the check
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'PREC':
+            sql_fields = "cod_staz, data_i, (prec24).val_tot"
+            results = querying.select_prec_records(
+                conn, sql_fields, stations_ids)
+        elif var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmxgg'], sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmngg'], sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check7 not implemented for variable %s' % var)
+    msg = "'controllo world excedence' for variable %s " % var
+    msgs.append(msg)
+
+    to_be_resetted = []
+    i = 0
+    exclude_condition = lambda r: False
+    if min_threshold is not None:
+        exclude_condition = lambda r: r[2] <= min_threshold
+    elif max_threshold is not None:
+        exclude_condition = lambda r: r[2] >= max_threshold
+    if min_threshold is not None and max_threshold is not None:
+        exclude_condition = lambda r: r[2] <= min_threshold or r[2] >= max_threshold
+    for i, station_record in enumerate(results):
+        if exclude_condition(station_record):
+            to_be_resetted.append(station_record)
+
+    msg = "Checked %i records" % i
+    msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def gap_top_checks(terms, threshold):
+    """
+    sort terms of kind (value, record) by index 0, check if gap between 2 consecutive values are
+    over the threshold, and return the list of the corresponding record and all the following
+
+    :param terms: list of tuple (value, record)
+    :param threshold: the threshold to check
+    :return: list of records
+    """
+    terms = sorted(terms)
+    ret_values = []
+    found_break = False
+    for index in range(len(terms) - 1):
+        if found_break:
+            ret_values.append(terms[index][1])
+        if abs(ret_values[index][0] - ret_values[index + 1][0]) > threshold:
+            ret_values.append(ret_values[index][1])
+            found_break = True
+    return ret_values
+
+
+def gap_bottom_checks(terms, threshold):
+    """
+    sort terms of kind (value, record) by index 0 reverse, check if gap between 2 consecutive
+    values are lower than the threshold, and return the list of the corresponding record and
+    all the following
+
+    :param terms: list of tuple (value, record)
+    :param threshold: the threshold to check
+    :return: list of records
+    """
+    terms = sorted(terms, reverse=True)
+    ret_values = []
+    found_break = False
+    for index in range(len(terms) - 2):
+        if found_break:
+            ret_values.append(terms[index][1])
+        if abs(ret_values[index][0] - ret_values[index + 1][0]) > threshold:
+            ret_values.append(ret_values[index + 1][1])
+            found_break = True
+    return ret_values
+
+
+def check8(conn, stations_ids, var, threshold=None, split=False, flag_sup=-23, flag_inf=-24,
+           use_records=None):
+    """
+    Check "controllo gap checks" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param threshold: value of the threshold in the check
+    :param split: if False (default), don't split by median, and consider only flag_sup
+    :param flag_sup: value of the flag to be set for found records with split=False, or with
+                     split=True for the top part of the split
+    :param flag_inf: value of the flag to be set for found records with split=True for the
+                     bottom part of the split
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'PREC':
+            sql_fields = "cod_staz, data_i, (prec24).val_tot"
+            results = querying.select_prec_records(
+                conn, sql_fields, stations_ids)
+        elif var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmxgg'], sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmngg'], sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check8 not implemented for variable %s' % var)
+    msg = "'controllo gap checks  precipitazione' for variable %s " % var
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    def group_by_year(record):
+        return record.data_i.year
+
+    def group_by_month(record):
+        return record.data_i.month
+
+    to_be_resetted_flag_sup = []
+    to_be_resetted_flag_inf = []
+    if not split:
+        for station, station_records in itertools.groupby(results, group_by_station):
+            for year, year_records in itertools.groupby(station_records, group_by_year):
+                for month, month_records in itertools.groupby(year_records, group_by_month):
+                    month_values = [(g[2], g) for g in month_records if g[2] is not None]
+                    to_be_resetted_flag_sup += gap_top_checks(month_values, threshold)
+    else:
+        for station, station_records in itertools.groupby(results, group_by_station):
+            for year, year_records in itertools.groupby(station_records, group_by_year):
+                for month, month_records in itertools.groupby(year_records, group_by_month):
+                    month_values = [(g[2], g) for g in month_records if g[2] is not None].sort()
+                    median = statistics.median([g[0] for g in month_values])
+                    top_values = [g for g in month_values if g >= median]
+                    to_be_resetted_flag_sup += gap_top_checks(top_values, threshold)
+                    bottom_values = [g for g in month_values if g <= median]
+                    to_be_resetted_flag_inf += gap_bottom_checks(bottom_values, threshold)
+
+    for to_be_resetted, flag in [(to_be_resetted_flag_sup, flag_sup),
+                                 (to_be_resetted_flag_inf, flag_inf)]:
+        num_to_be_resetted = len(to_be_resetted)
+        if num_to_be_resetted:
+            msg = "Found %i records with flag %s to be reset" % (num_to_be_resetted, flag)
+            msgs.append(msg)
+            msg = "Resetting flags to value %s..." % flag
+            msgs.append(msg)
+            db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     msg = "Check completed"
     msgs.append(msg)
     return msgs

@@ -639,7 +639,10 @@ def check8(conn, stations_ids, var, threshold=None, split=False, flag_sup=-23, f
             msgs.append(msg)
             msg = "Resetting flags to value %s..." % flag
             msgs.append(msg)
-            db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+            if var == 'PREC':
+                db_utils.set_prec_flags(conn, to_be_resetted, flag)
+            else:
+                db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     msg = "Check completed"
     msgs.append(msg)
     return msgs
@@ -729,21 +732,10 @@ def check10(conn, stations_ids, var, where_sql_on_temp="(tmdgg).val_md >= 0", ti
     :param use_records: force check on these records (used for test)
     :return: list of log messages
     """
-    """
-    Check "controllo z-score checks temperatura" for the `var`.
-
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
-    :param num_dev_std: times of the standard deviation to be considered in the check
-    :param window_days: the time window to consider (in days)
-    :param min_num: the minimum size of the values to be found inside the window
-    :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
-    """
     msgs = []
     results = use_records
+    if not (window_days % 2):
+        raise ValueError('window_days must be odd')
     if not use_records:
         if var == 'PREC':
             fields = "(tmdgg).val_md"
@@ -763,7 +755,8 @@ def check10(conn, stations_ids, var, where_sql_on_temp="(tmdgg).val_md >= 0", ti
             results = [r for r in results if r[1] in temp_dict[r[0]]]
         else:
             raise NotImplementedError('check10 not implemented for variable %s' % var)
-    msg = "'controllo z-score checks precipitazione' for variable %s " % var
+    msg = "'controllo z-score checks precipitazione' for variable %s (%s)" \
+          % (var, where_sql_on_temp)
     msgs.append(msg)
 
     def group_by_station(record):
@@ -787,6 +780,68 @@ def check10(conn, stations_ids, var, where_sql_on_temp="(tmdgg).val_md >= 0", ti
                     if check_record[2] > percentile_limit:
                         to_be_resetted.append(check_record)
             check_date += timedelta(1)
+
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check11(conn, stations_ids, var, max_diff=18, flag=-27, use_records=None):
+    """
+    Check "controllo jump checks" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param max_diff: module of the threshold increase between consecutive days
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'Tmax':
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmxgg'], sql_fields, stations_ids)
+        elif var == 'Tmin':
+            sql_fields = "cod_staz, data_i, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmngg'], sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check11 not implemented for variable %s' % var)
+    msg = "'controllo jump checks' for variable %s (max diff: %s)" % (var, max_diff)
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    to_be_resetted = []
+    for station, station_records in itertools.groupby(results, group_by_station):
+        prev1_record = None
+        prev2_record = None
+        # load previous 2:
+        for i, station_record in enumerate(station_records):
+            prev2_record = prev1_record
+            prev1_record = station_record
+            if i == 1:
+                break
+        for station_record in station_records:
+            day, value = station_record[1:3]
+            prev1_rec_day, prev1_rec_value = prev1_record[1:3]
+            prev2_rec_day, prev2_rec_value = prev2_record[1:3]
+            if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
+                if abs(prev1_rec_value - prev2_rec_value) > max_diff and \
+                        abs(prev1_rec_value - value) > max_diff:
+                    to_be_resetted.append(prev1_record)
+            prev2_record = prev1_record
+            prev1_record = station_record
 
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
     msgs.append(msg)

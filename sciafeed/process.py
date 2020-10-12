@@ -1,6 +1,7 @@
 """
 This module contains functions and utilities that involve more components of sciafeed.
 """
+import operator
 from os import listdir
 from os.path import isfile, join, splitext
 
@@ -305,9 +306,16 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    # from here on: TODO
-    msgs += checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], window_days=3, jump=35,
-                           policy=(max, 'greater'), flag=-31)
-    msgs += checks.check13(conn, stations_ids, ['Tmin', 'Tmax'], window_days=3, jump=-35,
-                           policy=(min, 'lower'), flag=-31)
+    report_fp.write('* start check13 for [Tmax, Tmin] (policy: >= max)' + '\n')
+    operators = max, operator.ge
+    msgs13_1 = checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], operators, jump=35, flag=-31)
+    for msg in msgs13_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
 
+    report_fp.write('* start check13 for [Tmin, Tmax] (policy: <= min)' + '\n')
+    operators = min, operator.le
+    msgs13_2 = checks.check13(conn, stations_ids, ['Tmin', 'Tmax'], operators, jump=-35, flag=-31)
+    for msg in msgs13_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')

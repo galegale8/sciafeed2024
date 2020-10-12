@@ -873,7 +873,7 @@ def check12(conn, stations_ids, variables, min_diff=5, flag=-29, use_records=Non
             results = querying.select_temp_records(
                 conn, ['tmxgg', 'tmngg'], sql_fields, stations_ids)
         else:
-            raise NotImplementedError('check11 not implemented for variables %s' % repr(vars))
+            raise NotImplementedError('check12 not implemented for variables %s' % repr(vars))
     msg = "'controllo jump checks' for variables %s (min diff: %s)" % (repr(vars), min_diff)
     msgs.append(msg)
 
@@ -895,3 +895,83 @@ def check12(conn, stations_ids, variables, min_diff=5, flag=-29, use_records=Non
     msgs.append(msg)
     return msgs
 
+
+def check13(conn, stations_ids, variables, operators, jump=35, flag=-31, use_records=None):
+    """
+    Check "controllo dtr (diurnal temperature range)".
+    Operators is applied in the formula:
+        operator2(variables[0], operator1(variables[1]) + jump)
+    example1:
+        operator1, operator2 = max, operator.ge
+        variables = [Tmax, Tmin]
+        jump = +35
+        -->
+        Tmax >= min(Tmin) + 35
+    example2:
+        operator1, operator2 = min, operator.le
+        variables = [Tmin, Tmax]
+        jump = -35
+        -->
+        Tmin <= min(Tmax) - 35
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param variables: name of the variables to check
+    :param operators: couple of operators to apply in
+    :param jump: the jump to apply in the formula
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if list(variables) == ['Tmax', 'Tmin']:
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md"
+        elif list(variables) == ['Tmin', 'Tmax']:
+            sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
+        else:
+            raise NotImplementedError('check13 not implemented for variables %s' % repr(vars))
+        results = querying.select_temp_records(conn, ['tmxgg', 'tmngg'], sql_fields, stations_ids)
+    msg = "'controllo dtr (diurnal temperature range)' for variables %s" % repr(vars)
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    to_be_resetted_var1 = []
+    to_be_resetted_var2 = []
+    operator1, operator2 = operators
+    for station, station_records in itertools.groupby(results, group_by_station):
+        prev1_record = None
+        prev2_record = None
+        # load previous 2:
+        for i, station_record in enumerate(station_records):
+            prev2_record = prev1_record
+            prev1_record = station_record
+            if i == 1:
+                break
+        for station_record in station_records:
+            day, val1, val2 = station_record[1:4]
+            prev1_rec_day, prev1_rec_val1, prev1_rec_val2 = prev1_record[1:4]
+            prev2_rec_day, prev2_rec_val1, prev2_rec_val2 = prev2_record[1:4]
+            if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
+                if operator2(prev1_rec_val1,
+                             operator1(prev2_rec_val2, prev1_rec_val2, val2) + jump):
+                    to_be_resetted_var1.append(prev1_record)
+                    to_be_resetted_var2.append(prev2_record)
+                    to_be_resetted_var2.append(prev1_record)
+                    to_be_resetted_var2.append(station_record)
+            prev2_record = prev1_record
+            prev1_record = station_record
+
+    msg = "Found %i records with flags to be reset" \
+          % len(to_be_resetted_var1) + len(to_be_resetted_var2)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted_var1, variables[0], flag)
+    db_utils.set_temp_flags(conn, to_be_resetted_var2, variables[1], flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs

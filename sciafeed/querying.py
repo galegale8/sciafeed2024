@@ -153,7 +153,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
 
 def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
                         schema='dailypdbanpacarica', flag_threshold=1, exclude_values=(),
-                        exclude_null=True):
+                        exclude_null=True, where_sql=None):
     """
     Select all the records of the table dailypdbadmclima.ds__t200 order by station, date.
     If  stations_ids is not None, filter also for station ids.
@@ -168,6 +168,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     :param flag_threshold: if not None, consider where prec24.flag >= this threshold
     :param exclude_values: query excludes not none values in this iterable
     :param exclude_null: if True, excludes NULL values
+    :param where_sql: if not None, add the selected where clause in sql
     :return: the iterable of the results
     """
     sql = "SELECT %s FROM %s.ds__t200" % (sql_fields, schema)
@@ -184,7 +185,8 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     if exclude_null:
         for field in fields:
             where_clauses.append('(%s).val_md IS NOT NULL' % field)
-
+    if where_sql:
+        where_clauses.append(where_sql)
     if where_clauses:
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     sql += ' ORDER BY cod_staz, data_i'

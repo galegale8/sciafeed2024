@@ -159,7 +159,7 @@ def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12, use
             block_index = 0
             block_records = []
         prev_staz = current_staz
-    msg = "Checked %i records" % i
+    msg = "Checked %i records" % i + 1
     msgs.append(msg)
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
     msgs.append(msg)
@@ -229,7 +229,7 @@ def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None
             block_records = []
         prev_staz = current_staz
         prev_value = current_value
-    msg = "Checked %i records" % i
+    msg = "Checked %i records" % i + 1
     msgs.append(msg)
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
     msgs.append(msg)
@@ -450,7 +450,7 @@ def check6(conn, stations_ids, variables, flag=-20, use_records=None):
         if station_record[2] == station_record[3] == 0:
             to_be_resetted.append(station_record)
 
-    msg = "Checked %i records" % i
+    msg = "Checked %i records" % i + 1
     msgs.append(msg)
     msg = "Found %i records with flags to be reset" % len(to_be_resetted)
     msgs.append(msg)
@@ -851,3 +851,47 @@ def check11(conn, stations_ids, var, max_diff=18, flag=-27, use_records=None):
     msg = "Check completed"
     msgs.append(msg)
     return msgs
+
+
+def check12(conn, stations_ids, variables, min_diff=5, flag=-29, use_records=None):
+    """
+    Check "controllo TMAX < TMIN" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param variables: name of the variables to check
+    :param min_diff: threshold difference between vars[0] and vars[1]
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if list(variables) == ['Tmax', 'Tmin']:
+            sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md"
+            results = querying.select_temp_records(
+                conn, ['tmxgg', 'tmngg'], sql_fields, stations_ids)
+        else:
+            raise NotImplementedError('check11 not implemented for variables %s' % repr(vars))
+    msg = "'controllo jump checks' for variables %s (min diff: %s)" % (repr(vars), min_diff)
+    msgs.append(msg)
+
+    to_be_resetted = []
+    i = 0
+    for i, result in enumerate(results):
+        if result[2] - result[3] < min_diff:
+            to_be_resetted.append(result)
+
+    msg = "Checked %i records" % i + 1
+    msgs.append(msg)
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
+    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+

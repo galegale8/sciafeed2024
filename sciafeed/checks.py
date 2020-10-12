@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 import itertools
 import statistics
 
+import numpy as np
+
 from sciafeed import db_utils
 from sciafeed import querying
 from sciafeed import utils
@@ -697,6 +699,92 @@ def check9(conn, stations_ids, var, num_dev_std=6, window_days=15, min_num=100, 
                     sample_records, [check_date.month, check_date.day])
                 for check_record in check_records:
                     if abs(check_record[2] - average) > dev_std_limit:
+                        to_be_resetted.append(check_record)
+            check_date += timedelta(1)
+
+    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msgs.append(msg)
+    msg = "Resetting flags to value %s..." % flag
+    msgs.append(msg)
+    db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+    msg = "Check completed"
+    msgs.append(msg)
+    return msgs
+
+
+def check10(conn, stations_ids, var, where_sql_on_temp="(tmdgg).val_md >= 0", times_perc=9,
+            percentile=95, window_days=29, min_num=20, flag=-25, use_records=None):
+    """
+    Check "controllo z-score checks precipitazione" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param where_sql_on_temp: add the selected where clause in sql for the temperature
+    :param times_perc: number of times of the percentile to create the limit
+    :param percentile: percentile value of the distribution to use
+    :param window_days: the time window to consider (in days)
+    :param min_num: the minimum size of the values to be found inside the window
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    """
+    Check "controllo z-score checks temperatura" for the `var`.
+
+    :param conn: db connection object
+    :param stations_ids: list of stations id where to do the check
+    :param var: name of the variable to check
+    :param num_dev_std: times of the standard deviation to be considered in the check
+    :param window_days: the time window to consider (in days)
+    :param min_num: the minimum size of the values to be found inside the window
+    :param flag: the value of the flag to set for found records
+    :param use_records: force check on these records (used for test)
+    :return: list of log messages
+    """
+    msgs = []
+    results = use_records
+    if not use_records:
+        if var == 'PREC':
+            fields = "(tmdgg).val_md"
+            sql_fields = "cod_staz, data_i"
+            temp_records = querying.select_temp_records(
+                conn, fields, sql_fields=sql_fields,
+                stations_ids=stations_ids, where_sql=where_sql_on_temp)
+            temp_dict = dict()
+            for temp_record in temp_records:
+                staz, day = temp_record[:2]
+                if staz not in temp_dict:
+                    temp_dict[staz] = []
+                temp_dict[staz].append(day)
+            sql_fields = "cod_staz, data_i, (prec24).val_tot"
+            results = querying.select_prec_records(
+                conn, sql_fields, stations_ids=list(temp_dict.keys()), exclude_values=(0,))
+            results = [r for r in results if r[1] in temp_dict[r[0]]]
+        else:
+            raise NotImplementedError('check10 not implemented for variable %s' % var)
+    msg = "'controllo z-score checks precipitazione' for variable %s " % var
+    msgs.append(msg)
+
+    def group_by_station(record):
+        return record.cod_staz
+
+    to_be_resetted = []
+    half_window = (window_days - 1) // 2
+    for station, station_records in itertools.groupby(results, group_by_station):
+        check_date = datetime(2000, 1, 1)  # first of a leap year
+        for i in range(366):
+            reference_days = [check_date + timedelta(n)
+                              for n in range(-half_window, half_window+1)]
+            day_month_tuples = [(day.day, day.month) for day in reference_days]
+            sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
+            if len(sample_records) >= min_num:
+                sample_values = np.array([r[2] for r in sample_records])
+                percentile_limit = np.percentile(sample_values, percentile) * times_perc
+                check_records = querying.filter_by_day_patterns(
+                    sample_records, [check_date.month, check_date.day])
+                for check_record in check_records:
+                    if check_record[2] > percentile_limit:
                         to_be_resetted.append(check_record)
             check_date += timedelta(1)
 

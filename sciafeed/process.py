@@ -271,16 +271,28 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
+    report_fp.write('* start check10 for PREC' + '\n')
+    msgs10_1 = checks.check10(
+        conn, stations_ids, 'PREC', where_sql_on_temp="(tmdgg).val_md >= 0", times_perc=9,
+        percentile=95, window_days=29, min_num=20, flag=-25)
+    for msg in msgs10_1:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+
+    report_fp.write('* start check10 for PREC (ice)' + '\n')
+    msgs10_2 = checks.check10(
+        conn, stations_ids, 'PREC', where_sql_on_temp="(tmdgg).val_md < 0", times_perc=5,
+        percentile=95, window_days=29, min_num=20, flag=-26)
+    for msg in msgs10_2:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    
     # from here on: TODO
-    msgs += checks.check10(conn, stations_ids, 'PREC', num_dev_std=9*0.95,
-                           window_days=29, min_num=20, flag=-25)
-    msgs += checks.check11(conn, stations_ids, 'PREC', num_dev_std=5*0.95,
-                           window_days=29, min_num=20, flag=-26)
-    msgs += checks.check12(conn, stations_ids, 'Tmax', max_up=18, window_days=3, flag=-27)
-    msgs += checks.check12(conn, stations_ids, 'Tmin', max_up=18, window_days=3, flag=-27)
-    msgs += checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], min_diff=5, flag=-29)
-    msgs += checks.check14(conn, stations_ids, ['Tmax', 'Tmin'], window_days=3, jump=35,
+    msgs += checks.check11(conn, stations_ids, 'Tmax', max_up=18, window_days=3, flag=-27)
+    msgs += checks.check11(conn, stations_ids, 'Tmin', max_up=18, window_days=3, flag=-27)
+    msgs += checks.check12(conn, stations_ids, ['Tmax', 'Tmin'], min_diff=5, flag=-29)
+    msgs += checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], window_days=3, jump=35,
                            policy=(max, 'greater'), flag=-31)
-    msgs += checks.check14(conn, stations_ids, ['Tmin', 'Tmax'], window_days=3, jump=-35,
+    msgs += checks.check13(conn, stations_ids, ['Tmin', 'Tmax'], window_days=3, jump=-35,
                            policy=(min, 'lower'), flag=-31)
 

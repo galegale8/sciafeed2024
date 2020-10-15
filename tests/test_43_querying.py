@@ -107,14 +107,14 @@ def test_select_temp_records(conn):
     results = [r for r in records]
     assert len(results) == 17806
     assert len(results[0]) == 36
-    assert results[0][:10] == (
+    assert results[0][:10] == [
         datetime(2001, 5, 18, 0, 0), 1, 4, '("(24,1)",23.6,,,)',
         '(0,0,0,0,0,0,1,0,0,0,0)', '("(24,1)",14.5,,,)', '(0,0,0,0,0,0,0,1,0)',
-        '("(24,1)",18.9,2.6)', '("(24,1)",19.05,)', '("(24,1)",9.1,,,)')
-    assert results[-1][:10] == (
+        '("(24,1)",18.9,2.6)', '("(24,1)",19.05,)', '("(24,1)",9.1,,,)']
+    assert results[-1][:10] == [
         datetime(2019, 12, 31, 0, 0), 3, 4, '("(24,1)",8.2,,,)', '(0,0,0,1,0,0,0,0,0,0,0)',
         '("(24,1)",-0.1,,,)', '(0,0,0,0,1,0,0,0,0)', '("(24,1)",2.5,2.5)', '("(24,1)",4.05,)',
-        '("(24,1)",8.3,,,)')
+        '("(24,1)",8.3,,,)']
 
     sql_fields = "cod_staz, data_i, (tmxgg).val_md"
     exclude_values = (23.6, 8.2)
@@ -124,8 +124,8 @@ def test_select_temp_records(conn):
     results = [r for r in records]
     assert len(results) == 17673
     assert len(results[0]) == 3
-    assert results[0] == (1, datetime(2001, 5, 19, 0, 0), Decimal('22'))
-    assert results[-1] == (3, datetime(2019, 12, 30, 0, 0), Decimal('1.8'))
+    assert results[0] == [1, datetime(2001, 5, 19, 0, 0), Decimal('22')]
+    assert results[-1] == [3, datetime(2019, 12, 30, 0, 0), Decimal('1.8')]
 
     fields = ['tmngg']
     sql_fields = "cod_staz, data_i, (tmngg).val_md"
@@ -134,5 +134,5 @@ def test_select_temp_records(conn):
     results = [r for r in records]
     assert len(results) == 17801
     assert len(results[0]) == 3
-    assert results[0] == (1, datetime(2001, 5, 18, 0, 0), Decimal('14.5'))
-    assert results[-1] == (3, datetime(2019, 12, 31, 0, 0), Decimal('-0.1'))
+    assert results[0] == [1, datetime(2001, 5, 18, 0, 0), Decimal('14.5')]
+    assert results[-1] == [3, datetime(2019, 12, 31, 0, 0), Decimal('-0.1')]

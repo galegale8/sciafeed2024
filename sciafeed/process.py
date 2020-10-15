@@ -143,47 +143,54 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
 
-    # report_fp.write('* initial resetting of flags' + '\n')
-    # db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
-
-    report_fp.write('* initial query to get temperature records...' + '\n')
+    report_fp.write('* initial query to get records of PREC...' + '\n')
     sql_fields = "cod_staz, data_i, (prec24).val_tot, 1 as flag"
     valid_prec_records = db_utils.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=stations_ids,
         flag_threshold=None, exclude_null=True)
+    invalid_prec_records = []
 
-    sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md, (tmdgg).val_md"
+    report_fp.write('* initial query to get records of temperature...' + '\n')
+    sql_fields = "cod_staz, data_i, (tmxgg).val_md, 1 as flag_tmxgg, " \
+                 "(tmngg).val_md, 1 as flag_tmngg, (tmdgg).val_md, 1 as flag_tmdgg"
     fields = ['Tmax', 'Tmin']
-    valid_temp_records,   = db_utils.select_temp_records(
+    valid_temp_records = db_utils.select_temp_records(
         conn, fields, sql_fields=sql_fields, stations_ids=stations_ids,
         flag_threshold=None, exclude_null=False)
+    invalid_temp_records = []
 
-    report_fp.write('* start check1 for PREC' + '\n')
-    valid_prec_records, invalid_prec_records, msgs1 = checks.check1(
+    report_fp.write("== STARTING CHECK CHAIN ==")
+    report_fp.write("* 'controllo valori ripetuti = 0' for variable PREC")
+    valid_prec_records, current_invalid_prec, msgs = checks.check1(
         valid_prec_records, len_threshold=180, flag=-12)
-    for msg in msgs1:
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_prec_records.extend(current_invalid_prec)
 
-
-    report_fp.write('* start check2 for PREC' + '\n')
-    msgs2_1 = checks.check2(conn, stations_ids, 'PREC', len_threshold=20, flag=-13,
-                            exclude_values=[0, ])
-    for msg in msgs2_1:
+    report_fp.write("* 'controllo valori ripetuti' for variable PREC")
+    valid_prec_records, current_invalid_prec, msgs = checks.check2(
+        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(0, ))
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_prec_records.extend(current_invalid_prec)
 
-    report_fp.write('* start check2 for Tmax' + '\n')
-    msgs2_2 = checks.check2(conn, stations_ids, 'Tmax', len_threshold=20, flag=-13)
-    for msg in msgs2_2:
+    report_fp.write("* 'controllo valori ripetuti' for variable Tmax")
+    valid_temp_records, current_invalid_temp, msgs = checks.check2(
+        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(None, ))
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
 
-    report_fp.write('* start check2 for Tmin' + '\n')
-    msgs2_3 = checks.check2(conn, stations_ids, 'Tmin', len_threshold=20, flag=-13)
-    for msg in msgs2_3:
+    report_fp.write("* 'controllo valori ripetuti' for variable Tmin")
+    valid_temp_records, current_invalid_temp, msgs = checks.check2(
+        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write('* start check3 for PREC' + '\n')
     msgs3_1 = checks.check3(conn, stations_ids, 'PREC', flag=-15, min_not_null=5)

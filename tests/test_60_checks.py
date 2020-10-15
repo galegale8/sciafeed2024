@@ -1,7 +1,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-
+from pprint import pprint
 from sciafeed import checks
 
 
@@ -600,8 +600,96 @@ def test_check1():
         [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), -12]
     ]
     assert msgs == [
-        "'controllo valori ripetuti = 0' for variable PREC (len=3)",
+        'starting check (parameters: 3, -12, 2)',
         'Checked 14 records',
         'Found 5 records with flags reset to -12',
+        'Check completed'
+    ]
+
+
+def test_check2():
+    records = [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('9.6'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 23, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 24, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 25, 0, 0), Decimal('1'), 1],
+        [1, datetime(2001, 5, 26, 0, 0), Decimal('1'), 1],
+        [2, datetime(2001, 5, 17, 0, 0), Decimal('1'), 1],
+        [2, datetime(2001, 5, 18, 0, 0), Decimal('1'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), None, 1],
+        [2, datetime(2001, 5, 19, 0, 0), None, 1],
+    ]
+    valid_records, invalid_records, msgs = checks.check2(records, len_threshold=2, flag=-13,
+                                                         exclude_values=(0, None))
+    assert valid_records == [
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('9.6'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 23, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 24, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), None, 1],
+        [2, datetime(2001, 5, 19, 0, 0), None, 1],
+    ]
+    assert invalid_records == [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -13],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), -13],
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), -13],
+        [1, datetime(2001, 5, 25, 0, 0), Decimal('1'), -13],
+        [1, datetime(2001, 5, 26, 0, 0), Decimal('1'), -13],
+        [2, datetime(2001, 5, 17, 0, 0), Decimal('1'), -13],
+        [2, datetime(2001, 5, 18, 0, 0), Decimal('1'), -13],
+    ]
+    assert msgs == [
+        'starting check (parameters: 2, -13, 2)',
+        'Checked 14 records',
+        'Found 7 records with flags reset to -13',
+        'Check completed'
+    ]
+    # try with a temperature-like set, for Tmin
+    records = [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('19.3'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('17.2'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('22'), 1, None, 1, Decimal('17.6'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('22'), 1, Decimal('17.2'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('15.7'), 1, Decimal('11.8'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('21'), 1, Decimal('14.1'), 1, Decimal('16.5'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, Decimal('14.2'), 1, Decimal('19'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.8'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.4'), 1],
+     [1, datetime(2001, 5, 26, 0, 0), Decimal('27.3'), 1, Decimal('12.7'), 1, Decimal('20.6'), 1],
+     [2, datetime(2001, 5, 17, 0, 0), Decimal('27.3'), 1, Decimal('12.7'), 1, Decimal('21.6'), 1],
+     [2, datetime(2001, 5, 18, 0, 0), Decimal('27.3'), 1, Decimal('15.3'), 1, Decimal('24.3'), 1],
+     [2, datetime(2001, 5, 19, 0, 0), Decimal('32.5'), 1, Decimal('15.3'), 1, Decimal('25.6'), 1],
+     [2, datetime(2001, 5, 21, 0, 0), Decimal('15.7'), 1, Decimal('11.8'), 1, Decimal('14.1'), 1],
+    ]
+    valid_records, invalid_records, msgs = checks.check2(
+        records, len_threshold=2, flag=-13, exclude_values=(None, ), val_index=4)
+    assert valid_records == [
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('22'), 1, None, 1, Decimal('17.6'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('15.7'), 1, Decimal('11.8'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('21'), 1, Decimal('14.1'), 1, Decimal('16.5'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, Decimal('14.2'), 1, Decimal('19'), 1],
+     [2, datetime(2001, 5, 17, 0, 0), Decimal('27.3'), 1, Decimal('12.7'), 1, Decimal('21.6'), 1],
+     [2, datetime(2001, 5, 21, 0, 0), Decimal('15.7'), 1, Decimal('11.8'), 1, Decimal('14.1'), 1]
+    ]
+    assert invalid_records == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('19.3'), 1, Decimal('17.2'), -13, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('17.2'), -13, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('22'), 1, Decimal('17.2'), -13, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), -13, Decimal('19.8'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), -13, Decimal('19.4'), 1],
+     [1, datetime(2001, 5, 26, 0, 0), Decimal('27.3'), 1, Decimal('12.7'), -13, Decimal('20.6'), 1],
+     [2, datetime(2001, 5, 18, 0, 0), Decimal('27.3'), 1, Decimal('15.3'), -13, Decimal('24.3'), 1],
+     [2, datetime(2001, 5, 19, 0, 0), Decimal('32.5'), 1, Decimal('15.3'), -13, Decimal('25.6'), 1],
+    ]
+    assert msgs == [
+        'starting check (parameters: 2, -13, 4)',
+        'Checked 14 records',
+        'Found 8 records with flags reset to -13',
         'Check completed'
     ]

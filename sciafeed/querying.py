@@ -191,7 +191,8 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     if where_clauses:
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     sql += ' ORDER BY cod_staz, data_i'
-    results = conn.execute(sql)
+    # each record must be a list to make flag changeable:
+    results = map(list, conn.execute(sql))
     return results
 
 

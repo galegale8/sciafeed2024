@@ -124,30 +124,34 @@ def group_by_station(record):
     return record[0]
 
 
-def check1(records, len_threshold=180, flag=-12):
+def check1(records, len_threshold=180, flag=-12, val_index=2):
     """
-    Check "controllo valori ripetuti = 0" for PREC. Assumes all records are flagged valid
-    and are sorted by station, date.
+    Check "controllo valori ripetuti = 0".
+    Assumes all records are flagged valid and are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of valid records, the list of invalid records, the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    msg = "'controllo valori ripetuti = 0' for variable PREC (len=%s)" % len_threshold
+    msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
     msgs.append(msg)
 
     valid_records = []
     invalid_records = []
+    val_getter = operator.itemgetter(val_index)
 
     for station, station_records in itertools.groupby(records, group_by_station):
-        for value, value_records in itertools.groupby(station_records, operator.itemgetter(2)):
+        for value, value_records in itertools.groupby(station_records, val_getter):
             value_records = list(value_records)
             if value == 0 and len(value_records) >= len_threshold:
                 invalid_records.extend(value_records)
                 for v in invalid_records:
-                    v[-1] = flag
+                    v[val_index+1] = flag
             else:
                 valid_records.extend(value_records)
 
@@ -162,77 +166,47 @@ def check1(records, len_threshold=180, flag=-12):
     return valid_records, invalid_records, msgs
 
 
-def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None,
-           exclude_values=()):
+def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     """
-    Check "controllo valori ripetuti" for the `var`.
+    Check "controllo valori ripetuti" for the input records.
+    Assumes all records are flagged valid and are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of valid records, the list of invalid records, the list of log messages.
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :param exclude_values: query excludes not none values in this iterable
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param exclude_values: iterable of values to be excluded from the check for the input records
+    :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    results = use_records
-    if not use_records:
-        if var == 'PREC':
-            sql_fields = "cod_staz, data_i, (prec24).val_tot"
-            results = querying.select_prec_records(
-                conn, sql_fields, stations_ids, exclude_values=exclude_values)
-            field_to_check = 'val_tot'
-        elif var == 'Tmax':
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg'], sql_fields, stations_ids, exclude_values=exclude_values)
-            field_to_check = 'val_md'
-        elif var == 'Tmin':
-            sql_fields = "cod_staz, data_i, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmngg'], sql_fields, stations_ids, exclude_values=exclude_values)
-            field_to_check = 'val_md'
-        else:
-            raise NotImplementedError('check2 not implemented for variable %s' % var)
-    msg = "'controllo valori ripetuti' for variable %s (len=%s)" \
-          % (var, len_threshold)
+    msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
     msgs.append(msg)
-    block_index = 0
-    block_records = []
-    to_be_resetted = []
-    i = 0
-    prev_staz = None
-    prev_value = None
-    for i, result in enumerate(results):
-        current_staz = result.cod_staz
-        current_value = result[field_to_check]
-        if current_staz == prev_staz and current_value == prev_value:
-            block_index += 1
-            block_records.append(result)
-            if block_index == len_threshold:
-                to_be_resetted.extend(block_records)
-            elif block_index > len_threshold:
-                to_be_resetted.append(result)
-        else:
-            block_index = 0
-            block_records = []
-        prev_staz = current_staz
-        prev_value = current_value
-    msg = "Checked %i records" % i + 1
+
+    val_getter = operator.itemgetter(val_index)
+
+    records_to_use = filter(lambda x: val_getter(x) not in exclude_values, records)
+    invalid_records = []
+
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
+        for value, value_records in itertools.groupby(station_records, val_getter):
+            value_records = list(value_records)
+            if len(value_records) >= len_threshold:
+                invalid_records.extend(value_records)
+                for v in invalid_records:
+                    v[val_index+1] = flag
+
+    valid_records = [r for r in records if r not in invalid_records]
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
-    msgs.append(msg)
-    if var in ['Tmax', 'Tmin']:
-        db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
-    else:
-        db_utils.set_prec_flags(conn, to_be_resetted, flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def check3(conn, stations_ids, var, min_not_null=None, flag=-14, use_records=None):

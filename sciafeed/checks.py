@@ -207,7 +207,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     return valid_records, invalid_records, msgs
 
 
-def check3(records, min_not_null=None, flag=-14, val_index=2):
+def check3(records, min_not_null=None, flag=-15, val_index=2):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
 

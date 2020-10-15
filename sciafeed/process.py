@@ -192,7 +192,7 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
 
-    report_fp.write("* 'controllo mesi duplicati' for variable PREC")
+    report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable PREC")
     valid_prec_records, current_invalid_prec, msgs = checks.check3(
         valid_prec_records, flag=-15, min_not_null=5)
     for msg in msgs:
@@ -200,39 +200,46 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
     invalid_prec_records.extend(current_invalid_prec)
 
-    report_fp.write("* 'controllo mesi duplicati' for variable Tmax")
+    report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable Tmax")
     valid_temp_records, current_invalid_temp, msgs = checks.check3(valid_temp_records, flag=-15)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
 
-    report_fp.write("* 'controllo mesi duplicati' for variable Tmin")
-    valid_temp_records, current_invalid_temp, msgs = checks.check3(valid_temp_records, flag=-15)
+    report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable Tmin")
+    valid_temp_records, current_invalid_temp, msgs = checks.check3(
+        valid_temp_records, flag=-15, val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
+
+    report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable PREC")
+    valid_prec_records, current_invalid_prec, msgs = checks.check4(
+        valid_prec_records, flag=-17, min_not_null=5)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    invalid_prec_records.extend(current_invalid_prec)
+
+    report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable Tmax")
+    valid_temp_records, current_invalid_temp, msgs = checks.check4(valid_temp_records, flag=-17)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
+
+    report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable Tmin")
+    valid_temp_records, current_invalid_temp, msgs = checks.check4(
+        valid_temp_records, flag=-17, val_index=4)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
+
 
     # from now on: FIXME
-    report_fp.write('* start check4 for PREC' + '\n')
-    msgs4_1 = checks.check4(conn, stations_ids, 'PREC', flag=-17, min_not_null=5)
-    for msg in msgs4_1:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
-    report_fp.write('* start check4 for Tmax' + '\n')
-    msgs4_2 = checks.check4(conn, stations_ids, 'Tmax', flag=-17)
-    for msg in msgs4_2:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
-    report_fp.write('* start check4 for Tmin' + '\n')
-    msgs4_3 = checks.check4(conn, stations_ids, 'Tmin', flag=-17)
-    for msg in msgs4_3:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
     report_fp.write('* start check5 for Tmax and Tmin' + '\n')
     msgs5 = checks.check5(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
     for msg in msgs5:

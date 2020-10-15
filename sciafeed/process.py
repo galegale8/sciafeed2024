@@ -238,14 +238,15 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
 
-
-    # from now on: FIXME
-    report_fp.write('* start check5 for Tmax and Tmin' + '\n')
-    msgs5 = checks.check5(conn, stations_ids, ['Tmax', 'Tmin'], len_threshold=10, flag=-19)
-    for msg in msgs5:
+    report_fp.write("* controllo TMAX=TMIN")
+    valid_temp_records, current_invalid_temp, msgs = checks.check5(
+        valid_temp_records, len_threshold=10, flag=-19)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
 
+    # from now on: FIXME
     report_fp.write('* start check6 for Tmax and Tmin' + '\n')
     msgs6 = checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
     for msg in msgs6:

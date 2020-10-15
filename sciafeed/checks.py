@@ -127,7 +127,7 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
     The sort order is maintained in the returned values, that are:
     the list of valid records, the list of invalid records, the list of log messages.
 
-    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
@@ -170,7 +170,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     The sort order is maintained in the returned values, that are:
     the list of valid records, the list of invalid records, the list of log messages.
 
-    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
@@ -211,7 +211,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
 
-    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
@@ -271,7 +271,7 @@ def check4(records, min_not_null=None, flag=-15, val_index=2):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
 
-    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
@@ -334,56 +334,47 @@ def check4(records, min_not_null=None, flag=-15, val_index=2):
     return valid_records, invalid_records, msgs
 
 
-def check5(conn, stations_ids, variables, len_threshold=10, flag=-19, use_records=None):
+def check5(records, len_threshold=10, flag=-19):
     """
-    Check "controllo TMAX=TMIN" for the `variables`.
+    Check "controllo TMAX=TMIN".
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param variables: list of names of the variables to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    results = use_records
-    if not use_records:
-        if sorted(variables) != ['Tmax', 'Tmin']:
-            raise NotImplementedError("check5 not implemented for variables != ['Tmax', 'Tmin']")
-        sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
-        results = querying.select_temp_records(conn, ['tmngg', 'tmxgg'], sql_fields, stations_ids)
-    msg = "'controllo TMAX=TMIN' for variables %s (len=%s)" % (repr(vars), len_threshold)
+    msg = "starting check (parameters: %s, %s)" % (len_threshold, flag)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
+    group_by_station = operator.itemgetter(0)
+    val_getter = lambda x: x[2] == x[4]
+    valid_records = []
+    invalid_records = []
 
-    to_be_resetted = []
-    for station, station_records in itertools.groupby(results, group_by_station):
-        block_index = 0
-        block_records = []
-        for station_record in station_records:
-            if station_record[2] == station_record[3]:
-                block_index += 1
-                block_records.append(station_record)
-                if block_index == len_threshold:
-                    to_be_resetted.extend(block_records)
-                elif block_index > len_threshold:
-                    to_be_resetted.append(station_record)
+    for station, station_records in itertools.groupby(records, group_by_station):
+        for are_the_same, value_records in itertools.groupby(station_records, val_getter):
+            if are_the_same:
+                value_records = list(value_records)
+                if len(value_records) >= len_threshold:
+                    invalid_records.extend(value_records)
+                    for v in invalid_records:
+                        v[3] = flag
+                        v[5] = flag
+                else:
+                    valid_records.extend(value_records)
             else:
-                block_index = 0
-                block_records = []
+                valid_records.extend(value_records)
 
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def check6(conn, stations_ids, variables, flag=-20, use_records=None):

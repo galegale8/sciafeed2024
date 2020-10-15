@@ -170,7 +170,7 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
 
     report_fp.write("* 'controllo valori ripetuti' for variable PREC")
     valid_prec_records, current_invalid_prec, msgs = checks.check2(
-        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(0, ))
+        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(0, ))
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
@@ -178,7 +178,7 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
 
     report_fp.write("* 'controllo valori ripetuti' for variable Tmax")
     valid_temp_records, current_invalid_temp, msgs = checks.check2(
-        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(None, ))
+        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(None, ))
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
@@ -186,17 +186,20 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
 
     report_fp.write("* 'controllo valori ripetuti' for variable Tmin")
     valid_temp_records, current_invalid_temp, msgs = checks.check2(
-        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
+        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
 
-    report_fp.write('* start check3 for PREC' + '\n')
-    msgs3_1 = checks.check3(conn, stations_ids, 'PREC', flag=-15, min_not_null=5)
-    for msg in msgs3_1:
+    # from now on: FIXME
+    report_fp.write("* 'controllo mesi duplicati' for variable PREC")
+    valid_prec_records, current_invalid_prec, msgs = checks.check3(
+        valid_prec_records, flag=-15, min_not_null=5)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_prec_records.extend(current_invalid_prec)
 
     report_fp.write('* start check3 for Tmax' + '\n')
     msgs3_2 = checks.check3(conn, stations_ids, 'Tmax', flag=-15)

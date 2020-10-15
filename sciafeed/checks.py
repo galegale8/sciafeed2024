@@ -120,10 +120,6 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     return err_msgs, data_modified
 
 
-def group_by_station(record):
-    return record[0]
-
-
 def check1(records, len_threshold=180, flag=-12, val_index=2):
     """
     Check "controllo valori ripetuti = 0".
@@ -143,6 +139,7 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
 
     valid_records = []
     invalid_records = []
+    group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
     for station, station_records in itertools.groupby(records, group_by_station):
@@ -184,6 +181,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
     msgs.append(msg)
 
+    group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
     records_to_use = filter(lambda x: val_getter(x) not in exclude_values, records)
@@ -209,66 +207,63 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     return valid_records, invalid_records, msgs
 
 
-def check3(conn, stations_ids, var, min_not_null=None, flag=-14, use_records=None):
+def check3(records, min_not_null=None, flag=-14, val_index=2):
     """
-    Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)" for the `var`.
+    Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :return: (valid_records, invalid_records, msgs)
     """
+    # TODO: ASK: check in the same time series both prec and temp, or do
+    #       a sequence of different checks?
     msgs = []
-    results = use_records
-    if not use_records:
-        if var == 'Tmax':
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg'], sql_fields, stations_ids)
-        elif var == 'Tmin':
-            sql_fields = "cod_staz, data_i, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmngg'], sql_fields, stations_ids)
-        else:
-            raise NotImplementedError('check3 not implemented for variable %s' % var)
-    msg = "'controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)' " \
-          "for variable %s" % var
+    msg = "starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
+    valid_records = []
+    invalid_records = []
+
+    group_by_station = operator.itemgetter(0)
+    val_getter = operator.itemgetter(val_index)
 
     def group_by_year(record):
-        return record.data_i.year
+        return record[1].year
 
     def group_by_month(record):
-        return record.data_i.month
+        return record[1].month
 
-    to_be_resetted = []
-    for station, station_records in itertools.groupby(results, group_by_station):
+    for station, station_records in itertools.groupby(records, group_by_station):
         for year, year_records in itertools.groupby(station_records, group_by_year):
-            year_dict = dict()
+            year_values_dict = dict()
+            year_records_dict = dict()
             for month, month_records in itertools.groupby(year_records, group_by_month):
-                month_values = {g[1].day: g[2] for g in month_records if g[2] is not None}
-                if month_values in year_dict.values():
-                    if min_not_null is None or len(month_values.values()) >= min_not_null:
-                        to_be_resetted += list(month_records)
-                year_dict[month] = month_values
+                month_records = list(month_records)
+                year_records_dict[month] = month_records
+                month_values = {g[1].day: val_getter(g) for g in month_records
+                                if val_getter(g) is not None}
+                year_values_dict[month] = month_values
+            all_month_values = list(year_values_dict.values())
+            for month, month_values in year_values_dict.items():
+                if all_month_values.count(month_values) > 1 and \
+                         (min_not_null is None or len(month_values) >= min_not_null):
+                    invalid_records += year_records_dict[month]
+                else:
+                    valid_records += year_records_dict[month]
+    for invalid_record in invalid_records:
+        invalid_record[val_index+1] = flag
 
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    if var in ['Tmax', 'Tmin']:
-        db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
-    else:
-        db_utils.set_prec_flags(conn, to_be_resetted, flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def check4(conn, stations_ids, var, min_not_null=None, flag=-17, use_records=None):

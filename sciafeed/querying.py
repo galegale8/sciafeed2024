@@ -147,7 +147,8 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     if where_clauses:
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     sql += ' ORDER BY cod_staz, data_i'
-    results = conn.execute(sql)
+    # each record must be a list to make flag changeable:
+    results = map(list, conn.execute(sql))
     return results
 
 

@@ -142,16 +142,29 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     """
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
-    msgs = []
 
-    report_fp.write('* initial resetting of flags' + '\n')
-    db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
+    # report_fp.write('* initial resetting of flags' + '\n')
+    # db_utils.reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1)
+
+    report_fp.write('* initial query to get temperature records...' + '\n')
+    sql_fields = "cod_staz, data_i, (prec24).val_tot, 1 as flag"
+    valid_prec_records = db_utils.select_prec_records(
+        conn, sql_fields=sql_fields, stations_ids=stations_ids,
+        flag_threshold=None, exclude_null=True)
+
+    sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md, (tmdgg).val_md"
+    fields = ['Tmax', 'Tmin']
+    valid_temp_records,   = db_utils.select_temp_records(
+        conn, fields, sql_fields=sql_fields, stations_ids=stations_ids,
+        flag_threshold=None, exclude_null=False)
 
     report_fp.write('* start check1 for PREC' + '\n')
-    msgs1 = checks.check1(conn, stations_ids, 'PREC', len_threshold=180, flag=-12)
+    valid_prec_records, invalid_prec_records, msgs1 = checks.check1(
+        valid_prec_records, len_threshold=180, flag=-12)
     for msg in msgs1:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+
 
     report_fp.write('* start check2 for PREC' + '\n')
     msgs2_1 = checks.check2(conn, stations_ids, 'PREC', len_threshold=20, flag=-13,

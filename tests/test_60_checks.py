@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from decimal import Decimal
 
 from sciafeed import checks
 
@@ -560,3 +561,47 @@ def test_data_weak_climatologic_check():
     err_msgs, out_data = checks.data_weak_climatologic_check(input_data, parameters_thresholds)
     assert not err_msgs
     assert out_data == input_data
+
+
+def test_check1():
+    records = [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('9.6'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 23, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 24, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 25, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 18, 0, 0), Decimal('1'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+    ]
+    valid_records, invalid_records, msgs = checks.check1(records, len_threshold=3, flag=-12)
+    assert valid_records == [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('9.6'), 1],
+        [2, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 18, 0, 0), Decimal('1'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1]
+    ]
+    assert invalid_records == [
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('0'), -12],
+        [1, datetime(2001, 5, 23, 0, 0), Decimal('0'), -12],
+        [1, datetime(2001, 5, 24, 0, 0), Decimal('0'), -12],
+        [1, datetime(2001, 5, 25, 0, 0), Decimal('0'), -12],
+        [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), -12]
+    ]
+    assert msgs == [
+        "'controllo valori ripetuti = 0' for variable PREC (len=3)",
+        'Checked 14 records',
+        'Found 5 records with flags reset to -12',
+        'Check completed'
+    ]

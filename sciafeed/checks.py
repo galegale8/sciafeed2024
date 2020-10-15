@@ -13,6 +13,7 @@ This module contains the functions and utilities to check climatologic data.
 """
 from datetime import datetime, timedelta
 import itertools
+import operator
 import statistics
 
 import numpy as np
@@ -119,56 +120,46 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     return err_msgs, data_modified
 
 
-def check1(conn, stations_ids=None, var='PREC', len_threshold=180, flag=-12, use_records=None):
-    """
-    Check "controllo valori ripetuti = 0" for the `var`.
+def group_by_station(record):
+    return record[0]
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+
+def check1(records, len_threshold=180, flag=-12):
+    """
+    Check "controllo valori ripetuti = 0" for PREC. Assumes all records are flagged valid
+    and are sorted by station, date.
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, val_tot, flag]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    results = use_records
-    if var != 'PREC':
-        raise NotImplementedError('check1 not implemented for variable %s' % var)
-    if not use_records:
-        sql_fields = "cod_staz, data_i, (prec24).val_tot"
-        results = querying.select_prec_records(conn, sql_fields, stations_ids, flag_threshold=1)
-    msg = "'controllo valori ripetuti = 0' for variable %s (len=%s)" \
-          % (var, len_threshold)
+    msg = "'controllo valori ripetuti = 0' for variable PREC (len=%s)" % len_threshold
     msgs.append(msg)
-    block_index = 0
-    block_records = []
-    to_be_resetted = []
-    i = 0
-    prev_staz = None
-    for i, result in enumerate(results):
-        current_staz = result.cod_staz
-        if current_staz == prev_staz and result.val_tot == 0:
-            block_index += 1
-            block_records.append(result)
-            if block_index == len_threshold:
-                to_be_resetted.extend(block_records)
-            elif block_index > len_threshold:
-                to_be_resetted.append(result)
-        else:
-            block_index = 0
-            block_records = []
-        prev_staz = current_staz
-    msg = "Checked %i records" % i + 1
+
+    valid_records = []
+    invalid_records = []
+
+    for station, station_records in itertools.groupby(records, group_by_station):
+        for value, value_records in itertools.groupby(station_records, operator.itemgetter(2)):
+            value_records = list(value_records)
+            if value == 0 and len(value_records) >= len_threshold:
+                invalid_records.extend(value_records)
+                for v in invalid_records:
+                    v[-1] = flag
+            else:
+                valid_records.extend(value_records)
+
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
-    msgs.append(msg)
-    db_utils.set_prec_flags(conn, to_be_resetted, flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def check2(conn, stations_ids, var, len_threshold=20, flag=-13, use_records=None,

@@ -377,104 +377,85 @@ def check5(records, len_threshold=10, flag=-19):
     return valid_records, invalid_records, msgs
 
 
-def check6(conn, stations_ids, variables, flag=-20, use_records=None):
+def check6(records, flag=-20):
     """
-    Check "controllo TMAX=TMIN=0" for the `variables`.
+    Check "controllo TMAX=TMIN=0"
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param variables: list of names of the variables to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    results = use_records
-    if not use_records:
-        if sorted(variables) != ['Tmax', 'Tmin']:
-            raise NotImplementedError("check6 not implemented for variables != ['Tmax', 'Tmin']")
-        sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
-        results = querying.select_temp_records(conn, ['tmngg', 'tmxgg'], sql_fields, stations_ids)
-    msg = "'controllo TMAX=TMIN=0' for variables %s " % repr(variables)
+    msg = "starting check (parameters: %s)" % flag
     msgs.append(msg)
 
-    to_be_resetted = []
-    i = 0
-    for i, station_record in enumerate(results):
-        if station_record[2] == station_record[3] == 0:
-            to_be_resetted.append(station_record)
+    valid_records = []
+    invalid_records = []
+    for record in records:
+        if record[2] == record[4] == 0:
+            new_record = record[:]
+            new_record[3] = new_record[5] = flag
+            invalid_records.append(new_record)
+        else:
+            valid_records.append(record)
 
-    msg = "Checked %i records" % i + 1
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
-    msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
-def check7(conn, stations_ids, var, min_threshold=None, max_threshold=None, flag=-21,
-           use_records=None):
+def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2):
     """
     Check "controllo world excedence" for the `variables`.
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param flag: the value of the flag to set for found records
     :param min_threshold: minimum value in the check
     :param max_threshold: maximum value in the check
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :return: (valid_records, invalid_records, msgs)
     """
     msgs = []
-    results = use_records
-    if not use_records:
-        if var == 'PREC':
-            sql_fields = "cod_staz, data_i, (prec24).val_tot"
-            results = querying.select_prec_records(
-                conn, sql_fields, stations_ids)
-        elif var == 'Tmax':
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg'], sql_fields, stations_ids)
-        elif var == 'Tmin':
-            sql_fields = "cod_staz, data_i, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmngg'], sql_fields, stations_ids)
-        else:
-            raise NotImplementedError('check7 not implemented for variable %s' % var)
-    msg = "'controllo world excedence' for variable %s " % var
+    msg = "starting check (parameters: %s, %s, %s, %s)" \
+          % (min_threshold, max_threshold, flag, val_index)
     msgs.append(msg)
 
-    to_be_resetted = []
-    i = 0
+    valid_records = []
+    invalid_records = []
+    val_getter = operator.itemgetter(val_index)
+
     exclude_condition = lambda r: False
     if min_threshold is not None:
-        exclude_condition = lambda r: r[2] <= min_threshold
+        exclude_condition = lambda r: val_getter(r) <= min_threshold
     elif max_threshold is not None:
-        exclude_condition = lambda r: r[2] >= max_threshold
+        exclude_condition = lambda r: val_getter(r) >= max_threshold
     if min_threshold is not None and max_threshold is not None:
-        exclude_condition = lambda r: r[2] <= min_threshold or r[2] >= max_threshold
-    for i, station_record in enumerate(results):
-        if exclude_condition(station_record):
-            to_be_resetted.append(station_record)
+        exclude_condition = lambda r: val_getter(r) <= min_threshold \
+                                      or val_getter(r) >= max_threshold
+    for record in records:
+        if val_getter(record) is None or not exclude_condition(record):
+            valid_records.append(record)
+        else:
+            new_record = record[:]
+            new_record[val_index+1] = flag
+            invalid_records.append(new_record)
 
-    msg = "Checked %i records" % i
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
-    msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def gap_top_checks(terms, threshold):

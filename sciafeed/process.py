@@ -246,31 +246,35 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
     invalid_temp_records.extend(current_invalid_temp)
 
-    # from now on: FIXME
-    report_fp.write('* start check6 for Tmax and Tmin' + '\n')
-    msgs6 = checks.check6(conn, stations_ids, ['Tmax', 'Tmin'], flag=-20)
-    for msg in msgs6:
+    report_fp.write("* controllo TMAX=TMIN=0")
+    valid_temp_records, current_invalid_temp, msgs = checks.check6(valid_temp_records, flag=-20)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write('* start check7 for PREC' + '\n')
-    msgs7_1 = checks.check7(conn, stations_ids, 'PREC', min=800, flag=-21)
-    for msg in msgs7_1:
+    valid_prec_records, current_invalid_prec, msgs = checks.check7(
+        valid_prec_records, min_threshold=800, flag=-21)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
     report_fp.write('* start check7 for Tmax' + '\n')
-    msgs7_2 = checks.check7(conn, stations_ids, 'Tmax', min=-30, max=50, flag=-21)
-    for msg in msgs7_2:
+    valid_temp_records, current_invalid_temp, msgs = checks.check7(
+        valid_temp_records, min_threshold=-30, max_threshold=50, flag=-21)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
     report_fp.write('* start check7 for Tmin' + '\n')
-    msgs7_3 = checks.check7(conn, stations_ids, 'Tmin', min=-40, max=40, flag=-21)
-    for msg in msgs7_3:
+    valid_temp_records, current_invalid_temp, msgs = checks.check7(
+        valid_temp_records, min_threshold=-40, max_threshold=40, flag=-21, val_index=4)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
+    # from now on: FIXME
     report_fp.write('* start check8 for PREC' + '\n')
     msgs8_1 = checks.check8(conn, stations_ids, 'PREC', threshold=300, split=False, flag_sup=-23)
     for msg in msgs8_1:

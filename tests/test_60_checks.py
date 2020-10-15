@@ -1044,3 +1044,101 @@ def test_check5():
      [2, datetime(2001, 5, 17, 0, 0), Decimal('27.5'), 1, Decimal('27.5'), 1, Decimal('21.6'), 1],
      [2, datetime(2001, 5, 18, 0, 0), Decimal('27.6'), 1, Decimal('27.3'), 1, Decimal('24.3'), 1],
     ]
+
+
+def test_check6():
+    records = [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('22'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('21'), 1, Decimal('21.1'), 1, Decimal('21'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, None, 1, Decimal('19'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.8'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.4'), 1],
+     [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('20.6'), 1],
+     [1, datetime(2001, 5, 27, 0, 0), Decimal('27.4'), 1, Decimal('27.4'), 1, Decimal('20.6'), 1],
+     [2, datetime(2001, 5, 17, 0, 0), Decimal('27.5'), 1, Decimal('27.5'), 1, Decimal('21.6'), 1],
+     [2, datetime(2001, 5, 18, 0, 0), Decimal('27.6'), 1, Decimal('27.3'), 1, Decimal('24.3'), 1],
+     [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('25.6'), 1],
+     [2, datetime(2001, 5, 21, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    valid_records, invalid_records, msgs = checks.check6(records, flag=-13)
+    assert invalid_records == [
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('20.6'), 1],
+     [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('25.6'), 1],
+     [2, datetime(2001, 5, 21, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('14.1'), 1],
+    ]
+    assert valid_records == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('22'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('21'), 1, Decimal('21.1'), 1, Decimal('21'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, None, 1, Decimal('19'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.8'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.4'), 1],
+     [1, datetime(2001, 5, 27, 0, 0), Decimal('27.4'), 1, Decimal('27.4'), 1, Decimal('20.6'), 1],
+     [2, datetime(2001, 5, 17, 0, 0), Decimal('27.5'), 1, Decimal('27.5'), 1, Decimal('21.6'), 1],
+     [2, datetime(2001, 5, 18, 0, 0), Decimal('27.6'), 1, Decimal('27.3'), 1, Decimal('24.3'), 1],
+    ]
+
+
+def test_check7():
+    records = [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    # only min
+    valid_records, invalid_records, msgs = checks.check7(
+        records, min_threshold=15, flag=-21, val_index=2)
+    assert valid_records == [
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
+    ]
+    assert invalid_records == [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), -21, Decimal('17.2'), 1, Decimal('17.9'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('18.9'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), -21, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    # only max
+    valid_records, invalid_records, msgs = checks.check7(
+        records, max_threshold=15, flag=-21, val_index=2)
+    assert valid_records == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    assert invalid_records == [
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('22'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, Decimal('16.3'), 1],
+    ]
+    # min and max
+    valid_records, invalid_records, msgs = checks.check7(
+        records, min_threshold=-10, max_threshold=10, flag=-21, val_index=2)
+    assert valid_records == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    assert invalid_records == [
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, Decimal('16.3'), 1],
+    ]
+    # change index
+    valid_records, invalid_records, msgs = checks.check7(
+        records, min_threshold=-10, max_threshold=10, flag=-21, val_index=4)
+    assert valid_records == [
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+    ]
+    assert invalid_records == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), -21, Decimal('17.9'), 1],
+    ]

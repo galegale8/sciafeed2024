@@ -124,44 +124,41 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
 def check1(records, len_threshold=180, flag=-12, val_index=2):
     """
     Check "controllo valori ripetuti = 0".
-    Assumes all records are flagged valid and are sorted by station, date.
+    Assumes all records are sorted by station, date.
     The sort order is maintained in the returned values, that are:
-    the list of valid records, the list of invalid records, the list of log messages.
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     msgs = []
     msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
     msgs.append(msg)
 
-    valid_records = []
-    invalid_records = []
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0]
+    num_invalid_records = 0
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         for value, value_records in itertools.groupby(station_records, val_getter):
             value_records = list(value_records)
             if value == 0 and len(value_records) >= len_threshold:
-                invalid_records.extend(value_records)
-                for v in invalid_records:
+                for v in value_records:
                     v[val_index+1] = flag
-            else:
-                valid_records.extend(value_records)
+                    num_invalid_records += 1
 
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
@@ -185,27 +182,31 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
-    records_to_use = filter(lambda x: val_getter(x) not in exclude_values, records)
-    invalid_records = []
+    new_records = []
+    num_valid_records = 0
+    num_invalid_records = 0
 
-    for station, station_records in itertools.groupby(records_to_use, group_by_station):
+    for station, station_records in itertools.groupby(records, group_by_station):
         for value, value_records in itertools.groupby(station_records, val_getter):
             value_records = list(value_records)
+            if value in exclude_values:
+                pass
             if len(value_records) >= len_threshold:
-                invalid_records.extend(value_records)
-                for v in invalid_records:
+                for v in value_records:
                     v[val_index+1] = flag
+                    new_records.append(v)
+                    num_invalid_records += 1
+            else:
+                new_records.extend(value_records)
+                num_valid_records += len(value_records)
 
-    valid_records = [r for r in records if r not in invalid_records]
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
     msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check3(records, min_not_null=None, flag=-15, val_index=2):

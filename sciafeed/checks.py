@@ -13,6 +13,7 @@ This module contains the functions and utilities to check climatologic data.
 """
 from datetime import datetime, timedelta
 import itertools
+import math
 import operator
 import statistics
 
@@ -267,7 +268,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     return valid_records, invalid_records, msgs
 
 
-def check4(records, min_not_null=None, flag=-15, val_index=2):
+def check4(records, min_not_null=None, flag=-17, val_index=2):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
 
@@ -460,127 +461,129 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
 
 def gap_top_checks(terms, threshold):
     """
-    sort terms of kind (value, record) by index 0, check if gap between 2 consecutive values are
-    over the threshold, and return the list of the corresponding record and all the following
+    sort a sequence of terms, checking the gaps between 2 consecutive values.
+    Return the first term after the gap where the gap is greater than the threshold.
+    If not found, return math.inf
 
     :param terms: list of tuple (value, record)
-    :param threshold: the threshold to check
-    :return: list of records
+    :param threshold: the threshold to overcome
+    :return: list of terms
     """
     terms = sorted(terms)
-    ret_values = []
-    found_break = False
     for index in range(len(terms) - 1):
-        if found_break:
-            ret_values.append(terms[index][1])
-        if abs(ret_values[index][0] - ret_values[index + 1][0]) > threshold:
-            ret_values.append(ret_values[index][1])
-            found_break = True
-    return ret_values
+        if terms[index + 1] - terms[index] > threshold:
+            return terms[index + 1]
+    return math.inf
 
 
 def gap_bottom_checks(terms, threshold):
     """
-    sort terms of kind (value, record) by index 0 reverse, check if gap between 2 consecutive
-    values are lower than the threshold, and return the list of the corresponding record and
-    all the following
+    sort a sequence of terms reverse, checking the gaps between 2 consecutive values.
+    Return the first term after the gap where the gap is lower than the threshold.
+    If not found, return -math.inf
 
     :param terms: list of tuple (value, record)
     :param threshold: the threshold to check
     :return: list of records
     """
     terms = sorted(terms, reverse=True)
-    ret_values = []
-    found_break = False
-    for index in range(len(terms) - 2):
-        if found_break:
-            ret_values.append(terms[index][1])
-        if abs(ret_values[index][0] - ret_values[index + 1][0]) > threshold:
-            ret_values.append(ret_values[index + 1][1])
-            found_break = True
-    return ret_values
+    for index in range(len(terms) - 1):
+        if terms[index] - terms[index + 1] > threshold:
+            return terms[index + 1]
+    return -math.inf
 
 
-def check8(conn, stations_ids, var, threshold=None, split=False, flag_sup=-23, flag_inf=-24,
-           use_records=None):
+def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val_index=2):
     """
-    Check "controllo gap checks" for the `var`.
+    Check "controllo gap checks" for the input records.
+    If split = False: case of "controllo gap checks  precipitazione" (see documentation)
+    If split = True: case of "controllo gap checks temperatura" (see documentation)
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param threshold: value of the threshold in the check
     :param split: if False (default), don't split by median, and consider only flag_sup
     :param flag_sup: value of the flag to be set for found records with split=False, or with
                      split=True for the top part of the split
     :param flag_inf: value of the flag to be set for found records with split=True for the
                      bottom part of the split
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :return: (valid_records, invalid_records, msgs)
     """
+    # TODO: ASK to accumulate distribution on all years of a month, or to do a month a time?
+    # TODO: ASK split by median: '>=' and '<=', or '>' and '<'?
     msgs = []
-    results = use_records
-    if not use_records:
-        if var == 'PREC':
-            sql_fields = "cod_staz, data_i, (prec24).val_tot"
-            results = querying.select_prec_records(
-                conn, sql_fields, stations_ids)
-        elif var == 'Tmax':
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg'], sql_fields, stations_ids)
-        elif var == 'Tmin':
-            sql_fields = "cod_staz, data_i, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmngg'], sql_fields, stations_ids)
-        else:
-            raise NotImplementedError('check8 not implemented for variable %s' % var)
-    msg = "'controllo gap checks  precipitazione' for variable %s " % var
+    msg = "starting check (parameters: %s, %s, %s, %s, %s)" \
+          % (threshold, split, flag_sup, flag_inf, val_index)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
+    valid_records = []
+    invalid_records_sup = []
+    invalid_records_inf = []
+    val_getter = operator.itemgetter(val_index)
+    group_by_station = operator.itemgetter(0)
 
-    def group_by_year(record):
-        return record.data_i.year
+    def group_by_year(r):
+        return r[1].year
 
-    def group_by_month(record):
-        return record.data_i.month
+    def group_by_month(r):
+        return r[1].month
 
-    to_be_resetted_flag_sup = []
-    to_be_resetted_flag_inf = []
-    if not split:
-        for station, station_records in itertools.groupby(results, group_by_station):
-            for year, year_records in itertools.groupby(station_records, group_by_year):
-                for month, month_records in itertools.groupby(year_records, group_by_month):
-                    month_values = [(g[2], g) for g in month_records if g[2] is not None]
-                    to_be_resetted_flag_sup += gap_top_checks(month_values, threshold)
-    else:
-        for station, station_records in itertools.groupby(results, group_by_station):
-            for year, year_records in itertools.groupby(station_records, group_by_year):
-                for month, month_records in itertools.groupby(year_records, group_by_month):
-                    month_values = [(g[2], g) for g in month_records if g[2] is not None].sort()
-                    median = statistics.median([g[0] for g in month_values])
-                    top_values = [g for g in month_values if g >= median]
-                    to_be_resetted_flag_sup += gap_top_checks(top_values, threshold)
-                    bottom_values = [g for g in month_values if g <= median]
-                    to_be_resetted_flag_inf += gap_bottom_checks(bottom_values, threshold)
+    for station, station_records in itertools.groupby(records, group_by_station):
+        station_records = list(station_records)
+        months_values_dict = dict()
+        # first loop to load months_values_dict
+        for year, year_records in itertools.groupby(station_records, group_by_year):
+            for month, month_records in itertools.groupby(year_records, group_by_month):
+                if month not in months_values_dict:
+                    months_values_dict[month] = []
+                month_values = [val_getter(g) for g in month_records if val_getter(g) is not None]
+                months_values_dict[month].extend(month_values)
 
-    for to_be_resetted, flag in [(to_be_resetted_flag_sup, flag_sup),
-                                 (to_be_resetted_flag_inf, flag_inf)]:
-        num_to_be_resetted = len(to_be_resetted)
-        if num_to_be_resetted:
-            msg = "Found %i records with flag %s to be reset" % (num_to_be_resetted, flag)
-            msgs.append(msg)
-            msg = "Resetting flags to value %s..." % flag
-            msgs.append(msg)
-            if var == 'PREC':
-                db_utils.set_prec_flags(conn, to_be_resetted, flag)
+        # second loop to compute sup and inf thresholds for each month
+        invalid_values_flag_sup = dict()
+        invalid_values_flag_inf = dict()
+        for month, month_values in months_values_dict.items():
+            if split:
+                median = statistics.median(month_values)
+                top_values = [g for g in month_values if g >= median]
+                bottom_values = [g for g in month_values if g <= median]
             else:
-                db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
+                top_values = month_values
+                bottom_values = []
+            invalid_values_flag_sup[month] = gap_top_checks(top_values, threshold)
+            invalid_values_flag_inf[month] = gap_bottom_checks(bottom_values, threshold)
+
+        # third loop to filter the invalid
+        for station_record in station_records:
+            threshold_sup = invalid_values_flag_sup.get(station_record[1].month, math.inf)
+            threshold_inf = invalid_values_flag_inf.get(station_record[1].month, -math.inf)
+            value = val_getter(station_record)
+            if value is None:
+                valid_records.append(station_record)
+            elif value >= threshold_sup:
+                invalid_record = station_record[:]
+                invalid_record[val_index+1] = flag_sup
+                invalid_records_sup.append(invalid_record)
+            elif value <= threshold_inf:
+                invalid_record = station_record[:]
+                invalid_record[val_index+1] = flag_inf
+                invalid_records_inf.append(invalid_record)
+            else:
+                valid_records.append(station_record)
+
+    invalid_records = invalid_records_sup + invalid_records_inf
+    invalid_records.sort(key=lambda x: (x[0], x[1]))
+    num_valid_records = len(valid_records)
+    num_invalid_records = len(invalid_records)
+    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msgs.append(msg)
+    msg = "Found %s records with flags reset to %s" % (len(invalid_records_sup), flag_sup)
+    msgs.append(msg)
+    msg = "Found %s records with flags reset to %s" % (len(invalid_records_inf), flag_inf)
+    msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return valid_records, invalid_records, msgs
 
 
 def check9(conn, stations_ids, var, num_dev_std=6, window_days=15, min_num=100, flag=-25,

@@ -334,11 +334,14 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
 def check5(records, len_threshold=10, flag=-19):
     """
     Check "controllo TMAX=TMIN".
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param len_threshold: lenght of the consecutive zeros to find
+    :param len_threshold: minimum lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     msgs = []
     msg = "starting check (parameters: %s, %s)" % (len_threshold, flag)
@@ -346,32 +349,28 @@ def check5(records, len_threshold=10, flag=-19):
 
     group_by_station = operator.itemgetter(0)
     val_getter = lambda x: x[2] == x[4]
-    valid_records = []
-    invalid_records = []
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[3] > 0 and r[5] > 0 and
+                      r[2] is not None and r[4 is not None]]
+    num_invalid_records = 0
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         for are_the_same, value_records in itertools.groupby(station_records, val_getter):
             if are_the_same:
                 value_records = list(value_records)
                 if len(value_records) >= len_threshold:
-                    invalid_records.extend(value_records)
-                    for v in invalid_records:
+                    for v in value_records:
                         v[3] = flag
                         v[5] = flag
-                else:
-                    valid_records.extend(value_records)
-            else:
-                valid_records.extend(value_records)
+                        num_invalid_records += 1
 
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check6(records, flag=-20):

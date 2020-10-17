@@ -1213,19 +1213,23 @@ def test_gap_top_checks():
     assert threshold == 130
     threshold = checks.gap_top_checks(terms, 150)
     assert threshold == math.inf
+    assert checks.gap_top_checks([], 150) == math.inf
 
 
 def test_gap_bottom_checks():
     terms = [3, 4, -6, 1, 0, -3, 11, 0, 1, 12, 130, 131]
     threshold = checks.gap_bottom_checks(terms, 4)
     assert threshold == 12
-    threshold = checks.gap_bottom_checks(terms, 120)
+    threshold = checks.gap_bottom_checks(terms, 110)
     assert threshold == 12
-    threshold = checks.gap_bottom_checks(terms, 150)
+    threshold = checks.gap_bottom_checks(terms, 120)
     assert threshold == -math.inf
+    assert checks.gap_bottom_checks([], 120) == -math.inf
 
 
 def test_check8():
+    flag_sup = -23
+    flag_inf = -24
     records = [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
@@ -1265,16 +1269,25 @@ def test_check8():
         [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
         [2, datetime(2001, 11, 21, 0, 0), Decimal('3'), 1],
         [2, datetime(2001, 11, 22, 0, 0), Decimal('4'), 1],
-        [2, datetime(2002, 11, 23, 0, 0), Decimal('33'), 1],
-        [2, datetime(2002, 11, 25, 0, 0), Decimal('34'), 1],
         [2, datetime(2002, 10, 21, 0, 0), Decimal('11'), 1],
         [2, datetime(2002, 10, 22, 0, 0), Decimal('-1'), 1],
         [2, datetime(2002, 11, 21, 0, 0), Decimal('33'), 1],
         [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), 1],
+        [2, datetime(2002, 11, 23, 0, 0), Decimal('33'), 1],
+        [2, datetime(2002, 11, 25, 0, 0), Decimal('34'), 1],
     ]
-    valid_records, invalid_records, msgs = checks.check8(
-        records, threshold=10, split=False, flag_sup=-23, flag_inf=-24, val_index=2)
-    assert invalid_records == [
+    original_records = [r[:] for r in records]
+
+    # split = False (case precipitation)
+    new_records, msgs = checks.check8(
+        records, threshold=10, split=False, flag_sup=flag_sup, flag_inf=flag_inf, val_index=2)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, ))
+    # testing effective found
+    found_sup = [r for r in new_records if r[3] == flag_sup]
+    assert found_sup == [
         [1, datetime(2001, 8, 17, 0, 0), Decimal('22'), -23],
         [1, datetime(2001, 8, 18, 0, 0), Decimal('23'), -23],
         [1, datetime(2001, 8, 19, 0, 0), Decimal('24'), -23],
@@ -1285,103 +1298,39 @@ def test_check8():
         [2, datetime(2002, 11, 23, 0, 0), Decimal('33'), -23],
         [2, datetime(2002, 11, 25, 0, 0), Decimal('34'), -23],
     ]
-    assert valid_records == [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 5, 21, 0, 0), None, 1],
-        [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
-        [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
-        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 7, 16, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 10, 22, 0, 0), Decimal('13'), 1],
-        [1, datetime(2001, 11, 21, 0, 0), Decimal('1'), 1],
-        [1, datetime(2001, 11, 22, 0, 0), Decimal('-3'), 1],
-        [1, datetime(2002, 1, 19, 0, 0), Decimal('-21'), 1],
-        [1, datetime(2002, 5, 17, 0, 0), Decimal('4.4'), 1],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('8'), 1],
-        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2004, 8, 17, 0, 0), Decimal('1'), 1],
-        [1, datetime(2004, 8, 18, 0, 0), Decimal('2'), 1],
-        [1, datetime(2004, 8, 19, 0, 0), Decimal('3'), 1],
-        [1, datetime(2004, 8, 20, 0, 0), Decimal('4'), 1],
-        [1, datetime(2005, 8, 17, 0, 0), Decimal('1'), 1],
-        [1, datetime(2005, 8, 18, 0, 0), Decimal('2'), 1],
-        [1, datetime(2005, 8, 19, 0, 0), Decimal('3'), 1],
-        [1, datetime(2005, 8, 20, 0, 0), Decimal('4'), 1],
-        [2, datetime(2001, 5, 17, 0, 0), Decimal('22'), 1],
-        [2, datetime(2001, 5, 18, 0, 0), Decimal('24'), 1],
-        [2, datetime(2001, 5, 19, 0, 0), Decimal('20'), 1],
-        [2, datetime(2001, 5, 21, 0, 0), None, 1],
-        [2, datetime(2001, 10, 21, 0, 0), Decimal('9'), 1],
-        [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 11, 21, 0, 0), Decimal('3'), 1],
-        [2, datetime(2001, 11, 22, 0, 0), Decimal('4'), 1],
-        [2, datetime(2002, 10, 21, 0, 0), Decimal('11'), 1],
-        [2, datetime(2002, 10, 22, 0, 0), Decimal('-1'), 1],
-        [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), 1],
-    ]
+    found_inf = [r for r in new_records if r[3] == flag_inf]
+    assert found_inf == []
     assert msgs == [
         'starting check (parameters: 10, False, -23, -24, 2)',
-        'Checked 44 records',
+        'Checked 42 records',
         'Found 9 records with flags reset to -23',
         'Found 0 records with flags reset to -24',
         'Check completed'
     ]
-    valid_records, invalid_records, msgs = checks.check8(
+
+    # test split = True (temperature)
+    new_records, msgs = checks.check8(
         records, threshold=10, split=True, flag_sup=-23, flag_inf=-24, val_index=2)
-    assert invalid_records == [
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, ))
+    # testing effective found
+    found_sup = [r for r in new_records if r[3] == flag_sup]
+    assert found_sup == [
         [1, datetime(2001, 8, 17, 0, 0), Decimal('22'), -23],
         [1, datetime(2001, 8, 18, 0, 0), Decimal('23'), -23],
         [1, datetime(2001, 8, 19, 0, 0), Decimal('24'), -23],
         [1, datetime(2001, 8, 20, 0, 0), Decimal('25'), -23],
-        [1, datetime(2002, 1, 19, 0, 0), Decimal('-21'), -24]
+
     ]
-    assert valid_records == [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 5, 21, 0, 0), None, 1],
-        [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
-        [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
-        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 7, 16, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 10, 22, 0, 0), Decimal('13'), 1],
-        [1, datetime(2001, 11, 21, 0, 0), Decimal('1'), 1],
-        [1, datetime(2001, 11, 22, 0, 0), Decimal('-3'), 1],
-        [1, datetime(2002, 1, 17, 0, 0), Decimal('1'), 1],
-        [1, datetime(2002, 1, 18, 0, 0), Decimal('-2'), 1],
-        [1, datetime(2002, 5, 17, 0, 0), Decimal('4.4'), 1],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('8'), 1],
-        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2004, 8, 17, 0, 0), Decimal('1'), 1],
-        [1, datetime(2004, 8, 18, 0, 0), Decimal('2'), 1],
-        [1, datetime(2004, 8, 19, 0, 0), Decimal('3'), 1],
-        [1, datetime(2004, 8, 20, 0, 0), Decimal('4'), 1],
-        [1, datetime(2005, 8, 17, 0, 0), Decimal('1'), 1],
-        [1, datetime(2005, 8, 18, 0, 0), Decimal('2'), 1],
-        [1, datetime(2005, 8, 19, 0, 0), Decimal('3'), 1],
-        [1, datetime(2005, 8, 20, 0, 0), Decimal('4'), 1],
-        [2, datetime(2001, 5, 17, 0, 0), Decimal('22'), 1],
-        [2, datetime(2001, 5, 18, 0, 0), Decimal('24'), 1],
-        [2, datetime(2001, 5, 19, 0, 0), Decimal('20'), 1],
-        [2, datetime(2001, 5, 21, 0, 0), None, 1],
-        [2, datetime(2001, 10, 21, 0, 0), Decimal('9'), 1],
-        [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 11, 21, 0, 0), Decimal('3'), 1],
-        [2, datetime(2001, 11, 22, 0, 0), Decimal('4'), 1],
-        [2, datetime(2002, 11, 23, 0, 0), Decimal('33'), 1],
-        [2, datetime(2002, 11, 25, 0, 0), Decimal('34'), 1],
-        [2, datetime(2002, 10, 21, 0, 0), Decimal('11'), 1],
-        [2, datetime(2002, 10, 22, 0, 0), Decimal('-1'), 1],
-        [2, datetime(2002, 11, 21, 0, 0), Decimal('33'), 1],
-        [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), 1],
+    found_inf = [r for r in new_records if r[3] == flag_inf]
+    assert found_inf == [
+        [1, datetime(2002, 1, 19, 0, 0), Decimal('-21'), -24]
     ]
     assert msgs == [
         'starting check (parameters: 10, True, -23, -24, 2)',
-        'Checked 44 records',
+        'Checked 42 records',
         'Found 4 records with flags reset to -23',
         'Found 1 records with flags reset to -24',
         'Check completed',

@@ -493,6 +493,9 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     Check "controllo gap checks" for the input records.
     If split = False: case of "controllo gap checks  precipitazione" (see documentation)
     If split = True: case of "controllo gap checks temperatura" (see documentation)
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param threshold: value of the threshold in the check
@@ -502,7 +505,7 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     :param flag_inf: value of the flag to be set for found records with split=True for the
                      bottom part of the split
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     # TODO: ASK to accumulate distribution on all years of a month, or to do a month a time?
     # TODO: ASK split by median: '>=' and '<=', or '>' and '<'?
@@ -511,9 +514,10 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
           % (threshold, split, flag_sup, flag_inf, val_index)
     msgs.append(msg)
 
-    valid_records = []
-    invalid_records_sup = []
-    invalid_records_inf = []
+    num_invalid_records_sup = 0
+    num_invalid_records_inf = 0
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
     val_getter = operator.itemgetter(val_index)
     group_by_station = operator.itemgetter(0)
 
@@ -523,7 +527,7 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     def group_by_month(r):
         return r[1].month
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         station_records = list(station_records)
         months_values_dict = dict()
         # first loop to load months_values_dict
@@ -531,7 +535,7 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
             for month, month_records in itertools.groupby(year_records, group_by_month):
                 if month not in months_values_dict:
                     months_values_dict[month] = []
-                month_values = [val_getter(g) for g in month_records if val_getter(g) is not None]
+                month_values = [val_getter(g) for g in month_records]
                 months_values_dict[month].extend(month_values)
 
         # second loop to compute sup and inf thresholds for each month
@@ -553,32 +557,22 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
             threshold_sup = invalid_values_flag_sup.get(station_record[1].month, math.inf)
             threshold_inf = invalid_values_flag_inf.get(station_record[1].month, -math.inf)
             value = val_getter(station_record)
-            if value is None:
-                valid_records.append(station_record)
-            elif value >= threshold_sup:
-                invalid_record = station_record[:]
-                invalid_record[val_index+1] = flag_sup
-                invalid_records_sup.append(invalid_record)
+            if value >= threshold_sup:
+                station_record[val_index+1] = flag_sup
+                num_invalid_records_sup += 1
             elif value <= threshold_inf:
-                invalid_record = station_record[:]
-                invalid_record[val_index+1] = flag_inf
-                invalid_records_inf.append(invalid_record)
-            else:
-                valid_records.append(station_record)
+                station_record[val_index+1] = flag_inf
+                num_invalid_records_inf += 1
 
-    invalid_records = invalid_records_sup + invalid_records_inf
-    invalid_records.sort(key=lambda x: (x[0], x[1]))
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (len(invalid_records_sup), flag_sup)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records_sup, flag_sup)
     msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (len(invalid_records_inf), flag_inf)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records_inf, flag_inf)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check9(conn, stations_ids, var, num_dev_std=6, window_days=15, min_num=100, flag=-25,

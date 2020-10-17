@@ -182,25 +182,20 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
-    new_records = []
-    num_valid_records = 0
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records
+                      if r[val_index+1] > 0 and r[val_index] not in exclude_values]
     num_invalid_records = 0
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         for value, value_records in itertools.groupby(station_records, val_getter):
             value_records = list(value_records)
-            if value in exclude_values:
-                pass
-            if len(value_records) >= len_threshold:
+            if value not in exclude_values and len(value_records) >= len_threshold:
                 for v in value_records:
                     v[val_index+1] = flag
-                    new_records.append(v)
                     num_invalid_records += 1
-            else:
-                new_records.extend(value_records)
-                num_valid_records += len(value_records)
 
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)

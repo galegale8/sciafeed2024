@@ -408,7 +408,10 @@ def check6(records, flag=-20):
 
 def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2):
     """
-    Check "controllo world excedence" for the `variables`.
+    Check "controllo world excedence" for the input records.
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
@@ -416,15 +419,16 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     :param max_threshold: maximum value in the check
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     msgs = []
     msg = "starting check (parameters: %s, %s, %s, %s)" \
           % (min_threshold, max_threshold, flag, val_index)
     msgs.append(msg)
 
-    valid_records = []
-    invalid_records = []
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
+    num_invalid_records = 0
     val_getter = operator.itemgetter(val_index)
 
     exclude_condition = lambda r: False
@@ -435,23 +439,19 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     if min_threshold is not None and max_threshold is not None:
         exclude_condition = lambda r: val_getter(r) <= min_threshold \
                                       or val_getter(r) >= max_threshold
-    for record in records:
-        if val_getter(record) is None or not exclude_condition(record):
-            valid_records.append(record)
-        else:
-            new_record = record[:]
-            new_record[val_index+1] = flag
-            invalid_records.append(new_record)
 
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    for record in records_to_use:
+        if exclude_condition(record):
+            record[val_index+1] = flag
+            num_invalid_records += 1
+
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def gap_top_checks(terms, threshold):

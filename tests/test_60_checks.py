@@ -1132,59 +1132,69 @@ def test_check6():
 
 
 def test_check7():
+    flag = -21
     records = [
      [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
      [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
      [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
      [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
      [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), -1, Decimal('0'), 1, Decimal('14.1'), 1],
     ]
+    original_records = [r[:] for r in records]
+
     # only min
-    valid_records, invalid_records, msgs = checks.check7(
-        records, min_threshold=15, flag=-21, val_index=2)
-    assert valid_records == [
-     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
-     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
-    ]
-    assert invalid_records == [
+    new_records, msgs = checks.check7(records, min_threshold=15, flag=flag, val_index=2)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, ))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), -21, Decimal('17.2'), 1, Decimal('17.9'), 1],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('18.9'), 1],
         [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), -21, Decimal('0'), 1, Decimal('14.1'), 1],
     ]
+
     # only max
-    valid_records, invalid_records, msgs = checks.check7(
-        records, max_threshold=15, flag=-21, val_index=2)
-    assert valid_records == [
-     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
-     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
-     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
-    ]
-    assert invalid_records == [
+    new_records, msgs = checks.check7(records, max_threshold=15, flag=-21, val_index=2)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, ))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
         [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('22'), 1],
         [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, Decimal('16.3'), 1],
     ]
+
     # min and max
-    valid_records, invalid_records, msgs = checks.check7(
+    new_records, msgs = checks.check7(
         records, min_threshold=-10, max_threshold=10, flag=-21, val_index=2)
-    assert valid_records == [
-     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
-     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
-    ]
-    assert invalid_records == [
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, ))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
      [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('18.9'), 1],
      [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('22'), 1],
      [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, Decimal('16.3'), 1],
     ]
+
     # change index
-    valid_records, invalid_records, msgs = checks.check7(
+    new_records, msgs = checks.check7(
         records, min_threshold=-10, max_threshold=10, flag=-21, val_index=4)
-    assert valid_records == [
-     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
-     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
-     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('0'), 1, Decimal('16.3'), 1],
-     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
-    ]
-    assert invalid_records == [
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(5, ))
+    # testing effective found
+    found = [r for r in new_records if r[5] == flag]
+    assert found == [
      [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), -21, Decimal('17.9'), 1],
     ]
     assert msgs == [

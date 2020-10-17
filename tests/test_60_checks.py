@@ -914,6 +914,7 @@ def test_check3():
 
 
 def test_check4():
+    flag = -17
     records = [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), 1],
@@ -958,105 +959,79 @@ def test_check4():
         [2, datetime(2002, 11, 21, 0, 0), Decimal('9.6'), 1],
         [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), 1],
     ]
-    valid_records, invalid_records, msgs = checks.check4(records, flag=-15, min_not_null=3)
-    assert invalid_records == [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -15],
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'),  -15],
-        [1, datetime(2001, 5, 21, 0, 0), None,  -15],
-        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'),  -15],
-        [1, datetime(2004, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2004, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2004, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2004, 8, 20, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2005, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2005, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2005, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2005, 8, 20, 0, 0), Decimal('0.4'),  -15],
+    original_records = [r[:] for r in records]
+
+    new_records, msgs = checks.check4(records, flag=flag, min_not_null=3)
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records)
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), -17],
+        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), -17],
+        [1, datetime(2004, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2004, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2004, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2004, 8, 20, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2005, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2005, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2005, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2005, 8, 20, 0, 0), Decimal('0.4'), -17],
     ]
-    assert valid_records == [
-        [1, datetime(2001, 6, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 6, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 11, 22, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 1, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 1, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 1, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 7, 16, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [2, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), 1],
-        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 5, 21, 0, 0), None, 1],
-        [2, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), 1],
-        [2, datetime(2001, 11, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2002, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [2, datetime(2002, 10, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2002, 11, 21, 0, 0), Decimal('9.6'), 1],
-        [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), 1],
-    ]
+    num_found = len(found)
     assert msgs == [
-        'starting check (parameters: 3, -15, 2)',
-        'Checked 42 records',
-        'Found 19 records with flags reset to -15',
+        'starting check (parameters: 3, -17, 2)',
+        'Checked 40 records',
+        'Found %s records with flags reset to %s' % (num_found, flag),
         'Check completed'
     ]
-    valid_records, invalid_records, msgs = checks.check4(records, flag=-15)
-    assert invalid_records == [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -15],
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'),  -15],
-        [1, datetime(2001, 5, 21, 0, 0), None,  -15],
-        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'),  -15],
-        [1, datetime(2004, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2004, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2004, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2004, 8, 20, 0, 0), Decimal('0.4'),  -15],
-        [1, datetime(2005, 8, 17, 0, 0), Decimal('0.1'),  -15],
-        [1, datetime(2005, 8, 18, 0, 0), Decimal('0.2'),  -15],
-        [1, datetime(2005, 8, 19, 0, 0), Decimal('0.3'),  -15],
-        [1, datetime(2005, 8, 20, 0, 0), Decimal('0.4'),  -15],
-        [2, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), -15],
-        [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), -15],
-        [2, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), -15],
-        [2, datetime(2001, 11, 22, 0, 0), Decimal('0'), -15],
-        [2, datetime(2002, 10, 21, 0, 0), Decimal('9.6'), -15],
-        [2, datetime(2002, 10, 22, 0, 0), Decimal('0'), -15],
-        [2, datetime(2002, 11, 21, 0, 0), Decimal('9.6'), -15],
-        [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), -15],
-    ]
-    assert valid_records == [
-        [1, datetime(2001, 6, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 6, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 11, 22, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 1, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 1, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 1, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2002, 7, 16, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [2, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), 1],
-        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 5, 21, 0, 0), None, 1],
+
+    # with min_not_null=None
+    new_records, msgs = checks.check4(records, flag=flag)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records)
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), -17],
+        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), -17],
+        [1, datetime(2004, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2004, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2004, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2004, 8, 20, 0, 0), Decimal('0.4'), -17],
+        [1, datetime(2005, 8, 17, 0, 0), Decimal('0.1'), -17],
+        [1, datetime(2005, 8, 18, 0, 0), Decimal('0.2'), -17],
+        [1, datetime(2005, 8, 19, 0, 0), Decimal('0.3'), -17],
+        [1, datetime(2005, 8, 20, 0, 0), Decimal('0.4'), -17],
+        [2, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), -17],
+        [2, datetime(2001, 10, 22, 0, 0), Decimal('0'), -17],
+        [2, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), -17],
+        [2, datetime(2001, 11, 22, 0, 0), Decimal('0'), -17],
+        [2, datetime(2002, 10, 21, 0, 0), Decimal('9.6'), -17],
+        [2, datetime(2002, 10, 22, 0, 0), Decimal('0'), -17],
+        [2, datetime(2002, 11, 21, 0, 0), Decimal('9.6'), -17],
+        [2, datetime(2002, 11, 22, 0, 0), Decimal('0'), -17],
     ]
 
 

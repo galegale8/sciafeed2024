@@ -226,7 +226,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     msgs.append(msg)
 
     new_records = [r[:] for r in records]
-    records_to_use = [r for r in new_records if r[val_index+1] > 0 if r[val_index] is not None]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
     invalid_records = []
 
     group_by_station = operator.itemgetter(0)
@@ -269,12 +269,15 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
 def check4(records, min_not_null=None, flag=-17, val_index=2):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
@@ -283,11 +286,11 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
     msg = "starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index)
     msgs.append(msg)
 
-    valid_records = []
-    invalid_records = []
-
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
+    invalid_records = []
 
     def group_by_year(record):
         return record[1].year
@@ -295,7 +298,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
     def group_by_month(record):
         return record[1].month
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         months_values_dict = dict()
         months_records_dict = dict()
         for year, year_records in itertools.groupby(station_records, group_by_year):
@@ -304,7 +307,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
                 if month not in months_values_dict:
                     months_values_dict[month] = dict()
                     months_records_dict[month] = dict()
-                month_values = {g[1].day: val_getter(g) for g in month_records if g[2] is not None}
+                month_values = {g[1].day: val_getter(g) for g in month_records}
                 months_values_dict[month][year] = month_values
                 months_records_dict[month][year] = month_records
 
@@ -315,22 +318,17 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
                 if months_values_for_years.count(months_values) > 1 and \
                         (min_not_null is None or len(months_values) >= min_not_null):
                     invalid_records += months_records_dict[month][year]
-                else:
-                    valid_records += months_records_dict[month][year]
 
-    valid_records.sort(key=lambda x: (x[0], x[1]))
-    invalid_records.sort(key=lambda x: (x[0], x[1]))
     for invalid_record in invalid_records:
         invalid_record[val_index+1] = flag
-    num_valid_records = len(valid_records)
     num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check5(records, len_threshold=10, flag=-19):

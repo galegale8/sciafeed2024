@@ -763,6 +763,7 @@ def test_check2():
 
 
 def test_check3():
+    flag = -15
     records = [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), 1],
@@ -810,33 +811,21 @@ def test_check3():
         [2, datetime(2001, 9, 19, 0, 0), Decimal('0.3'), 1],
         [2, datetime(2001, 9, 20, 0, 0), Decimal('0.4'), 1],
     ]
-    valid_records, invalid_records, msgs = checks.check3(records, flag=-15, min_not_null=3)
-    assert valid_records == [
-        [1, datetime(2001, 7, 16, 0, 0), Decimal('0.3'), 1],
-        [1, datetime(2001, 7, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 7, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 7, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 7, 20, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'), 1],
-        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'), 1],
-        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'), 1],
-        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 10, 22, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), 1],
-        [1, datetime(2001, 11, 22, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 7, 16, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 7, 17, 0, 0), Decimal('0.1'), 1],
-        [2, datetime(2001, 7, 18, 0, 0), Decimal('0.2'), 1],
-        [2, datetime(2001, 7, 19, 0, 0), Decimal('0.3'), 1],
-        [2, datetime(2001, 7, 20, 0, 0), Decimal('0.4'), 1],
-    ]
-    assert invalid_records == [
+    original_records = [r[:] for r in records]
+
+    new_records, msgs = checks.check3(records, flag=flag, min_not_null=3)
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records)
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), -15],
         [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), -15],
-        [1, datetime(2001, 5, 21, 0, 0), None, -15],
         [1, datetime(2001, 6, 17, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 6, 18, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), -15],
@@ -860,36 +849,29 @@ def test_check3():
         [2, datetime(2001, 9, 19, 0, 0), Decimal('0.3'), -15],
         [2, datetime(2001, 9, 20, 0, 0), Decimal('0.4'), -15],
     ]
+    # testing messages
+    num_found = len(found)
     assert msgs == [
         'starting check (parameters: 3, -15, 2)',
-        'Checked 45 records',
-        'Found 27 records with flags reset to -15',
+        'Checked 44 records',
+        'Found %s records with flags reset to %s' % (num_found, flag),
         'Check completed'
     ]
+
     # with min_not_null=None
-    valid_records, invalid_records, msgs = checks.check3(records, flag=-15)
-    assert valid_records == [
-        [1, datetime(2001, 7, 16, 0, 0), Decimal('0.3'), 1],
-        [1, datetime(2001, 7, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 7, 18, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 7, 19, 0, 0), Decimal('0'), 1],
-        [1, datetime(2001, 7, 20, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2001, 8, 17, 0, 0), Decimal('0.1'), 1],
-        [1, datetime(2001, 8, 18, 0, 0), Decimal('0.2'), 1],
-        [1, datetime(2001, 8, 19, 0, 0), Decimal('0.3'), 1],
-        [1, datetime(2001, 8, 20, 0, 0), Decimal('0.4'), 1],
-        [2, datetime(2001, 7, 16, 0, 0), Decimal('0'), 1],
-        [2, datetime(2001, 7, 17, 0, 0), Decimal('0.1'), 1],
-        [2, datetime(2001, 7, 18, 0, 0), Decimal('0.2'), 1],
-        [2, datetime(2001, 7, 19, 0, 0), Decimal('0.3'), 1],
-        [2, datetime(2001, 7, 20, 0, 0), Decimal('0.4'), 1],
-    ]
-    assert invalid_records == [
+    new_records, msgs = checks.check3(records, flag=flag)
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records)
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
         [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 5, 18, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), -15],
         [1, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), -15],
-        [1, datetime(2001, 5, 21, 0, 0), None, -15],
         [1, datetime(2001, 6, 17, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 6, 18, 0, 0), Decimal('0.4'), -15],
         [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), -15],
@@ -917,13 +899,18 @@ def test_check3():
         [2, datetime(2001, 9, 19, 0, 0), Decimal('0.3'), -15],
         [2, datetime(2001, 9, 20, 0, 0), Decimal('0.4'), -15],
     ]
+
     # with another index:
-    new_records = [r + r[2:] for r in records]
-    new_valid_records, new_invalid_records, msgs = checks.check3(
-        new_records, flag=-15, val_index=4)
-    assert new_valid_records == [r + valid_records[i][2:] for i, r in enumerate(valid_records)]
-    assert new_invalid_records == \
-           [r + invalid_records[i][2:] for i, r in enumerate(invalid_records)]
+    records2 = [r + r[2:] for r in records]
+    original_records2 = [r[:] for r in records2]
+    new_records2, msgs = checks.check3(records2, flag=-15, val_index=4)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records2, new_records2, indexes_to_exclude=(5,))
+    # testing effective found
+    found2 = [r for r in new_records2 if r[5] == flag]
+    assert found2 == [r[:3] + [1] + r[2:] for r in found]
 
 
 def test_check4():

@@ -142,6 +142,7 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
     records_to_use = [r for r in new_records if r[val_index+1] > 0]
     num_invalid_records = 0
     group_by_station = operator.itemgetter(0)
+
     val_getter = operator.itemgetter(val_index)
 
     for station, station_records in itertools.groupby(records_to_use, group_by_station):
@@ -164,16 +165,16 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
 def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     """
     Check "controllo valori ripetuti" for the input records.
-    Assumes all records are flagged valid and are sorted by station, date.
+    Assumes all records are sorted by station, date.
     The sort order is maintained in the returned values, that are:
-    the list of valid records, the list of invalid records, the list of log messages.
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param exclude_values: iterable of values to be excluded from the check for the input records
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     msgs = []
     msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
@@ -207,12 +208,15 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
 def check3(records, min_not_null=None, flag=-15, val_index=2):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
@@ -221,7 +225,8 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     msg = "starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index)
     msgs.append(msg)
 
-    valid_records = []
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 if r[val_index] is not None]
     invalid_records = []
 
     group_by_station = operator.itemgetter(0)
@@ -233,35 +238,32 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     def group_by_month(record):
         return record[1].month
 
-    for station, station_records in itertools.groupby(records, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         for year, year_records in itertools.groupby(station_records, group_by_year):
             year_values_dict = dict()
             year_records_dict = dict()
             for month, month_records in itertools.groupby(year_records, group_by_month):
                 month_records = list(month_records)
                 year_records_dict[month] = month_records
-                month_values = {g[1].day: val_getter(g) for g in month_records
-                                if val_getter(g) is not None}
+                month_values = {g[1].day: val_getter(g) for g in month_records}
                 year_values_dict[month] = month_values
             all_month_values = list(year_values_dict.values())
             for month, month_values in year_values_dict.items():
                 if all_month_values.count(month_values) > 1 and \
                          (min_not_null is None or len(month_values) >= min_not_null):
                     invalid_records += year_records_dict[month]
-                else:
-                    valid_records += year_records_dict[month]
+
     for invalid_record in invalid_records:
         invalid_record[val_index+1] = flag
 
-    num_valid_records = len(valid_records)
     num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check4(records, min_not_null=None, flag=-17, val_index=2):

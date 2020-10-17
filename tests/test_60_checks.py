@@ -657,7 +657,7 @@ def test_check1():
     num_found = len(found)
     assert msgs == [
         'starting check (parameters: 3, -12, 2)',
-        'Checked %s records' % (len(records) -1),
+        'Checked %s records' % (len(records) - 1),
         'Found %s records with flags reset to %s' % (num_found, flag),
         'Check completed'
     ]
@@ -1088,6 +1088,7 @@ def test_check5():
 
 
 def test_check6():
+    flag = -20
     records = [
      [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
      [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
@@ -1098,32 +1099,35 @@ def test_check6():
      [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, None, 1, Decimal('19'), 1],
      [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.8'), 1],
      [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.4'), 1],
-     [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('20.6'), 1],
+     [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), 1, Decimal('0'), -1, Decimal('20.6'), 1],
      [1, datetime(2001, 5, 27, 0, 0), Decimal('27.4'), 1, Decimal('27.4'), 1, Decimal('20.6'), 1],
      [2, datetime(2001, 5, 17, 0, 0), Decimal('27.5'), 1, Decimal('27.5'), 1, Decimal('21.6'), 1],
      [2, datetime(2001, 5, 18, 0, 0), Decimal('27.6'), 1, Decimal('27.3'), 1, Decimal('24.3'), 1],
      [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('25.6'), 1],
      [2, datetime(2001, 5, 21, 0, 0), Decimal('0'), 1, Decimal('0'), 1, Decimal('14.1'), 1],
     ]
-    valid_records, invalid_records, msgs = checks.check6(records, flag=-13)
-    assert invalid_records == [
-     [1, datetime(2001, 5, 20, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('16.3'), 1],
-     [1, datetime(2001, 5, 21, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('14.1'), 1],
-     [1, datetime(2001, 5, 26, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('20.6'), 1],
-     [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('25.6'), 1],
-     [2, datetime(2001, 5, 21, 0, 0), Decimal('0'), -13, Decimal('0'), -13, Decimal('14.1'), 1],
+    original_records = [r[:] for r in records]
+
+    new_records, msgs = checks.check6(records, flag=flag)
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, 5))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+        [1, datetime(2001, 5, 20, 0, 0), Decimal('0'), -20, Decimal('0'), -20, Decimal('16.3'), 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('0'), -20, Decimal('0'), -20, Decimal('14.1'), 1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), -20, Decimal('0'), -20, Decimal('25.6'), 1],
+        [2, datetime(2001, 5, 21, 0, 0), Decimal('0'), -20, Decimal('0'), -20, Decimal('14.1'), 1],
     ]
-    assert valid_records == [
-     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
-     [1, datetime(2001, 5, 18, 0, 0), Decimal('22'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
-     [1, datetime(2001, 5, 19, 0, 0), Decimal('22'), 1, None, 1, Decimal('22'), 1],
-     [1, datetime(2001, 5, 22, 0, 0), Decimal('21'), 1, Decimal('21.1'), 1, Decimal('21'), 1],
-     [1, datetime(2001, 5, 23, 0, 0), Decimal('23.6'), 1, None, 1, Decimal('19'), 1],
-     [1, datetime(2001, 5, 24, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.8'), 1],
-     [1, datetime(2001, 5, 25, 0, 0), None, 1, Decimal('12.7'), 1, Decimal('19.4'), 1],
-     [1, datetime(2001, 5, 27, 0, 0), Decimal('27.4'), 1, Decimal('27.4'), 1, Decimal('20.6'), 1],
-     [2, datetime(2001, 5, 17, 0, 0), Decimal('27.5'), 1, Decimal('27.5'), 1, Decimal('21.6'), 1],
-     [2, datetime(2001, 5, 18, 0, 0), Decimal('27.6'), 1, Decimal('27.3'), 1, Decimal('24.3'), 1],
+    num_found = len(found)
+    assert msgs == [
+        'starting check (parameters: -20)',
+        'Checked 15 records',
+        'Found %s records with flags reset to %s' % (num_found, flag),
+        'Check completed'
     ]
 
 

@@ -376,34 +376,34 @@ def check5(records, len_threshold=10, flag=-19):
 def check6(records, flag=-20):
     """
     Check "controllo TMAX=TMIN=0"
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
-    :return: (valid_records, invalid_records, msgs)
+    :return: (new_records, msgs)
     """
     msgs = []
     msg = "starting check (parameters: %s)" % flag
     msgs.append(msg)
 
-    valid_records = []
-    invalid_records = []
-    for record in records:
-        if record[2] == record[4] == 0:
-            new_record = record[:]
-            new_record[3] = new_record[5] = flag
-            invalid_records.append(new_record)
-        else:
-            valid_records.append(record)
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[3] > 0 and r[5] > 0]
 
-    num_valid_records = len(valid_records)
-    num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % str(num_valid_records + num_invalid_records)
+    num_invalid_records = 0
+    for record in records_to_use:
+        if record[2] == record[4] == 0:
+            record[3] = record[5] = flag
+            num_invalid_records += 1
+
+    msg = "Checked %s records" % len(new_records)
     msgs.append(msg)
     msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
     msg = "Check completed"
     msgs.append(msg)
-    return valid_records, invalid_records, msgs
+    return new_records, msgs
 
 
 def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2):

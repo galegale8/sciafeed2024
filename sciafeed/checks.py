@@ -703,39 +703,29 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     return new_records, msgs
 
 
-def check11(conn, stations_ids, var, max_diff=18, flag=-27, use_records=None):
+def check11(records, max_diff=18, flag=-27, val_index=2):
     """
-    Check "controllo jump checks" for the `var`.
+    Check "controllo jump checks" for the input records.
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param max_diff: module of the threshold increase between consecutive days
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :return: (new_records, msgs)
     """
     msgs = []
-    results = use_records
-    if not use_records:
-        if var == 'Tmax':
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg'], sql_fields, stations_ids)
-        elif var == 'Tmin':
-            sql_fields = "cod_staz, data_i, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmngg'], sql_fields, stations_ids)
-        else:
-            raise NotImplementedError('check11 not implemented for variable %s' % var)
-    msg = "'controllo jump checks' for variable %s (max diff: %s)" % (var, max_diff)
+    msg = "starting check (parameters: %s, %s, %s)" % (max_diff, flag, val_index)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
+    group_by_station = operator.itemgetter(0)
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
+    num_invalid_records = 0
 
-    to_be_resetted = []
-    for station, station_records in itertools.groupby(results, group_by_station):
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         prev1_record = None
         prev2_record = None
         # load previous 2:
@@ -745,24 +735,24 @@ def check11(conn, stations_ids, var, max_diff=18, flag=-27, use_records=None):
             if i == 1:
                 break
         for station_record in station_records:
-            day, value = station_record[1:3]
-            prev1_rec_day, prev1_rec_value = prev1_record[1:3]
-            prev2_rec_day, prev2_rec_value = prev2_record[1:3]
+            day, value = station_record[1], station_record[val_index]
+            prev1_rec_day, prev1_rec_value = prev1_record[1], prev1_record[val_index]
+            prev2_rec_day, prev2_rec_value = prev2_record[1], prev2_record[val_index]
             if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
                 if abs(prev1_rec_value - prev2_rec_value) > max_diff and \
                         abs(prev1_rec_value - value) > max_diff:
-                    to_be_resetted.append(prev1_record)
+                    prev1_record[val_index+1] = flag
+                    num_invalid_records += 1
             prev2_record = prev1_record
             prev1_record = station_record
 
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return new_records, msgs
 
 
 def check12(conn, stations_ids, variables, min_diff=5, flag=-29, use_records=None):

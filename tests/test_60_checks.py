@@ -1340,27 +1340,27 @@ def test_check8():
 def test_check9():
     flag = -25
     records = [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],  # nc: sample 9
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],  # ok: sample 10 -> ok
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],  # ok:sample > 10 -> ok
-        [1, datetime(2001, 5, 20, 0, 0), None, 1],  # ok: sample 11 -> ok
-        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],  # nc: sample 7
-        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1],  # nc: sample 6
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), None, 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1],
 
         [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
         [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
         [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
 
         [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],  # ok
-        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), 1],  # ok
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],
+        [1, datetime(2002, 5, 19, 0, 0), Decimal('0'), 1],
         [1, datetime(2002, 5, 20, 0, 0), None, 1],
         [1, datetime(2002, 5, 21, 0, 0), Decimal('4'), 1],
         [1, datetime(2002, 5, 22, 0, 0), Decimal('-0.4'), -1],
 
         [1, datetime(2003, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), 1],  # no
-        [1, datetime(2003, 5, 19, 0, 0), Decimal('2'), 1],  # ok
+        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), 1],
+        [1, datetime(2003, 5, 19, 0, 0), Decimal('2'), 1],
         [1, datetime(2003, 5, 20, 0, 0), Decimal('2'), 1],
         [1, datetime(2003, 5, 21, 0, 0), Decimal('4'), 1],
         [1, datetime(2003, 5, 22, 0, 0), Decimal('25'), -1],
@@ -1389,19 +1389,19 @@ def test_check9():
 def test_check10():
     flag = -25
     records = [
-        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],  # nc: sample 9
-        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],  # ok: sample 10 -> ok
-        [1, datetime(2001, 5, 19, 0, 0), Decimal('0.1'), 1],  # ok:sample > 10 -> ok
-        [1, datetime(2001, 5, 20, 0, 0), None, 1],  # ok: sample 11 -> ok
-        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],  # nc: sample 7
-        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1],  # nc: sample 6
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0.1'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), None, 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1],
 
         [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
         [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
         [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
 
         [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), 1],
-        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],  # ok
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],
         [1, datetime(2002, 5, 19, 0, 0), Decimal('0.1'), 1],
         [1, datetime(2002, 5, 20, 0, 0), None, 1],
         [1, datetime(2002, 5, 21, 0, 0), Decimal('4'), 1],
@@ -1450,5 +1450,58 @@ def test_check10():
         'starting check (parameters: 2, 90, 5, 10, -25, 2)',
         'Checked 14 records',
         'Found 0 records with flags reset to -25',
+        'Check completed',
+    ]
+
+
+def test_check11():
+    flag = -27
+    records = [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0.1'), 1],
+        [1, datetime(2001, 5, 20, 0, 0), None, 1],
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1], #
+        [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
+        [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
+        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
+        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],
+        [1, datetime(2002, 5, 19, 0, 0), Decimal('0.1'), 1],
+        [1, datetime(2002, 5, 20, 0, 0), None, 1],
+        [1, datetime(2002, 5, 21, 0, 0), Decimal('4'), 1],
+        [1, datetime(2002, 5, 22, 0, 0), Decimal('-0.4'), -1],
+        [1, datetime(2003, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), 1],
+        [1, datetime(2003, 5, 19, 0, 0), Decimal('2'), 1],
+        [1, datetime(2003, 5, 20, 0, 0), Decimal('2'), 1],
+        [1, datetime(2003, 5, 21, 0, 0), Decimal('4'), 1],
+        [1, datetime(2003, 5, 22, 0, 0), Decimal('25'), -1],
+        [2, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [2, datetime(2001, 5, 18, 0, 0), Decimal('40'), -1],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 1],
+        [2, datetime(2001, 5, 21, 0, 0), None, 1],
+        [2, datetime(2001, 10, 21, 0, 0), Decimal('9.6'), 1],
+        [2, datetime(2001, 10, 22, 0, 0), Decimal('40'), 1],
+        [2, datetime(2001, 11, 21, 0, 0), Decimal('9.6'), 1],
+    ]
+    original_records = [r[:] for r in records]
+
+    new_records, msgs = checks.check11(records, max_diff=18, flag=-27, val_index=2)
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3,))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), -27],
+    ]
+    assert msgs == [
+        'starting check (parameters: 18, -27, 2)',
+        'Checked 21 records',
+        'Found 1 records with flags reset to -27',
         'Check completed',
     ]

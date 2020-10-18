@@ -633,80 +633,74 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     return new_records, msgs
 
 
-def check10(conn, stations_ids, var, where_sql_on_temp="(tmdgg).val_md >= 0", times_perc=9,
-            percentile=95, window_days=29, min_num=20, flag=-25, use_records=None):
-    """
-    Check "controllo z-score checks precipitazione" for the `var`.
+def select_positive_average_temp(record):
+    # TODO: to be used to filter temperature records before check10
+    value, flag = record[6], record[7]
+    if value is None or flag < 0 or (flag >= 0 and value >= 0):
+        return True
+    return False
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param var: name of the variable to check
-    :param where_sql_on_temp: add the selected where clause in sql for the temperature
+
+def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, min_num=20,
+            flag=-25, val_index=2):
+    """
+    Check "controllo z-score checks precipitazione [ghiaccio]".
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param filter_days: dictionary of kind {station: [days to consider]}
     :param times_perc: number of times of the percentile to create the limit
     :param percentile: percentile value of the distribution to use
     :param window_days: the time window to consider (in days)
     :param min_num: the minimum size of the values to be found inside the window
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :return: (new_records, msgs)
     """
-    msgs = []
-    results = use_records
     if not (window_days % 2):
         raise ValueError('window_days must be odd')
-    if not use_records:
-        if var == 'PREC':
-            fields = "(tmdgg).val_md"
-            sql_fields = "cod_staz, data_i"
-            temp_records = querying.select_temp_records(
-                conn, fields, sql_fields=sql_fields,
-                stations_ids=stations_ids, where_sql=where_sql_on_temp)
-            temp_dict = dict()
-            for temp_record in temp_records:
-                staz, day = temp_record[:2]
-                if staz not in temp_dict:
-                    temp_dict[staz] = []
-                temp_dict[staz].append(day)
-            sql_fields = "cod_staz, data_i, (prec24).val_tot"
-            results = querying.select_prec_records(
-                conn, sql_fields, stations_ids=list(temp_dict.keys()), exclude_values=(0,))
-            results = [r for r in results if r[1] in temp_dict[r[0]]]
-        else:
-            raise NotImplementedError('check10 not implemented for variable %s' % var)
-    msg = "'controllo z-score checks precipitazione' for variable %s (%s)" \
-          % (var, where_sql_on_temp)
+    msgs = []
+    msg = "starting check (parameters: %s, %s, %s, %s, %s, %s)" \
+          % (times_perc, percentile, window_days, min_num, flag, val_index)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
+    group_by_station = operator.itemgetter(0)
 
-    to_be_resetted = []
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_index+1] > 0
+                      and r[val_index] not in (None, 0)
+                      and r[1] in filter_days.get(r[0], [])]
+    num_invalid_records = 0
     half_window = (window_days - 1) // 2
-    for station, station_records in itertools.groupby(results, group_by_station):
+
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         check_date = datetime(2000, 1, 1)  # first of a leap year
+        station_records = list(station_records)
         for i in range(366):
             reference_days = [check_date + timedelta(n)
                               for n in range(-half_window, half_window+1)]
             day_month_tuples = [(day.day, day.month) for day in reference_days]
             sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
             if len(sample_records) >= min_num:
-                sample_values = np.array([r[2] for r in sample_records])
+                sample_values = np.array([float(r[val_index]) for r in sample_records])
                 percentile_limit = np.percentile(sample_values, percentile) * times_perc
                 check_records = querying.filter_by_day_patterns(
-                    sample_records, [check_date.month, check_date.day])
+                    sample_records, [(check_date.day, check_date.month)])
                 for check_record in check_records:
-                    if check_record[2] > percentile_limit:
-                        to_be_resetted.append(check_record)
+                    if check_record[val_index] > percentile_limit:
+                        check_record[val_index+1] = flag
+                        num_invalid_records += 1
             check_date += timedelta(1)
 
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, var, flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return new_records, msgs
 
 
 def check11(conn, stations_ids, var, max_diff=18, flag=-27, use_records=None):

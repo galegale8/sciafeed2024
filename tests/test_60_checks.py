@@ -1366,7 +1366,7 @@ def test_check9():
         [1, datetime(2003, 5, 22, 0, 0), Decimal('25'), -1],
     ]
     original_records = [r[:] for r in records]
-    # import pdb; pdb.set_trace()
+
     new_records, msgs = checks.check9(
         records, num_dev_std=2, window_days=5, min_num=10, flag=-25, val_index=2)
     # test no change in-place
@@ -1382,5 +1382,73 @@ def test_check9():
         'starting check (parameters: 2, 5, 10, -25, 2)',
         'Checked 16 records',
         'Found 1 records with flags reset to -25',
+        'Check completed',
+    ]
+
+
+def test_check10():
+    flag = -25
+    records = [
+        [1, datetime(2001, 5, 17, 0, 0), Decimal('0.4'), 1],  # nc: sample 9
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0.5'), 1],  # ok: sample 10 -> ok
+        [1, datetime(2001, 5, 19, 0, 0), Decimal('0.1'), 1],  # ok:sample > 10 -> ok
+        [1, datetime(2001, 5, 20, 0, 0), None, 1],  # ok: sample 11 -> ok
+        [1, datetime(2001, 5, 21, 0, 0), Decimal('-1'), 1],  # nc: sample 7
+        [1, datetime(2001, 5, 22, 0, 0), Decimal('-33'), -1],  # nc: sample 6
+
+        [1, datetime(2001, 6, 17, 0, 0), Decimal('3'), 1],
+        [1, datetime(2001, 6, 18, 0, 0), Decimal('8'), 1],
+        [1, datetime(2001, 6, 19, 0, 0), Decimal('0'), 1],
+
+        [1, datetime(2002, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2002, 5, 18, 0, 0), Decimal('5'), 1],  # ok
+        [1, datetime(2002, 5, 19, 0, 0), Decimal('0.1'), 1],
+        [1, datetime(2002, 5, 20, 0, 0), None, 1],
+        [1, datetime(2002, 5, 21, 0, 0), Decimal('4'), 1],
+        [1, datetime(2002, 5, 22, 0, 0), Decimal('-0.4'), -1],
+
+        [1, datetime(2003, 5, 17, 0, 0), Decimal('0.4'), 1],
+        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), 1],
+        [1, datetime(2003, 5, 19, 0, 0), Decimal('2'), 1],
+        [1, datetime(2003, 5, 20, 0, 0), Decimal('2'), 1],
+        [1, datetime(2003, 5, 21, 0, 0), Decimal('4'), 1],
+        [1, datetime(2003, 5, 22, 0, 0), Decimal('25'), -1],
+    ]
+    original_records = [r[:] for r in records]
+
+    filter_days = {1: [r[1] for r in records]}  # i.e.: no filtering
+    new_records, msgs = checks.check10(
+        records, filter_days, times_perc=2, percentile=90, window_days=5, min_num=10,
+        flag=-25, val_index=2)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3,))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+        [1, datetime(2003, 5, 18, 0, 0), Decimal('33'), -25],
+    ]
+    assert msgs == [
+        'starting check (parameters: 2, 90, 5, 10, -25, 2)',
+        'Checked 15 records',
+        'Found 1 records with flags reset to -25',
+        'Check completed',
+    ]
+    filter_days = {1: [r[1] for r in records if r[1] != datetime(2003, 5, 18, 0, 0)]}
+    new_records, msgs = checks.check10(
+        records, filter_days, times_perc=2, percentile=90, window_days=5, min_num=10,
+        flag=-25, val_index=2)
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3,))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == []
+    assert msgs == [
+        'starting check (parameters: 2, 90, 5, 10, -25, 2)',
+        'Checked 14 records',
+        'Found 0 records with flags reset to -25',
         'Check completed',
     ]

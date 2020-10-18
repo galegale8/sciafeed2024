@@ -19,7 +19,6 @@ import statistics
 
 import numpy as np
 
-from sciafeed import db_utils
 from sciafeed import querying
 from sciafeed import utils
 
@@ -794,7 +793,7 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
     return new_records, msgs
 
 
-def check13(conn, stations_ids, variables, operators, jump=35, flag=-31, use_records=None):
+def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
     """
     Check "controllo dtr (diurnal temperature range)".
     Operators is applied in the formula:
@@ -812,35 +811,31 @@ def check13(conn, stations_ids, variables, operators, jump=35, flag=-31, use_rec
         -->
         Tmin <= min(Tmax) - 35
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param variables: name of the variables to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param operators: couple of operators to apply in
     :param jump: the jump to apply in the formula
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :return: (new_records, msgs)
     """
+    # TODO: ASK: to invalidate tmax0 and [tmin-1, tmin0, tmin1] ?
+    # TODO: ASK: the flags are to be reset at the end, not during the execution of the algorithm,
+    #            isn't it?
     msgs = []
-    results = use_records
-    if not use_records:
-        if list(variables) == ['Tmax', 'Tmin']:
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md"
-        elif list(variables) == ['Tmin', 'Tmax']:
-            sql_fields = "cod_staz, data_i, (tmngg).val_md, (tmxgg).val_md"
-        else:
-            raise NotImplementedError('check13 not implemented for variables %s' % repr(vars))
-        results = querying.select_temp_records(conn, ['tmxgg', 'tmngg'], sql_fields, stations_ids)
-    msg = "'controllo dtr (diurnal temperature range)' for variables %s" % repr(vars)
+    msg = "starting check (parameters: %s, %s, %s, %s)" \
+          % (repr(operators), jump, flag, val_indexes)
     msgs.append(msg)
 
-    def group_by_station(record):
-        return record.cod_staz
-
-    to_be_resetted_var1 = []
-    to_be_resetted_var2 = []
+    group_by_station = operator.itemgetter(0)
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_indexes[0]+1] > 0
+                      and r[val_indexes[0]] is not None
+                      and r[val_indexes[1]+1] > 0
+                      and r[val_indexes[1]] is not None]
+    num_invalid_flags = 0
     operator1, operator2 = operators
-    for station, station_records in itertools.groupby(results, group_by_station):
+
+    for station, station_records in itertools.groupby(records_to_use, group_by_station):
         prev1_record = None
         prev2_record = None
         # load previous 2:
@@ -850,26 +845,26 @@ def check13(conn, stations_ids, variables, operators, jump=35, flag=-31, use_rec
             if i == 1:
                 break
         for station_record in station_records:
-            day, val1, val2 = station_record[1:4]
-            prev1_rec_day, prev1_rec_val1, prev1_rec_val2 = prev1_record[1:4]
-            prev2_rec_day, prev2_rec_val1, prev2_rec_val2 = prev2_record[1:4]
+            day, val1, val2 = \
+                station_record[1], station_record[val_indexes[0]], station_record[val_indexes[1]]
+            prev1_rec_day, prev1_rec_val1, prev1_rec_val2 = \
+                prev1_record[1], prev1_record[val_indexes[0]], prev1_record[val_indexes[1]]
+            prev2_rec_day, prev2_rec_val1, prev2_rec_val2 = \
+                prev2_record[1], prev2_record[val_indexes[0]], prev2_record[val_indexes[1]]
             if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
                 if operator2(prev1_rec_val1,
                              operator1(prev2_rec_val2, prev1_rec_val2, val2) + jump):
-                    to_be_resetted_var1.append(prev1_record)
-                    to_be_resetted_var2.append(prev2_record)
-                    to_be_resetted_var2.append(prev1_record)
-                    to_be_resetted_var2.append(station_record)
+                    num_invalid_flags += 4
+                    prev1_record[val_indexes[0]+1] = prev1_record[val_indexes[1]+1] = flag
+                    prev2_record[val_indexes[1]+1] = flag
+                    station_record[val_indexes[1]+1] = flag
             prev2_record = prev1_record
             prev1_record = station_record
 
-    msg = "Found %i records with flags to be reset" \
-          % len(to_be_resetted_var1) + len(to_be_resetted_var2)
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
+    msg = "Found %s flags reset to %s" % (num_invalid_flags, flag)
     msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted_var1, variables[0], flag)
-    db_utils.set_temp_flags(conn, to_be_resetted_var2, variables[1], flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return new_records, msgs

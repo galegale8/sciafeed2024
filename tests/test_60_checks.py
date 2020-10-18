@@ -2,6 +2,7 @@
 from datetime import datetime
 from decimal import Decimal
 import math
+import operator
 from pprint import pprint
 from sciafeed import checks
 
@@ -1526,7 +1527,7 @@ def test_check12():
     # test preserving order and other values
     compare_noindexes(records, new_records, indexes_to_exclude=(3, 5))
     # testing effective found
-    found = [r for r in new_records if r[3] == flag]
+    found = [r for r in new_records if r[3] == flag and r[5] == flag]
     assert found == [
      [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), -29, Decimal('17.2'), -29, Decimal('17.9'), 1],
      [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), -29, Decimal('2'), -29, Decimal('14.1'), 1],
@@ -1535,5 +1536,44 @@ def test_check12():
         'starting check (parameters: -5, -29, (2, 4))',
         'Checked 3 records',
         'Found 2 records with flags reset to -29',
+        'Check completed',
+    ]
+
+
+def test_check13():
+    flag = -31
+    records = [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('21'), -1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), -1, Decimal('3'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), 1, Decimal('2'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('40.1'), 1, Decimal('4'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), Decimal('41'), 1, Decimal('3'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), Decimal('-4'), 1, Decimal('2'), 1, Decimal('14.1'), 1],
+    ]
+    original_records = [r[:] for r in records]
+
+    operators = max, operator.ge
+    new_records, msgs = checks.check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4))
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, 5))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag or r[5] == flag]
+    assert found == [
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), 1, Decimal('2'), -31, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 23, 0, 0), Decimal('40.1'), -31, Decimal('4'), -31, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 24, 0, 0), Decimal('41'), -31, Decimal('3'), -31, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 25, 0, 0), Decimal('-4'), 1, Decimal('2'), -31, Decimal('14.1'), 1],
+    ]
+    assert msgs == [
+        'starting check (parameters: (<built-in function max>, <built-in function ge>), '
+        '35, -31, (2, 4))',
+        'Checked 6 records',
+        'Found 8 flags reset to -31',
         'Check completed',
     ]

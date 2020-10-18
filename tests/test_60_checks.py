@@ -1505,3 +1505,35 @@ def test_check11():
         'Found 1 records with flags reset to -27',
         'Check completed',
     ]
+
+
+def test_check12():
+    flag = -29
+    records = [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), 1, Decimal('17.2'), 1, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), 1, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), 1, None, 1, Decimal('22'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), 1, Decimal('21'), -1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), Decimal('-4'), -1, Decimal('3'), 1, Decimal('14.1'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), 1, Decimal('2'), 1, Decimal('14.1'), 1],
+    ]
+    original_records = [r[:] for r in records]
+
+    new_records, msgs = checks.check12(records, min_diff=-5, flag=flag, val_indexes=(2, 4))
+
+    # test no change in-place
+    assert records == original_records
+    # test preserving order and other values
+    compare_noindexes(records, new_records, indexes_to_exclude=(3, 5))
+    # testing effective found
+    found = [r for r in new_records if r[3] == flag]
+    assert found == [
+     [1, datetime(2001, 5, 17, 0, 0), Decimal('0'), -29, Decimal('17.2'), -29, Decimal('17.9'), 1],
+     [1, datetime(2001, 5, 22, 0, 0), Decimal('-4'), -29, Decimal('2'), -29, Decimal('14.1'), 1],
+    ]
+    assert msgs == [
+        'starting check (parameters: -5, -29, (2, 4))',
+        'Checked 3 records',
+        'Found 2 records with flags reset to -29',
+        'Check completed',
+    ]

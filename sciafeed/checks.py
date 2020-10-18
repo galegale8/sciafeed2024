@@ -755,47 +755,43 @@ def check11(records, max_diff=18, flag=-27, val_index=2):
     return new_records, msgs
 
 
-def check12(conn, stations_ids, variables, min_diff=5, flag=-29, use_records=None):
+def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
     """
-    Check "controllo TMAX < TMIN" for the `var`.
+    Check "controllo TMAX < TMIN" for the input records.
+    Assumes all records are sorted by station, date.
+    The sort order is maintained in the returned values, that are:
+    the list of records (with flag updated), the list of log messages.
 
-    :param conn: db connection object
-    :param stations_ids: list of stations id where to do the check
-    :param variables: name of the variables to check
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_diff: threshold difference between vars[0] and vars[1]
     :param flag: the value of the flag to set for found records
-    :param use_records: force check on these records (used for test)
-    :return: list of log messages
+    :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :return: (new_records, msgs)
     """
+    # TODO: ASK: really check that TMAX >= Tmin -5 ? not TMAX >= Tmin +5
     msgs = []
-    results = use_records
-    if not use_records:
-        if list(variables) == ['Tmax', 'Tmin']:
-            sql_fields = "cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md"
-            results = querying.select_temp_records(
-                conn, ['tmxgg', 'tmngg'], sql_fields, stations_ids)
-        else:
-            raise NotImplementedError('check12 not implemented for variables %s' % repr(vars))
-    msg = "'controllo jump checks' for variables %s (min diff: %s)" % (repr(vars), min_diff)
+    msg = "starting check (parameters: %s, %s, %s)" % (min_diff, flag, val_indexes)
     msgs.append(msg)
 
-    to_be_resetted = []
-    i = 0
-    for i, result in enumerate(results):
-        if result[2] - result[3] < min_diff:
-            to_be_resetted.append(result)
+    new_records = [r[:] for r in records]
+    records_to_use = [r for r in new_records if r[val_indexes[0]+1] > 0
+                      and r[val_indexes[0]] is not None
+                      and r[val_indexes[1]+1] > 0
+                      and r[val_indexes[1]] is not None]
+    num_invalid_records = 0
 
-    msg = "Checked %i records" % i + 1
+    for result in records_to_use:
+        if result[val_indexes[0]] - result[val_indexes[1]] < min_diff:
+            num_invalid_records += 1
+            result[val_indexes[0]+1] = result[val_indexes[1]+1] = flag
+
+    msg = "Checked %s records" % len(records_to_use)
     msgs.append(msg)
-    msg = "Found %i records with flags to be reset" % len(to_be_resetted)
+    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
     msgs.append(msg)
-    msg = "Resetting flags to value %s..." % flag
-    msgs.append(msg)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmax', flag)
-    db_utils.set_temp_flags(conn, to_be_resetted, 'Tmin', flag)
     msg = "Check completed"
     msgs.append(msg)
-    return msgs
+    return new_records, msgs
 
 
 def check13(conn, stations_ids, variables, operators, jump=35, flag=-31, use_records=None):

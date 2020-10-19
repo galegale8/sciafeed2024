@@ -54,6 +54,7 @@ setup(
             'compute_daily_indicators = sciafeed.entry_points:compute_daily_indicators',
             'find_new_stations = sciafeed.entry_points:find_new_stations',
             'upsert_stations = sciafeed.entry_points:upsert_stations',
+            'check_chain = sciafeed.entry_points:check_chain'
         ],
     },
 )

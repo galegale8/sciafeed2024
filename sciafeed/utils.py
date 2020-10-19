@@ -190,3 +190,20 @@ def extract_gz(input_path, output_path, rm_source=False):
             shutil.copyfileobj(f_in, f_out)
     if rm_source and input_path != output_path:
         os.remove(input_path)
+
+
+def gettime(thefunction):
+    "decorator to print start and ending time"
+    name = thefunction.__name__
+
+    def wrapper(*args, **kwargs):
+        start = datetime.now()
+        print('start time of %s: %r' % (name, start))
+        res = thefunction(*args, **kwargs)
+        end = datetime.now()
+        print('end time of %s: %r' % (name, end))
+        elapsed_sec = (end-start).seconds
+        print('seconds occurred for %s: %s' % (name, elapsed_sec))
+        return res
+
+    return wrapper

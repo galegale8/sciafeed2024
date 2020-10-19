@@ -231,7 +231,7 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
 
     report_fp.write("* 'controllo world excedence' for PREC" + '\n')
-    prec_records, msgs = checks.check7(prec_records, min_threshold=800, flag=-21)
+    prec_records, msgs = checks.check7(prec_records, max_threshold=800, flag=-21)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
@@ -306,7 +306,7 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     report_fp.write('\n')
 
     report_fp.write("* 'controllo Tmax < Tmin'" + '\n')
-    temp_records, msgs = checks.check12(temp_records, min_diff=5, flag=-29, val_indexes=(2, 4))
+    temp_records, msgs = checks.check12(temp_records, min_diff=-5, flag=-29, val_indexes=(2, 4))
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')

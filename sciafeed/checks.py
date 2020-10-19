@@ -613,8 +613,8 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
             sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
             if len(sample_records) >= min_num:
                 sample_values = [r[val_index] for r in sample_records]
-                average = statistics.mean(sample_values)
-                dev_std_limit = statistics.stdev(sample_values) * num_dev_std
+                average = np.mean(sample_values)
+                dev_std_limit = np.std(sample_values, ddof=1) * num_dev_std
                 check_records = querying.filter_by_day_patterns(
                     sample_records, [(check_date.day, check_date.month), ])
                 for check_record in check_records:

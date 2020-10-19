@@ -83,9 +83,9 @@ class DummyRecord():
 
 def test_set_prec_flags(conn):
     records = [
-        DummyRecord(1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 'val_tot'),
-        DummyRecord(2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 'val_tot'),
-        DummyRecord(3, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 'val_tot')
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0')],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0')],
+        [3, datetime(2001, 5, 20, 0, 0), Decimal('0.4')]
     ]
     executed = db_utils.set_prec_flags(conn, records, -15, dry_run=True)
     expected = [
@@ -119,9 +119,9 @@ def test_set_prec_flags(conn):
 
 def test_set_temp_flags(conn):
     records = [
-        DummyRecord(1, datetime(2001, 5, 18, 0, 0), Decimal('0'), 'val_md'),
-        DummyRecord(2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 'val_md'),
-        DummyRecord(3, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 'val_md')
+        [1, datetime(2001, 5, 18, 0, 0), Decimal('0')],
+        [2, datetime(2001, 5, 19, 0, 0), Decimal('0'), 'val_md'],
+        [3, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 'val_md'],
     ]
     # case var=Tmax
     executed = db_utils.set_temp_flags(conn, records, 'Tmax', -15, dry_run=True)

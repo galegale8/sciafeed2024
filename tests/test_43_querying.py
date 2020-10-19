@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from os.path import join
 
@@ -136,3 +136,16 @@ def test_select_temp_records(conn):
     assert len(results[0]) == 3
     assert results[0] == [1, datetime(2001, 5, 18, 0, 0), Decimal('14.5')]
     assert results[-1] == [3, datetime(2019, 12, 31, 0, 0), Decimal('-0.1')]
+
+
+def test_filter_by_day_patterns():
+    check_day = datetime(2000, 1, 1)
+    some_days_records = [[1, (check_day + timedelta(n))] for n in range(-366, +366)]
+    day_patterns = [(3, 1), (3, 2)]
+    results = querying.filter_by_day_patterns(some_days_records, day_patterns)
+    assert results == [
+        [1, datetime(1999, 1, 3, 0, 0)],
+        [1, datetime(1999, 2, 3, 0, 0)],
+        [1, datetime(2000, 1, 3, 0, 0)],
+        [1, datetime(2000, 2, 3, 0, 0)],
+    ]

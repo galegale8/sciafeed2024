@@ -115,7 +115,7 @@ def set_prec_flags(conn, records, set_flag, dry_run=False):
     It assumes each record has attributes data_i and cod_staz
 
     :param conn: db connection object
-    :param records: iterable of the records
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param set_flag: value of the flag
     :param dry_run: True only for testing
     :return the list of SQL executed
@@ -130,7 +130,7 @@ def set_prec_flags(conn, records, set_flag, dry_run=False):
             ((prec12).flag).wht
             ) = (%s, %s, %s, %s)
             WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (set_flag, set_flag, set_flag, set_flag, record.data_i, record.cod_staz)
+              % (set_flag, set_flag, set_flag, set_flag, record[1], record[0])
         if not dry_run:
             conn.execute(sql)
         executed.append(sql)
@@ -144,7 +144,7 @@ def set_temp_flags(conn, records, var, set_flag, dry_run=False):
     It assumes each record has attributes data_i and cod_staz
 
     :param conn: db connection object
-    :param records: iterable of the records
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param var: 'Tmax' or 'Tmin'
     :param set_flag: value of the flag
     :param dry_run: True only for testing
@@ -160,7 +160,7 @@ def set_temp_flags(conn, records, var, set_flag, dry_run=False):
         sql = """
             UPDATE dailypdbanpacarica.ds__t200 SET ((%s).flag).wht = %s
             WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (db_field, set_flag, record.data_i, record.cod_staz)
+              % (db_field, set_flag, record[1], record[0])
         if not dry_run:
             conn.execute(sql)
         executed.append(sql)

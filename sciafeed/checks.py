@@ -19,7 +19,6 @@ import statistics
 
 import numpy as np
 
-from sciafeed import querying
 from sciafeed import utils
 
 
@@ -606,17 +605,25 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     for station, station_records in itertools.groupby(records_to_use, group_by_station):
         check_date = datetime(2000, 1, 1)  # first of a leap year
         station_records = list(station_records)
+        # first loop to load dayname_groups
+        dayname_groups = dict()
+        for station_record in station_records:
+            dayname = (station_record[1].day, station_record[1].month)
+            dayname_groups[dayname] = dayname_groups.get(dayname, [])
+            dayname_groups[dayname].append(station_record)
+
         for i in range(366):
             reference_days = [check_date + timedelta(n)
                               for n in range(-half_window, half_window+1)]
-            day_month_tuples = [(day.day, day.month) for day in reference_days]
-            sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
+            day_month_tuples = ((day.day, day.month) for day in reference_days)
+            sample_records = []
+            for dayname in day_month_tuples:
+                sample_records.extend(dayname_groups.get(dayname, []))
             if len(sample_records) >= min_num:
                 sample_values = [r[val_index] for r in sample_records]
                 average = np.mean(sample_values)
                 dev_std_limit = np.std(sample_values, ddof=1) * num_dev_std
-                check_records = querying.filter_by_day_patterns(
-                    sample_records, [(check_date.day, check_date.month), ])
+                check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:
                     if abs(check_record[val_index] - average) > dev_std_limit:
                         check_record[val_index+1] = flag
@@ -686,16 +693,24 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     for station, station_records in itertools.groupby(records_to_use, group_by_station):
         check_date = datetime(2000, 1, 1)  # first of a leap year
         station_records = list(station_records)
+        # first loop to load dayname_groups
+        dayname_groups = dict()
+        for station_record in station_records:
+            dayname = (station_record[1].day, station_record[1].month)
+            dayname_groups[dayname] = dayname_groups.get(dayname, [])
+            dayname_groups[dayname].append(station_record)
+
         for i in range(366):
             reference_days = [check_date + timedelta(n)
                               for n in range(-half_window, half_window+1)]
-            day_month_tuples = [(day.day, day.month) for day in reference_days]
-            sample_records = querying.filter_by_day_patterns(station_records, day_month_tuples)
+            day_month_tuples = ((day.day, day.month) for day in reference_days)
+            sample_records = []
+            for dayname in day_month_tuples:
+                sample_records.extend(dayname_groups.get(dayname, []))
             if len(sample_records) >= min_num:
                 sample_values = np.array([float(r[val_index]) for r in sample_records])
                 percentile_limit = np.percentile(sample_values, percentile) * times_perc
-                check_records = querying.filter_by_day_patterns(
-                    sample_records, [(check_date.day, check_date.month)])
+                check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:
                     if check_record[val_index] > percentile_limit:
                         check_record[val_index+1] = flag

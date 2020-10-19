@@ -194,14 +194,3 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     # each record must be a list to make flag changeable:
     results = map(list, conn.execute(sql))
     return results
-
-
-def filter_by_day_patterns(records, day_month_tuples):
-    """
-    Filter records if (day, month) in `day_month_tuples`.
-    """
-    ret_value = []
-    for record in records:
-        if (record[1].day, record[1].month) in day_month_tuples:
-            ret_value.append(record)
-    return ret_value

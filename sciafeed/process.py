@@ -10,6 +10,7 @@ from sciafeed import compute
 from sciafeed import db_utils
 from sciafeed import export
 from sciafeed import parsing
+from sciafeed import querying
 from sciafeed import utils
 
 
@@ -140,221 +141,208 @@ def check_chain(dburi, stations_ids=None, report_fp=None):
     :param stations_ids: primary keys of the stations (if None: no filtering by stations)
     :param report_fp: report file pointer
     """
+    report_fp.write('== Start process ==' + '\n')
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
 
     report_fp.write('* initial query to get records of PREC...' + '\n')
     sql_fields = "cod_staz, data_i, (prec24).val_tot, 1 as flag"
-    valid_prec_records = db_utils.select_prec_records(
+    prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=stations_ids,
         flag_threshold=None, exclude_null=True)
-    invalid_prec_records = []
 
     report_fp.write('* initial query to get records of temperature...' + '\n')
     sql_fields = "cod_staz, data_i, (tmxgg).val_md, 1 as flag_tmxgg, " \
                  "(tmngg).val_md, 1 as flag_tmngg, (tmdgg).val_md, 1 as flag_tmdgg"
     fields = ['Tmax', 'Tmin']
-    valid_temp_records = db_utils.select_temp_records(
+    temp_records = querying.select_temp_records(
         conn, fields, sql_fields=sql_fields, stations_ids=stations_ids,
         flag_threshold=None, exclude_null=False)
-    invalid_temp_records = []
 
     report_fp.write("== STARTING CHECK CHAIN ==")
+
     report_fp.write("* 'controllo valori ripetuti = 0' for variable PREC")
-    valid_prec_records, current_invalid_prec, msgs = checks.check1(
-        valid_prec_records, len_threshold=180, flag=-12)
+    prec_records, msgs = checks.check1(prec_records, len_threshold=180, flag=-12)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_prec_records.extend(current_invalid_prec)
 
     report_fp.write("* 'controllo valori ripetuti' for variable PREC")
-    valid_prec_records, current_invalid_prec, msgs = checks.check2(
-        valid_prec_records, len_threshold=20, flag=-13, exclude_values=(0, ))
+    prec_records, msgs = checks.check2(
+        prec_records, len_threshold=20, flag=-13, exclude_values=(0, None))
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_prec_records.extend(current_invalid_prec)
-
     report_fp.write("* 'controllo valori ripetuti' for variable Tmax")
-    valid_temp_records, current_invalid_temp, msgs = checks.check2(
-        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(None, ))
+    temp_records, msgs = checks.check2(
+        temp_records, len_threshold=20, flag=-13, exclude_values=(None, ))
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
-
     report_fp.write("* 'controllo valori ripetuti' for variable Tmin")
-    valid_temp_records, current_invalid_temp, msgs = checks.check2(
-        valid_temp_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
+    temp_records, msgs = checks.check2(
+        temp_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable PREC")
-    valid_prec_records, current_invalid_prec, msgs = checks.check3(
-        valid_prec_records, flag=-15, min_not_null=5)
+    prec_records, msgs = checks.check3(prec_records, flag=-15, min_not_null=5)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_prec_records.extend(current_invalid_prec)
-
     report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable Tmax")
-    valid_temp_records, current_invalid_temp, msgs = checks.check3(valid_temp_records, flag=-15)
+    temp_records, msgs = checks.check3(temp_records, flag=-15)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
-
     report_fp.write("* 'controllo mesi duplicati (stesso anno)' for variable Tmin")
-    valid_temp_records, current_invalid_temp, msgs = checks.check3(
-        valid_temp_records, flag=-15, val_index=4)
+    temp_records, msgs = checks.check3(temp_records, flag=-15, val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable PREC")
-    valid_prec_records, current_invalid_prec, msgs = checks.check4(
-        valid_prec_records, flag=-17, min_not_null=5)
+    prec_records, msgs = checks.check4(prec_records, flag=-17, min_not_null=5)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_prec_records.extend(current_invalid_prec)
-
     report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable Tmax")
-    valid_temp_records, current_invalid_temp, msgs = checks.check4(valid_temp_records, flag=-17)
+    temp_records, msgs = checks.check4(temp_records, flag=-17)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
-
     report_fp.write("* 'controllo mesi duplicati (anni differenti)' for variable Tmin")
-    valid_temp_records, current_invalid_temp, msgs = checks.check4(
-        valid_temp_records, flag=-17, val_index=4)
+    temp_records, msgs = checks.check4(temp_records, flag=-17, val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write("* controllo TMAX=TMIN")
-    valid_temp_records, current_invalid_temp, msgs = checks.check5(
-        valid_temp_records, len_threshold=10, flag=-19)
+    temp_records, msgs = checks.check5(temp_records, len_threshold=10, flag=-19)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write("* controllo TMAX=TMIN=0")
-    valid_temp_records, current_invalid_temp, msgs = checks.check6(valid_temp_records, flag=-20)
+    temp_records, msgs = checks.check6(temp_records, flag=-20)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-    invalid_temp_records.extend(current_invalid_temp)
 
     report_fp.write("* 'controllo world excedence' for PREC" + '\n')
-    valid_prec_records, current_invalid_prec, msgs = checks.check7(
-        valid_prec_records, min_threshold=800, flag=-21)
+    prec_records, msgs = checks.check7(prec_records, min_threshold=800, flag=-21)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-
     report_fp.write("* 'controllo world excedence' for Tmax" + '\n')
-    valid_temp_records, current_invalid_temp, msgs = checks.check7(
-        valid_temp_records, min_threshold=-30, max_threshold=50, flag=-21)
+    temp_records, msgs = checks.check7(temp_records, min_threshold=-30, max_threshold=50, flag=-21)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-
     report_fp.write("* 'controllo world excedence' for Tmin" + '\n')
-    valid_temp_records, current_invalid_temp, msgs = checks.check7(
-        valid_temp_records, min_threshold=-40, max_threshold=40, flag=-21, val_index=4)
+    temp_records, msgs = checks.check7(
+        temp_records, min_threshold=-40, max_threshold=40, flag=-21, val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
     report_fp.write('* controllo gap checks  precipitazione' + '\n')
-    valid_prec_records, current_invalid_prec, msgs = checks.check8(
-        valid_prec_records, threshold=300, split=False, flag_sup=-23)
+    prec_records, msgs = checks.check8(prec_records, threshold=300, split=False, flag_sup=-23)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-
     report_fp.write("* 'controllo gap checks temperatura' for Tmax" + '\n')
-    valid_temp_records, current_invalid_temp, msgs = checks.check8(
-        valid_temp_records, 'Tmax', threshold=10, split=True, flag_sup=-23, flag_inf=-24)
+    temp_records, msgs = checks.check8(
+        temp_records, threshold=10, split=True, flag_sup=-23, flag_inf=-24)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
-
     report_fp.write("* 'controllo gap checks temperatura' for Tmin" + '\n')
-    valid_temp_records, current_invalid_temp, msgs = checks.check8(
-        valid_temp_records, 'Tmin', threshold=10, split=True, flag_sup=-23, flag_inf=-24)
+    temp_records, msgs = checks.check8(
+        temp_records, threshold=10, split=True, flag_sup=-23, flag_inf=-24, val_index=4)
     for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-
-    # from now on: FIXME
-    report_fp.write('* start check9 for Tmax' + '\n')
-    msgs9_1 = checks.check9(conn, stations_ids, 'Tmax', num_dev_std=6, window_days=15,
-                            min_num=100, flag=-25)
-    for msg in msgs9_1:
+    report_fp.write("* 'controllo z-score checks temperatura' for Tmax" + '\n')
+    temp_records, msgs = checks.check9(
+        temp_records, num_dev_std=6, window_days=15, min_num=100, flag=-25)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    report_fp.write("* 'controllo z-score checks temperatura' for Tmin" + '\n')
+    temp_records, msgs = checks.check9(
+        temp_records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_index=4)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    report_fp.write('* start check9 for Tmin' + '\n')
-    msgs9_2 = checks.check9(conn, stations_ids, 'Tmin', num_dev_std=6, window_days=15,
-                            min_num=100, flag=-25)
-    for msg in msgs9_2:
+    report_fp.write("* 'controllo z-score checks precipitazione'" + '\n')
+    pos_temp_days, neg_temp_days = checks.split_days_by_average_temp(temp_records)
+    prec_records, msgs = checks.check10(
+        prec_records, pos_temp_days, times_perc=9, percentile=95, window_days=29,
+        min_num=20, flag=-25)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    report_fp.write("* 'controllo z-score checks precipitazione ghiaccio'" + '\n')
+    prec_records, msgs = checks.check10(
+        prec_records, neg_temp_days, times_perc=5, percentile=95, window_days=29,
+        min_num=20, flag=-26)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    report_fp.write('* start check10 for PREC' + '\n')
-    msgs10_1 = checks.check10(
-        conn, stations_ids, 'PREC', where_sql_on_temp="(tmdgg).val_md >= 0", times_perc=9,
-        percentile=95, window_days=29, min_num=20, flag=-25)
-    for msg in msgs10_1:
+    report_fp.write("* 'controllo jump checks' for Tmax" + '\n')
+    temp_records, msgs = checks.check11(temp_records, max_diff=18, flag=-27)
+    for msg in msgs:
+        report_fp.write(msg + '\n')
+    report_fp.write('\n')
+    report_fp.write("* 'controllo jump checks' for Tmin" + '\n')
+    temp_records, msgs = checks.check11(temp_records, max_diff=18, flag=-27, val_index=4)
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    report_fp.write('* start check10 for PREC (ice)' + '\n')
-    msgs10_2 = checks.check10(
-        conn, stations_ids, 'PREC', where_sql_on_temp="(tmdgg).val_md < 0", times_perc=5,
-        percentile=95, window_days=29, min_num=20, flag=-26)
-    for msg in msgs10_2:
+    report_fp.write("* 'controllo Tmax < Tmin'" + '\n')
+    temp_records, msgs = checks.check12(temp_records, min_diff=5, flag=-29, val_indexes=(2, 4))
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    report_fp.write('* start check11 for Tmax' + '\n')
-    msgs11_1 = checks.check11(conn, stations_ids, 'Tmax', max_diff=18, flag=-27)
-    for msg in msgs11_1:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
-    report_fp.write('* start check11 for Tmin' + '\n')
-    msgs11_2 = checks.check11(conn, stations_ids, 'Tmin', max_diff=18, flag=-27)
-    for msg in msgs11_2:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
-    report_fp.write('* start check12 for Tmax and Tmin' + '\n')
-    msgs12 = checks.check12(conn, stations_ids, ['Tmax', 'Tmin'], min_diff=5, flag=-29)
-    for msg in msgs12:
-        report_fp.write(msg + '\n')
-    report_fp.write('\n')
-
-    report_fp.write('* start check13 for [Tmax, Tmin] (policy: >= max)' + '\n')
+    report_fp.write("* 'controllo dtr (diurnal temperature range)' for Tmax" + '\n')
     operators = max, operator.ge
-    msgs13_1 = checks.check13(conn, stations_ids, ['Tmax', 'Tmin'], operators, jump=35, flag=-31)
-    for msg in msgs13_1:
+    temp_records, msgs = checks.check13(
+        temp_records, operators, jump=35, flag=-31, val_indexes=(2, 4))
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
 
-    report_fp.write('* start check13 for [Tmin, Tmax] (policy: <= min)' + '\n')
+    report_fp.write("* 'controllo dtr (diurnal temperature range)' for Tmin" + '\n')
     operators = min, operator.le
-    msgs13_2 = checks.check13(conn, stations_ids, ['Tmin', 'Tmax'], operators, jump=-35, flag=-31)
-    for msg in msgs13_2:
+    temp_records, msgs = checks.check13(
+        temp_records, operators, jump=-35, flag=-31, val_indexes=(2, 4))
+    for msg in msgs:
         report_fp.write(msg + '\n')
     report_fp.write('\n')
+
+    report_fp.write("== END CHECK CHAIN ==" + '\n')
+
+    report_fp.write('* final set of flags records of PREC...')
+    for record in prec_records:
+        flag = record[3]
+        if flag < 0:
+            db_utils.set_prec_flags(conn, [record], flag)
+    report_fp.write('* final set of flags records of Tmax...')
+    for record in temp_records:
+        flag = record[3]
+        if flag < 0:
+            db_utils.set_temp_flags(conn, [record], 'Tmax', flag)
+    report_fp.write('* final set of flags records of Tmin...')
+    for record in temp_records:
+        flag = record[5]
+        if flag < 0:
+            db_utils.set_temp_flags(conn, [record], 'Tmin', flag)
+
+    report_fp.write('== End process ==' + '\n')

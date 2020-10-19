@@ -632,12 +632,21 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     return new_records, msgs
 
 
-def select_positive_average_temp(record):
-    # TODO: to be used to filter temperature records before check10
-    value, flag = record[6], record[7]
-    if value is None or flag < 0 or (flag >= 0 and value >= 0):
-        return True
-    return False
+def split_days_by_average_temp(temp_records):
+    "to be used to filter temperature records before check10"
+    group_by_station = operator.itemgetter(0)
+    ret_value_pos = dict()
+    ret_value_neg = dict()
+    for station, station_records in itertools.groupby(temp_records, group_by_station):
+        ret_value_pos[station] = []
+        ret_value_neg[station] = []
+        for record in station_records:
+            value, flag = record[6], record[7]
+            if value is not None and value < 0 < flag:
+                ret_value_neg[station].append(record[1])
+            else:
+                ret_value_pos[station].append(record[1])
+    return ret_value_pos, ret_value_neg
 
 
 def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, min_num=20,

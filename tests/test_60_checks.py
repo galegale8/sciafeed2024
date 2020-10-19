@@ -1387,6 +1387,45 @@ def test_check9():
     ]
 
 
+def test_split_days_by_average_temp():
+    records = [
+     [1, datetime(2001, 5, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('18.9'), 1],
+     [1, datetime(2001, 5, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('-3.2'), 1],
+     [1, datetime(2001, 5, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, Decimal('16.3'), 1],
+     [1, datetime(2001, 5, 21, 0, 0), None, -21, Decimal('0'), 1, Decimal('-16.4'), 0],
+     [1, datetime(2001, 5, 22, 0, 0), None, -21, Decimal('0'), 1, None, 1],
+     [2, datetime(2001, 6, 18, 0, 0), Decimal('14'), -21, Decimal('0'), 1, Decimal('0'), 1],
+     [2, datetime(2001, 6, 19, 0, 0), Decimal('16'), -21, None, 1, Decimal('0'), -1],
+     [2, datetime(2001, 6, 20, 0, 0), Decimal('15.1'), -21, Decimal('0'), 1, None, 0],
+     [2, datetime(2001, 6, 21, 0, 0), None, -21, Decimal('0'), 1, Decimal('-16.4'), 1],
+     [2, datetime(2001, 6, 22, 0, 0), None, -21, Decimal('0'), 1, Decimal('16.4'), 1],
+    ]
+    pos, neg = checks.split_days_by_average_temp(records)
+    assert pos == {
+        1: [
+            datetime(2001, 5, 18, 0, 0),
+            datetime(2001, 5, 20, 0, 0),
+            datetime(2001, 5, 21, 0, 0),
+            datetime(2001, 5, 22, 0, 0),
+        ],
+        2: [
+            datetime(2001, 6, 18, 0, 0),
+            datetime(2001, 6, 19, 0, 0),
+            datetime(2001, 6, 20, 0, 0),
+            datetime(2001, 6, 22, 0, 0)
+
+    ]
+    }
+    assert neg == {
+        1: [
+            datetime(2001, 5, 19, 0, 0),
+        ],
+        2: [
+            datetime(2001, 6, 21, 0, 0),
+        ]
+    }
+
+
 def test_check10():
     flag = -25
     records = [

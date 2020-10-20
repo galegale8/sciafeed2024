@@ -4,12 +4,15 @@ This modules provides generic utility functions of the SCIA FEED package
 import csv
 from datetime import datetime, timedelta
 import gzip
+import logging
 import os
 import os.path
 import random
 import shutil
 
 import xlrd
+
+from sciafeed import LOG_NAME
 
 
 def cell_str(cell, datemode, datepattern='%d.%m.%Y'):
@@ -207,3 +210,31 @@ def gettime(thefunction):
         return res
 
     return wrapper
+
+
+def setup_log(report_path=None):
+    log_format = '%(asctime)s %(levelname)s: %(message)s'
+    log_datefmt = '%d-%m-%Y %H:%M:%S'
+    log_name = LOG_NAME
+    level_for_standard_output = logging.INFO
+    level_for_report_file = logging.INFO
+
+    logger = logging.getLogger(log_name)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(log_format, datefmt=log_datefmt)
+
+    # setup standard output
+    std_output_handler = logging.StreamHandler()
+    std_output_handler.setLevel(level_for_standard_output)
+    std_output_handler.setFormatter(formatter)
+    logger.addHandler(std_output_handler)
+
+    if not report_path:
+        return
+
+    # setup report file
+    log_filepath = os.path.abspath(report_path)
+    file_handler = logging.FileHandler(log_filepath)
+    file_handler.setLevel(level_for_report_file)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)

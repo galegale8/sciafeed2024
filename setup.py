@@ -25,6 +25,7 @@ install_requires = [
     'zeep==3.4.0',
     'google-api-python-client',
     # 'google-auth-httplib2',
+    'oauth2client',
     'google-auth-oauthlib',
     'numpy',
 ]
@@ -54,7 +55,8 @@ setup(
             'compute_daily_indicators = sciafeed.entry_points:compute_daily_indicators',
             'find_new_stations = sciafeed.entry_points:find_new_stations',
             'upsert_stations = sciafeed.entry_points:upsert_stations',
-            'check_chain = sciafeed.entry_points:check_chain'
+            'check_chain = sciafeed.entry_points:check_chain',
+            'download_er = sciafeed.entry_points:download_er',
         ],
     },
 )

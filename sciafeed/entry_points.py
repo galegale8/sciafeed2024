@@ -1,18 +1,24 @@
 """
 This modules provides the functions of the SCIA FEED package's entry points
 """
+from datetime import datetime
+import logging
 from os import listdir, mkdir
 from os.path import exists, isdir, isfile, join
 import sys
 
 import click
 
+from sciafeed import arpaer
 from sciafeed import db_utils
 from sciafeed import export
 from sciafeed import hiscentral
 from sciafeed import process
 from sciafeed import querying
 from sciafeed import upsert
+from sciafeed import utils
+
+logger = logging.getLogger('SCIA-FEED')
 
 
 @click.command()
@@ -231,3 +237,48 @@ def check_chain(dburi, report_path, station_where):
         report_fp.write('' + '\n')
         process.check_chain(dburi, stations_ids, report_fp)
         report_fp.write('END CHECK CHAIN')
+
+
+@click.command()
+@click.argument('download_folder', type=click.Path(exists=False, dir_okay=True))
+@click.option('--start', '-s', help='start date: use format "YYYY-MM-DD". Default is the '
+                                    'oldest available')
+@click.option('--end', '-e', help='end date: use format "YYYY-MM-DD". Default is today')
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--parameters_filepath', '-p', type=click.Path(exists=True, dir_okay=False),
+              help="customized file path containing information about parameters"
+                   "default is %s" % arpaer.PARAMETERS_FILEPATH, default=arpaer.PARAMETERS_FILEPATH)
+@click.option('--credentials_folder', '-c', type=click.Path(exists=True, dir_okay=True),
+              help="folder containing gdrive credentials."
+                   "default is %s" % arpaer.DEFAULT_CREDENTIALS_FOLDER,
+              default=arpaer.DEFAULT_CREDENTIALS_FOLDER)
+def download_er(start, end, download_folder, report_path, parameters_filepath, credentials_folder):
+    """
+    Download utility for ARPA Emilia-Romagna.
+    """
+    utils.setup_log(report_path)
+    if not exists(download_folder):
+        mkdir(download_folder)
+    now = datetime.now()
+    if start:
+        try:
+            start = datetime.strptime(start, '%Y-%m-%d')
+        except ValueError:
+            logger.error('%r doesn''t seem a date in format "YYYY-MM-DD"' % start)
+            sys.exit(2)
+    if end:
+        try:
+            end = datetime.strptime(end, '%Y-%m-%d')
+        except ValueError:
+            logger.error('%r doesn''t seem a date in format "YYYY-MM-DD"' % end)
+            sys.exit(2)
+    else:
+        end = now
+
+    if start > end or start > now:
+        logger.error('required time interval is not valid')
+        sys.exit(2)
+    arpaer.download_er(
+        download_folder, start, end, parameters_filepath=parameters_filepath,
+        credentials_folder=credentials_folder)

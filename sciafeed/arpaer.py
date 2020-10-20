@@ -5,19 +5,22 @@ import copy
 import csv
 from datetime import datetime, timedelta
 import json
+import logging
 import os
 from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 
 import requests
-from googleapiclient.discovery import build
 
-from sciafeed import TEMPLATES_PATH, this_path
+from sciafeed import TEMPLATES_PATH, this_path, LOG_NAME
 from sciafeed import gdrive_utils
 from sciafeed import utils
 
+logger = logging.getLogger(LOG_NAME)
+
 JSON_ANY_MARKER = '999999'
 HISTORICAL_GDRIVE_FOLDER_ID = '0B7KLnPu6vjdPRjZzNWFReTd0MDQ'
+DEFAULT_CREDENTIALS_FOLDER = join(this_path, 'credentials')
 # the name of the 'resource' table, where to find data: it can be taken from the link of
 # of `dati recenti' from the URL
 # `https://dati.arpae.it/dataset/dati-dalle-stazioni-meteo-locali-della-rete-idrometeorologica-regionale`
@@ -30,62 +33,13 @@ TABLE_NAME = "1396fb33-d6a1-442b-a1a1-90ff7a3d3642"
 # # taken from https://raw.githubusercontent.com/ARPA-SIMC/dballe/v8.2-1/doc/fapi_tranges.md
 # TRANGES_PATH = join(TEMPLATES_PATH, 'fapi_tranges.md')
 
-DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
+# DATASTORE_QUERY_URL = 'https://arpae.datamb.it/api/action/datastore_search_sql'
+DATASTORE_QUERY_URL = 'https://dati.arpae.it/api/action/datastore_search_sql'
 PARAMETERS_FILEPATH = join(TEMPLATES_PATH, 'arpaer_params.csv')
 LIMITING_PARAMETERS = {}
 FORMAT_LABEL = 'ARPA-ER'
 
 # ##### start of online interface utilities #####
-
-
-def historical_download(start_date, end_date, output_folder, ungzip=True):
-    """
-    Download the historical files containing data of a time interval [`start_date`, `end_date`].
-    The files are downloaded in the folder `output_folder`.
-    Return the list of paths of downloaded files.
-
-    :param start_date: start datetime of the data interval
-    :param end_date: end datetime of the data interval
-    :param output_folder: the output folder
-    :param ungzip: True if uncompress the .gz archives
-    :return: the list of output file paths
-    """
-    pattern = "meteo-%Y-%m.json.gz"
-    # note: also to list google drive public files must be authenticated!
-    credentials_folder = join(this_path, 'credentials')
-    historical_files = gdrive_utils.get_gdrive_filelist(
-        HISTORICAL_GDRIVE_FOLDER_ID,
-        credentials_folder
-    )
-    historical_times = [datetime.strptime(d, pattern) for d in historical_files]
-    historical_start = min(historical_times)
-    historical_end = max(historical_times)
-    historical_end += timedelta(31)
-    historical_end = datetime(historical_end.year, historical_end.month, 1) - timedelta(1)
-    if end_date < historical_start or start_date > historical_end:
-        print('interval out of historical range')
-        return []
-    # FIXME: manage partial covered interval
-    current_date = start_date
-    files_to_download = dict()
-    while current_date <= end_date:
-        filename = current_date.strftime(pattern)
-        if filename not in files_to_download:
-            files_to_download[filename] = historical_files[filename]
-        current_date += timedelta(1)
-    outputs = []
-    for file_name, file_id in files_to_download.items():
-        destination_path = join(output_folder, file_name)
-        output_item = destination_path
-        print('downloading %s to %s' % (file_name, output_folder))
-        gdrive_utils.download_gdrive_public_file(file_id, destination_path)
-        if ungzip:
-            output_path = destination_path[:-3]
-            output_item = output_path
-            print('unzipping %s' % file_name)
-            utils.extract_gz(destination_path, output_path, rm_source=True)
-        outputs.append(output_item)
-    return outputs
 
 
 def build_sql(table_name, start=None, end=None, limit=None, only_bcodes=None, **kwargs):
@@ -152,9 +106,18 @@ def sql2results(sql, timeout=None):
     :return: the list of dictionaries of the results
     """
     payload = {'sql': sql}
-    print(sql)
-    response = requests.get(DATASTORE_QUERY_URL, params=payload, timeout=timeout).json()
-    print(response)
+    logger.debug(sql)
+    rr = requests.get(DATASTORE_QUERY_URL, params=payload, timeout=timeout)
+    if rr.status_code > 299 or rr.status_code < 200:
+        logger.error("Server response is not good: %r" % rr.reason)
+        logger.error("Recent data not available at the moment")
+        return []
+    try:
+        response = rr.json()
+    except:
+        logger.error("Server response is not standard JSON: %r" % rr.reason)
+        logger.error("Recent data not available at the moment")
+        return []
     result = response.get('result', [])
     if response.get('success') and 'records' in result:
         return result['records']
@@ -246,9 +209,8 @@ def load_db_results(filepath):
     return results
 
 
-# entry point candidate
-def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcodes=None,
-                   start=None, end=None, timeout=None, limit=None, **kwargs):
+def query_recent_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcodes=None,
+                          start=None, end=None, timeout=None, limit=None, **kwargs):
     """
     Query the online datastore and save the results on `save_path`.
 
@@ -261,7 +223,6 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcod
     :param limit: number to limit the number of results
     :param kwargs: additional filters on the table's columns
     """
-    # TODO: verify if there's a way to check if data is recent or not, so where to download
     parameters_map = load_parameter_file(parameters_filepath)
     if not only_bcodes:
         only_bcodes = list(parameters_map.keys())
@@ -269,6 +230,78 @@ def query_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcod
     db_results = get_db_results(start, end, limit=limit, timeout=timeout, only_bcodes=only_bcodes,
                                 bcodes_filters=bcodes_filters, **kwargs)
     save_db_results(save_path, db_results)
+
+
+# entry point candidate
+def download_er(download_folder, start=None, end=None, parameters_filepath=PARAMETERS_FILEPATH,
+                credentials_folder=DEFAULT_CREDENTIALS_FOLDER):
+    """
+    Download data from Emilia-Romagna dataset from an interval of dates.
+
+    :param download_folder: download folder
+    :param start: start datetime
+    :param end: end datetime (default is now)
+    :param parameters_filepath: path to the CSV file containing info about stored parameters
+    :param credentials_folder: folder with google credential files
+    """
+    logger.info("try to connect to the historical folder to get the list of files")
+    filelist = gdrive_utils.get_gdrive_filelist(HISTORICAL_GDRIVE_FOLDER_ID, credentials_folder)
+    historical_months_map = dict()
+    for filename, file_id in filelist.items():
+        try:
+            month = datetime.strptime(filename, 'meteo-%Y-%m.json.gz')
+        except ValueError:
+            logger.warning("  file %r not parsable: go on" % filename)
+            continue
+        historical_months_map[month] = (file_id, filename)
+    historical_months = list(historical_months_map.keys())
+    oldest_history = min(historical_months)
+    youngest_history = max(historical_months)
+    old_in_recent = youngest_history + timedelta(32)
+    oldest_recent = datetime(old_in_recent.year, old_in_recent.month, 1)
+
+    if not start:
+        start = oldest_history
+    now = datetime.now()
+    if not end or end > now:
+        end = now
+    if start > end or start > now:
+        logger.error('required time interval is not valid')
+        return
+
+    required_months = set()
+    current_time = start
+    while current_time <= end:
+        required_months |= {datetime(current_time.year, current_time.month, 1)}
+        current_time += timedelta(1)
+    required_in_history = required_months.intersection(set(historical_months))
+
+    if end < oldest_history:
+        logger.warning('oldest date in history is %s' % oldest_history.date().isoformat())
+        logger.warning('No data available in the time interval requested.')
+        return
+    if start < oldest_history:
+        logger.warning('oldest date in history is %s' % oldest_history.date().isoformat())
+        start = oldest_history
+    # download history
+    for current_required in sorted(required_in_history):
+        file_id, filename = historical_months_map[current_required]
+        download_filepath = join(download_folder, filename)
+        logger.info('downloading historical %s' % filename)
+        gdrive_utils.download_gdrive_public_file(file_id, download_filepath)
+        logger.info('unzipping %s' % filename)
+        utils.extract_gz(download_filepath, download_filepath[:-3], rm_source=True)
+    # download recent
+    if datetime(start.year, start.month, 1) in required_in_history:
+        start = oldest_recent
+        if end < start:
+            return
+    save_filename = start.strftime('meteo-%Y-%m-%d') + '_' + end.strftime('%Y-%m-%d.json')
+    save_path = join(download_folder, save_filename)
+    logger.warning('note that downloading recent data is deprecated!')
+    logger.info('downloading recent %s' % save_filename)
+    query_recent_and_save(save_path, parameters_filepath=parameters_filepath, start=start, end=end)
+
 
 # ##### end of online interface utilities #####
 

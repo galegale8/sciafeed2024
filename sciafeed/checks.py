@@ -13,13 +13,17 @@ This module contains the functions and utilities to check climatologic data.
 """
 from datetime import datetime, timedelta
 import itertools
+import logging
 import math
 import operator
 import statistics
 
 import numpy as np
 
+from sciafeed import LOG_NAME
 from sciafeed import utils
+
+logger = logging.getLogger(LOG_NAME)
 
 
 def data_internal_consistence_check(input_data, limiting_params=None):
@@ -123,18 +127,16 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
     """
     Check "controllo valori ripetuti = 0".
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated)
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0]
@@ -151,32 +153,27 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
                     v[val_index+1] = flag
                     num_invalid_records += 1
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     """
     Check "controllo valori ripetuti" for the input records.
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated)
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param exclude_values: iterable of values to be excluded from the check for the input records
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
@@ -194,34 +191,29 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
                     v[val_index+1] = flag
                     num_invalid_records += 1
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check3(records, min_not_null=None, flag=-15, val_index=2):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
     # TODO: ASK: of course, grouping by station, isn't it?
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
@@ -255,34 +247,29 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
         invalid_record[val_index+1] = flag
 
     num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check4(records, min_not_null=None, flag=-17, val_index=2):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
     # TODO: ASK: of course, grouping by station, isn't it?
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
@@ -320,30 +307,25 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
     for invalid_record in invalid_records:
         invalid_record[val_index+1] = flag
     num_invalid_records = len(invalid_records)
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check5(records, len_threshold=10, flag=-19):
     """
     Check "controllo TMAX=TMIN".
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: minimum lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s, %s)" % (len_threshold, flag)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s)" % (len_threshold, flag))
 
     group_by_station = operator.itemgetter(0)
     val_getter = lambda x: x[2] == x[4]
@@ -362,29 +344,24 @@ def check5(records, len_threshold=10, flag=-19):
                         v[5] = flag
                         num_invalid_records += 1
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check6(records, flag=-20):
     """
     Check "controllo TMAX=TMIN=0"
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s)" % flag
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s)" % flag)
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[3] > 0 and r[5] > 0]
@@ -395,21 +372,18 @@ def check6(records, flag=-20):
             record[3] = record[5] = flag
             num_invalid_records += 1
 
-    msg = "Checked %s records" % len(new_records)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(new_records))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2):
     """
     Check "controllo world excedence" for the input records.
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
@@ -417,12 +391,10 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     :param max_threshold: maximum value in the check
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s, %s)" \
-          % (min_threshold, max_threshold, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s, %s)" \
+          % (min_threshold, max_threshold, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
@@ -443,13 +415,10 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
             record[val_index+1] = flag
             num_invalid_records += 1
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def gap_top_checks(terms, threshold):
@@ -492,8 +461,8 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     If split = False: case of "controllo gap checks  precipitazione" (see documentation)
     If split = True: case of "controllo gap checks temperatura" (see documentation)
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param threshold: value of the threshold in the check
@@ -503,14 +472,12 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     :param flag_inf: value of the flag to be set for found records with split=True for the
                      bottom part of the split
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
     # TODO: ASK to accumulate distribution on all years of a month, or to do a month a time?
     # TODO: ASK split by median: '>=' and '<=', or '>' and '<'?
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s, %s, %s)" \
-          % (threshold, split, flag_sup, flag_inf, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s, %s, %s)"
+                % (threshold, split, flag_sup, flag_inf, val_index))
 
     num_invalid_records_sup = 0
     num_invalid_records_inf = 0
@@ -562,23 +529,19 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
                 station_record[val_index+1] = flag_inf
                 num_invalid_records_inf += 1
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records_sup, flag_sup)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records_inf, flag_inf)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records_sup, flag_sup))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records_inf, flag_inf))
+    logger.info("Check completed")
+    return new_records
 
 
 def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_index=2):
     """
     Check "controllo z-score checks temperatura"
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param num_dev_std: times of the standard deviation to be considered in the check
@@ -586,15 +549,13 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     :param min_num: the minimum size of the values to be found inside the window
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
     if not (window_days % 2):
         raise ValueError('window_days must be odd')
 
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s, %s, %s)" \
-          % (num_dev_std, window_days, min_num, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s, %s, %s)"
+                % (num_dev_std, window_days, min_num, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
@@ -630,17 +591,14 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
                         num_invalid_records += 1
             check_date += timedelta(1)
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def split_days_by_average_temp(temp_records):
-    "to be used to filter temperature records before check10"
+    """to be used to filter temperature records before check10"""
     group_by_station = operator.itemgetter(0)
     ret_value_pos = dict()
     ret_value_neg = dict()
@@ -661,8 +619,8 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     """
     Check "controllo z-score checks precipitazione [ghiaccio]".
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param filter_days: dictionary of kind {station: [days to consider]}
@@ -672,14 +630,13 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     :param min_num: the minimum size of the values to be found inside the window
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
     if not (window_days % 2):
         raise ValueError('window_days must be odd')
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s, %s, %s, %s)" \
-          % (times_perc, percentile, window_days, min_num, flag, val_index)
-    msgs.append(msg)
+
+    logger.info("starting check (parameters: %s, %s, %s, %s, %s, %s)"
+                % (times_perc, percentile, window_days, min_num, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
 
@@ -717,31 +674,26 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
                         num_invalid_records += 1
             check_date += timedelta(1)
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check11(records, max_diff=18, flag=-27, val_index=2):
     """
     Check "controllo jump checks" for the input records.
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param max_diff: module of the threshold increase between consecutive days
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
-    :return: (new_records, msgs)
+    :return: new_records
     """
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (max_diff, flag, val_index)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (max_diff, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
     new_records = [r[:] for r in records]
@@ -769,32 +721,27 @@ def check11(records, max_diff=18, flag=-27, val_index=2):
             prev2_record = prev1_record
             prev1_record = station_record
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
     """
     Check "controllo TMAX < TMIN" for the input records.
     Assumes all records are sorted by station, date.
-    The sort order is maintained in the returned values, that are:
-    the list of records (with flag updated), the list of log messages.
+    The sort order is maintained in the returned values, that are
+    the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_diff: threshold difference between vars[0] and vars[1]
     :param flag: the value of the flag to set for found records
     :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
-    :return: (new_records, msgs)
+    :return: new_records
     """
     # TODO: ASK: really check that TMAX >= Tmin -5 ? not TMAX >= Tmin +5
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s)" % (min_diff, flag, val_indexes)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s)" % (min_diff, flag, val_indexes))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_indexes[0]+1] > 0
@@ -808,13 +755,10 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
             num_invalid_records += 1
             result[val_indexes[0]+1] = result[val_indexes[1]+1] = flag
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s records with flags reset to %s" % (num_invalid_records, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Check completed")
+    return new_records
 
 
 def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
@@ -840,15 +784,13 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
     :param jump: the jump to apply in the formula
     :param flag: the value of the flag to set for found records
     :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
-    :return: (new_records, msgs)
+    :return: new_records
     """
     # TODO: ASK: to invalidate tmax0 and [tmin-1, tmin0, tmin1] ?
     # TODO: ASK: the flags are to be reset at the end, not during the execution of the algorithm,
     #            isn't it?
-    msgs = []
-    msg = "starting check (parameters: %s, %s, %s, %s)" \
-          % (repr(operators), jump, flag, val_indexes)
-    msgs.append(msg)
+    logger.info("starting check (parameters: %s, %s, %s, %s)"
+                % (repr(operators), jump, flag, val_indexes))
 
     group_by_station = operator.itemgetter(0)
     new_records = [r[:] for r in records]
@@ -885,10 +827,7 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
             prev2_record = prev1_record
             prev1_record = station_record
 
-    msg = "Checked %s records" % len(records_to_use)
-    msgs.append(msg)
-    msg = "Found %s flags reset to %s" % (num_invalid_flags, flag)
-    msgs.append(msg)
-    msg = "Check completed"
-    msgs.append(msg)
-    return new_records, msgs
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s flags reset to %s" % (num_invalid_flags, flag))
+    logger.info("Check completed")
+    return new_records

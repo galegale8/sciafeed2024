@@ -226,17 +226,11 @@ def upsert_stations(stations_path, dburi, report_path):
               help="""SQL where condition on stations (for example: "cod_rete='15'"). 
                       If omitted, checks all stations""")
 def check_chain(dburi, report_path, station_where):
-    if report_path and exists(report_path):
-        print('wrong "report_path": the report must not exist or will be overwritten')
-        sys.exit(2)
+    utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
     stations_ids = querying.get_stations_by_where(dburi, station_where)
-    with open(report_path, 'w') as report_fp:
-        line = 'START CHECK CHAIN'
-        report_fp.write(line + '\n')
-        report_fp.write('='*len(line) + '\n')
-        report_fp.write('' + '\n')
-        process.check_chain(dburi, stations_ids, report_fp)
-        report_fp.write('END CHECK CHAIN')
+    logger.info('START CHECK CHAIN')
+    process.check_chain(dburi, stations_ids)
+    logger.info('END CHECK CHAIN')
 
 
 @click.command()

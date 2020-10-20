@@ -212,8 +212,7 @@ def gettime(thefunction):
     return wrapper
 
 
-def setup_log(report_path=None):
-    log_format = '%(asctime)s %(levelname)s: %(message)s'
+def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message)s'):
     log_datefmt = '%d-%m-%Y %H:%M:%S'
     log_name = LOG_NAME
     level_for_standard_output = logging.INFO

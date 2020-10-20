@@ -200,6 +200,7 @@ class DummyResponseObject:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        self.status_code = 200
 
     def json(self):
         if self.kwargs.get('return_error'):
@@ -320,7 +321,7 @@ def test_load_db_results():
     assert effective == expected
 
 
-def test_query_and_save(tmpdir, mocker):
+def test_query_recent_and_save(tmpdir, mocker):
     start = datetime(2020, 2, 6)
     end = datetime(2020, 2, 7)
     limit = 3
@@ -396,7 +397,7 @@ def test_query_and_save(tmpdir, mocker):
          'version': '0.1'}
     ]
     assert not exists(save_path)
-    arpaer.query_and_save(save_path, start=start, end=end, limit=limit)
+    arpaer.query_recent_and_save(save_path, start=start, end=end, limit=limit)
     assert exists(save_path)
     effective = arpaer.load_db_results(save_path)
     assert effective == expected

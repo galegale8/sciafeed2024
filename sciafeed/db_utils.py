@@ -108,7 +108,7 @@ def reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1, dry_run=Fals
     return executed
 
 
-def set_prec_flags(conn, records, set_flag, dry_run=False):
+def set_prec_flags(conn, records, set_flag, schema='dailypdbanpacarica', dry_run=False):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__preci.
@@ -117,27 +117,28 @@ def set_prec_flags(conn, records, set_flag, dry_run=False):
     :param conn: db connection object
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param set_flag: value of the flag
+    :param schema: database schema to use
     :param dry_run: True only for testing
     :return the list of SQL executed
     """
     executed = []
     for record in records:
         sql = """
-            UPDATE dailypdbanpacarica.ds__preci SET (
-            ((prec24).flag).wht,
-            ((prec01).flag).wht,
-            ((prec06).flag).wht,
-            ((prec12).flag).wht
+            UPDATE %s.ds__preci SET (
+            prec24.flag.wht,
+            prec01.flag.wht,
+            prec06.flag.wht,
+            prec12.flag.wht
             ) = (%s, %s, %s, %s)
             WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (set_flag, set_flag, set_flag, set_flag, record[1], record[0])
+              % (schema, set_flag, set_flag, set_flag, set_flag, record[1], record[0])
         if not dry_run:
             conn.execute(sql)
         executed.append(sql)
     return executed
 
 
-def set_temp_flags(conn, records, var, set_flag, dry_run=False):
+def set_temp_flags(conn, records, var, set_flag, schema='dailypdbanpacarica', dry_run=False):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__preci.
@@ -147,6 +148,7 @@ def set_temp_flags(conn, records, var, set_flag, dry_run=False):
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param var: 'Tmax' or 'Tmin'
     :param set_flag: value of the flag
+    :param schema: database schema to use
     :param dry_run: True only for testing
     :return the list of SQL executed
     """
@@ -158,9 +160,9 @@ def set_temp_flags(conn, records, var, set_flag, dry_run=False):
     db_field = var2dbfield_map[var]
     for record in records:
         sql = """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((%s).flag).wht = %s
+            UPDATE %s.ds__t200 SET %s.flag.wht = %s
             WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (db_field, set_flag, record[1], record[0])
+              % (schema, db_field, set_flag, record[1], record[0])
         if not dry_run:
             conn.execute(sql)
         executed.append(sql)

@@ -11,10 +11,10 @@ def conn():
     connection.execute("drop schema if exists test cascade")
     connection.execute('create schema if not exists test')
 
-    # 1896409 records of TEMP
+    # 1.896.409 records of TEMP
     connection.execute("create table test.ds__t200 as select * from dailypdbanpacarica.ds__t200 "
                        "where cod_staz <=5800 and cod_staz >= 5500")
-    # 1695420 records of PREC
+    # 1.695.420 records of PREC
     connection.execute("create table test.ds__preci as select * from dailypdbanpacarica.ds__preci "
                        "where cod_staz <=5800 and cod_staz >= 5500")
     yield connection

@@ -87,30 +87,30 @@ def test_set_prec_flags(conn):
         [2, datetime(2001, 5, 19, 0, 0), Decimal('0')],
         [3, datetime(2001, 5, 20, 0, 0), Decimal('0.4')]
     ]
-    executed = db_utils.set_prec_flags(conn, records, -15, dry_run=True)
+    executed = db_utils.set_prec_flags(conn, records, -15, schema='boh', dry_run=True)
     expected = [
             """
-            UPDATE dailypdbanpacarica.ds__preci SET (
-            ((prec24).flag).wht,
-            ((prec01).flag).wht,
-            ((prec06).flag).wht,
-            ((prec12).flag).wht
+            UPDATE boh.ds__preci SET (
+            prec24.flag.wht,
+            prec01.flag.wht,
+            prec06.flag.wht,
+            prec12.flag.wht
             ) = (-15, -15, -15, -15)
             WHERE data_i = '2001-05-18 00:00:00' AND cod_staz = 1""",
             """
-            UPDATE dailypdbanpacarica.ds__preci SET (
-            ((prec24).flag).wht,
-            ((prec01).flag).wht,
-            ((prec06).flag).wht,
-            ((prec12).flag).wht
+            UPDATE boh.ds__preci SET (
+            prec24.flag.wht,
+            prec01.flag.wht,
+            prec06.flag.wht,
+            prec12.flag.wht
             ) = (-15, -15, -15, -15)
             WHERE data_i = '2001-05-19 00:00:00' AND cod_staz = 2""",
             """
-            UPDATE dailypdbanpacarica.ds__preci SET (
-            ((prec24).flag).wht,
-            ((prec01).flag).wht,
-            ((prec06).flag).wht,
-            ((prec12).flag).wht
+            UPDATE boh.ds__preci SET (
+            prec24.flag.wht,
+            prec01.flag.wht,
+            prec06.flag.wht,
+            prec12.flag.wht
             ) = (-15, -15, -15, -15)
             WHERE data_i = '2001-05-20 00:00:00' AND cod_staz = 3"""
     ]
@@ -124,31 +124,31 @@ def test_set_temp_flags(conn):
         [3, datetime(2001, 5, 20, 0, 0), Decimal('0.4'), 'val_md'],
     ]
     # case var=Tmax
-    executed = db_utils.set_temp_flags(conn, records, 'Tmax', -15, dry_run=True)
+    executed = db_utils.set_temp_flags(conn, records, 'Tmax', -15, dry_run=True, schema='boh')
     expected = [
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmxgg).flag).wht = -15
+            UPDATE boh.ds__t200 SET tmxgg.flag.wht = -15
             WHERE data_i = '2001-05-18 00:00:00' AND cod_staz = 1""",
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmxgg).flag).wht = -15
+            UPDATE boh.ds__t200 SET tmxgg.flag.wht = -15
             WHERE data_i = '2001-05-19 00:00:00' AND cod_staz = 2""",
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmxgg).flag).wht = -15
+            UPDATE boh.ds__t200 SET tmxgg.flag.wht = -15
             WHERE data_i = '2001-05-20 00:00:00' AND cod_staz = 3"""
     ]
     assert executed == expected
 
     # case var=Tmin
-    executed = db_utils.set_temp_flags(conn, records, 'Tmin', -15, dry_run=True)
+    executed = db_utils.set_temp_flags(conn, records, 'Tmin', -15, dry_run=True, schema='abc')
     expected = [
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmngg).flag).wht = -15
+            UPDATE abc.ds__t200 SET tmngg.flag.wht = -15
             WHERE data_i = '2001-05-18 00:00:00' AND cod_staz = 1""",
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmngg).flag).wht = -15
+            UPDATE abc.ds__t200 SET tmngg.flag.wht = -15
             WHERE data_i = '2001-05-19 00:00:00' AND cod_staz = 2""",
             """
-            UPDATE dailypdbanpacarica.ds__t200 SET ((tmngg).flag).wht = -15
+            UPDATE abc.ds__t200 SET tmngg.flag.wht = -15
             WHERE data_i = '2001-05-20 00:00:00' AND cod_staz = 3"""
     ]
     assert executed == expected

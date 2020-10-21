@@ -137,7 +137,7 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
     return msgs, computed_indicators
 
 
-def check_chain(dburi, stations_ids=None):
+def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica'):
     """
     Start a chain of checks on records of the database from a set of monitoring stations selected.
 
@@ -151,7 +151,7 @@ def check_chain(dburi, stations_ids=None):
     logger.info('* initial query to get records of PREC...')
     sql_fields = "cod_staz, data_i, (prec24).val_tot, 1 as flag"
     prec_records = querying.select_prec_records(
-        conn, sql_fields=sql_fields, stations_ids=stations_ids,
+        conn, sql_fields=sql_fields, stations_ids=stations_ids, schema=schema,
         flag_threshold=None, exclude_null=True)
 
     logger.info('* initial query to get records of temperature...')
@@ -159,7 +159,7 @@ def check_chain(dburi, stations_ids=None):
                  "(tmngg).val_md, 1 as flag_tmngg, (tmdgg).val_md, 1 as flag_tmdgg"
     fields = ['Tmax', 'Tmin']
     temp_records = querying.select_temp_records(
-        conn, fields, sql_fields=sql_fields, stations_ids=stations_ids,
+        conn, fields, sql_fields=sql_fields, stations_ids=stations_ids, schema=schema,
         flag_threshold=None, exclude_null=False)
 
     logger.info("== STARTING CHECK CHAIN ==")
@@ -250,20 +250,20 @@ def check_chain(dburi, stations_ids=None):
     temp_records = checks.check13(
         temp_records, operators, jump=-35, flag=-31, val_indexes=(2, 4))
 
-    # logger.info('* final set of flags records of PREC...')
-    # for record in prec_records:
-    #     flag = record[3]
-    #     if flag < 0:
-    #         db_utils.set_prec_flags(conn, [record], flag)
-    # logger.info('* final set of flags records of Tmax...')
-    # for record in temp_records:
-    #     flag = record[3]
-    #     if flag < 0:
-    #         db_utils.set_temp_flags(conn, [record], 'Tmax', flag)
-    # logger.info('* final set of flags records of Tmin...')
-    # for record in temp_records:
-    #     flag = record[5]
-    #     if flag < 0:
-    #         db_utils.set_temp_flags(conn, [record], 'Tmin', flag)
+    logger.info('* final set of flags records of PREC...')
+    for record in prec_records:
+        flag = record[3]
+        if flag < 0:
+            db_utils.set_prec_flags(conn, [record], flag, schema=schema)
+    logger.info('* final set of flags records of Tmax...')
+    for record in temp_records:
+        flag = record[3]
+        if flag < 0:
+            db_utils.set_temp_flags(conn, [record], 'Tmax', flag, schema=schema)
+    logger.info('* final set of flags records of Tmin...')
+    for record in temp_records:
+        flag = record[5]
+        if flag < 0:
+            db_utils.set_temp_flags(conn, [record], 'Tmin', flag, schema=schema)
 
     logger.info('== End process ==')

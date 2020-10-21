@@ -225,11 +225,13 @@ def upsert_stations(stations_path, dburi, report_path):
 @click.option('--station_where', '-w',
               help="""SQL where condition on stations (for example: "cod_rete='15'"). 
                       If omitted, checks all stations""")
-def check_chain(dburi, report_path, station_where):
+@click.option('--schema', '-s', default='dailypdbanpacarica',
+              help="""database schema to use. Default is 'dailypdbanpacarica'""")
+def check_chain(dburi, report_path, station_where, schema):
     utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
     stations_ids = querying.get_stations_by_where(dburi, station_where)
     logger.info('START CHECK CHAIN')
-    process.check_chain(dburi, stations_ids)
+    process.check_chain(dburi, stations_ids, schema)
     logger.info('END CHECK CHAIN')
 
 

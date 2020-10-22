@@ -250,20 +250,9 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica'):
     temp_records = checks.check13(
         temp_records, operators, jump=-35, flag=-31, val_indexes=(2, 4))
 
-    logger.info('* final set of flags records of PREC...')
-    for record in prec_records:
-        flag = record[3]
-        if flag < 0:
-            db_utils.set_prec_flags(conn, [record], flag, schema=schema)
-    logger.info('* final set of flags records of Tmax...')
-    for record in temp_records:
-        flag = record[3]
-        if flag < 0:
-            db_utils.set_temp_flags(conn, [record], 'Tmax', flag, schema=schema)
-    logger.info('* final set of flags records of Tmin...')
-    for record in temp_records:
-        flag = record[5]
-        if flag < 0:
-            db_utils.set_temp_flags(conn, [record], 'Tmin', flag, schema=schema)
+    logger.info('* final set of flags records...')
+    db_utils.update_prec_flags(conn, prec_records, schema=schema)
+    db_utils.update_temp_flags(conn, temp_records, schema=schema, db_field='tmxgg', flag_index=3)
+    db_utils.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
 
     logger.info('== End process ==')

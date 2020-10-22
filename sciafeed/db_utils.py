@@ -1,11 +1,12 @@
 """
 This module contains functions and utilities to interface with a database
 """
-import functools
+import logging
 
-from sqlalchemy.sql import select
 from sqlalchemy import engine_from_config, MetaData, Table
+from sciafeed import LOG_NAME
 
+logger = logging.getLogger(LOG_NAME)
 
 USER = 'scia'
 PASSWORD = 'scia'
@@ -71,44 +72,7 @@ def get_table_columns(table_name):
     return [c.name for c in table_obj.columns]
 
 
-def reset_flags(conn, stations_ids, flag_threshold=-10, set_flag=1, dry_run=False):
-    """
-    Reset all the flags < `flag_threshold` to the value `set_flag` for the records of
-    precipitation and temperature and for selected stations.
-
-    :param conn: db connection object
-    :param stations_ids: list of station ids (if None, no filter is applied by stations)
-    :param flag_threshold: max value of the flag that will not be reset
-    :param set_flag: value of the flag to be set
-    :param dry_run: True only for testing
-    :return the list of SQL executed
-    """
-    executed = []
-    sql_prec = """
-      UPDATE dailypdbanpacarica.ds__preci SET ( 
-      ((prec24).flag).wht,
-      ((prec01).flag).wht,
-      ((prec06).flag).wht,
-      ((prec12).flag).wht
-      ) = (%s, %s, %s, %s)
-      WHERE ((prec24).flag).wht < %s""" % (set_flag, set_flag, set_flag, set_flag, flag_threshold)
-    sql_temp_min = """
-      UPDATE dailypdbanpacarica.ds__t200  SET ((tmngg).flag).wht = %s 
-      WHERE ((tmngg).flag).wht < %s""" % (set_flag, flag_threshold)
-    sql_temp_max = """
-      UPDATE dailypdbanpacarica.ds__t200  SET ((tmxgg).flag).wht = %s 
-      WHERE ((tmxgg).flag).wht < %s""" % (set_flag, flag_threshold)
-    for sql in [sql_prec, sql_temp_min, sql_temp_max]:
-        if stations_ids:
-            sql += " AND cod_staz IN %s" % repr(tuple(stations_ids))
-        if not dry_run:
-            with conn.begin():
-                conn.execute(sql)
-        executed.append(sql)
-    return executed
-
-
-def set_prec_flags(conn, records, set_flag, schema='dailypdbanpacarica', dry_run=False):
+def update_prec_flags(conn, records, schema='dailypdbanpacarica'):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__preci.
@@ -116,54 +80,85 @@ def set_prec_flags(conn, records, set_flag, schema='dailypdbanpacarica', dry_run
 
     :param conn: db connection object
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param set_flag: value of the flag
     :param schema: database schema to use
-    :param dry_run: True only for testing
-    :return the list of SQL executed
     """
-    executed = []
-    for record in records:
-        sql = """
-            UPDATE %s.ds__preci SET (
+    logger.info('start process for update of PREC flags')
+    pre_sql_cmds = [
+        'DROP TABLE IF EXISTS updates_table',
+        '''
+    CREATE TABLE IF NOT EXISTS updates_table (
+        cod_staz integer NOT NULL,
+        data_i timestamp without time zone NOT NULL,
+        flag integer,
+        PRIMARY KEY (cod_staz, data_i)
+        )''',
+    ]
+    for cmd in pre_sql_cmds:
+        conn.execute(cmd)
+    logger.debug('created temp folder')
+    meta = MetaData()
+    table_obj = Table('updates_table', meta, autoload=True, autoload_with=conn.engine)
+    data = [{'cod_staz': r[0], 'data_i': r[1], 'flag': r[3]} for r in records]
+    conn.execute(table_obj.insert(), data)
+    logger.debug('filled temp folder')
+    update_sql = """
+        UPDATE %s.ds__preci t SET (
             prec24.flag.wht,
             prec01.flag.wht,
             prec06.flag.wht,
             prec12.flag.wht
-            ) = (%s, %s, %s, %s)
-            WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (schema, set_flag, set_flag, set_flag, set_flag, record[1], record[0])
-        if not dry_run:
-            conn.execute(sql)
-        executed.append(sql)
-    return executed
+            ) = (u.flag, u.flag, u.flag, u.flag)
+        FROM updates_table u
+        WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i AND ((t.prec24).flag).wht <> u.flag
+    """ % schema
+    result = conn.execute(update_sql)
+    num_of_updates = result.rowcount
+    logger.info('update completed: %s flags updated' % num_of_updates)
+    post_cmd = 'DROP TABLE updates_table'
+    conn.execute(post_cmd)
+    logger.debug('temp folder removed')
 
 
-def set_temp_flags(conn, records, var, set_flag, schema='dailypdbanpacarica', dry_run=False):
+def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxgg', flag_index=2):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
-    of the table dailypdbanpacarica.ds__preci.
+    of the table dailypdbanpacarica.ds__t200.
     It assumes each record has attributes data_i and cod_staz
 
     :param conn: db connection object
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param var: 'Tmax' or 'Tmin'
-    :param set_flag: value of the flag
     :param schema: database schema to use
-    :param dry_run: True only for testing
-    :return the list of SQL executed
+    :param db_field: name of the database field related to the flag
+    :param flag_index: index of the flag value in each record
     """
-    executed = []
-    var2dbfield_map = {
-        'Tmax': 'tmxgg',
-        'Tmin': 'tmngg',
-    }
-    db_field = var2dbfield_map[var]
-    for record in records:
-        sql = """
-            UPDATE %s.ds__t200 SET %s.flag.wht = %s
-            WHERE data_i = '%s' AND cod_staz = %s""" \
-              % (schema, db_field, set_flag, record[1], record[0])
-        if not dry_run:
-            conn.execute(sql)
-        executed.append(sql)
-    return executed
+    logger.info('start process for update of TEMP flags (%s)' % db_field)
+    pre_sql_cmds = [
+        'DROP TABLE IF EXISTS updates_table2',
+        '''
+    CREATE TABLE IF NOT EXISTS updates_table2 (
+        cod_staz integer NOT NULL,
+        data_i timestamp without time zone NOT NULL,
+        flag integer,
+        PRIMARY KEY (cod_staz, data_i)
+        )''',
+    ]
+    for cmd in pre_sql_cmds:
+        conn.execute(cmd)
+    logger.debug('created temp folder')
+    meta = MetaData()
+    table_obj = Table('updates_table2', meta, autoload=True, autoload_with=conn.engine)
+    data = [{'id_record': i, 'cod_staz': r[0], 'data_i': r[1], 'flag': r[flag_index]}
+            for i, r in enumerate(records, 1)]
+    conn.execute(table_obj.insert(), data)
+    logger.debug('filled temp folder')
+    update_sql = """
+        UPDATE %s.ds__t200 t SET %s.flag.wht = u.flag
+        FROM updates_table2 u
+        WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i AND ((t.%s).flag).wht <> u.flag
+    """ % (schema, db_field, db_field)
+    result = conn.execute(update_sql)
+    num_of_updates = result.rowcount
+    logger.info('update completed: %s flags updated for %s' % (num_of_updates, db_field))
+    post_cmd = 'DROP TABLE updates_table2'
+    conn.execute(post_cmd)
+    logger.debug('temp folder removed')

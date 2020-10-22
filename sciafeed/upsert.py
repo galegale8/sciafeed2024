@@ -54,7 +54,7 @@ def upsert_stations(dburi, stations_path):
     return msgs, num_inserted_stations, num_updated_stations
 
 
-def upsert_from_csv_table(dburi, csv_table_path, report_path=None):
+def upsert_from_csv_table(dburi, csv_table_path, report_path=None, schema="dailypdbanpacarica"):
     """
     Load data from a CSV file and insert it in the table with the same name
 

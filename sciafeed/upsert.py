@@ -1,4 +1,6 @@
 
+import logging
+
 from sqlalchemy import MetaData, Table
 
 from sciafeed import db_utils
@@ -54,15 +56,19 @@ def upsert_stations(dburi, stations_path):
     return msgs, num_inserted_stations, num_updated_stations
 
 
-def upsert_from_csv_table(dburi, csv_table_path, report_path=None, schema="dailypdbanpacarica"):
+def upsert_from_csv_table(conn, csv_table_path, policy, logger, schema="dailypdbanpacarica"):
     """
     Load data from a CSV file and insert it in the table with the same name
 
-    :param dburi:
+    :param conn:
     :param csv_table_path:
-    :param report_path:
+    :param policy:
+    :param logger:
+    :param schema:
     :return:
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     # TODO
     # for each row of the CSV:
     #   open a transaction

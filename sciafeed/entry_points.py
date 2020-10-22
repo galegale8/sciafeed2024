@@ -2,7 +2,6 @@
 This modules provides the functions of the SCIA FEED package's entry points
 """
 from datetime import datetime
-import logging
 from os import listdir, mkdir
 from os.path import exists, isdir, isfile, join
 import sys
@@ -17,8 +16,6 @@ from sciafeed import process
 from sciafeed import querying
 from sciafeed import upsert
 from sciafeed import utils
-
-logger = logging.getLogger('SCIA-FEED')
 
 
 @click.command()
@@ -228,10 +225,10 @@ def upsert_stations(stations_path, dburi, report_path):
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
 def check_chain(dburi, report_path, station_where, schema):
-    utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
+    logger = utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
     stations_ids = querying.get_stations_by_where(dburi, station_where)
     logger.info('START CHECK CHAIN')
-    process.check_chain(dburi, stations_ids, schema)
+    process.check_chain(dburi, stations_ids, schema, logger)
     logger.info('END CHECK CHAIN')
 
 
@@ -253,7 +250,7 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
     """
     Download utility for ARPA Emilia-Romagna.
     """
-    utils.setup_log(report_path)
+    logger = utils.setup_log(report_path)
     if not exists(download_folder):
         mkdir(download_folder)
     now = datetime.now()
@@ -278,3 +275,26 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
     arpaer.download_er(
         download_folder, start, end, parameters_filepath=parameters_filepath,
         credentials_folder=credentials_folder)
+
+
+@click.command()
+@click.argument('data_folder', type=click.Path(exists=True, dir_okay=True))
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--policy', '-p', type=click.Choice(['onlyinsert', 'upsert']), default='upsert',
+              help="policy to apply in the insert")
+@click.option('--schema', '-s', default='dailypdbanpacarica',
+              help="""database schema to use. Default is 'dailypdbanpacarica'""")
+def insert_data(data_folder, dburi, report_path, policy, schema):
+    logger = utils.setup_log(report_path)
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    children = sorted(listdir(data_folder))
+    for child in children:
+        csv_table_path = join(data_folder, child)
+        if not isfile(csv_table_path):
+            continue
+        upsert.upsert_from_csv_table(conn, csv_table_path, policy, logger, schema, )

@@ -23,8 +23,6 @@ import numpy as np
 from sciafeed import LOG_NAME
 from sciafeed import utils
 
-logger = logging.getLogger(LOG_NAME)
-
 
 def data_internal_consistence_check(input_data, limiting_params=None):
     """
@@ -123,7 +121,7 @@ def data_weak_climatologic_check(input_data, parameters_thresholds=None):
     return err_msgs, data_modified
 
 
-def check1(records, len_threshold=180, flag=-12, val_index=2):
+def check1(records, len_threshold=180, flag=-12, val_index=2, logger=None):
     """
     Check "controllo valori ripetuti = 0".
     Assumes all records are sorted by station, date.
@@ -134,8 +132,11 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
     :param len_threshold: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index))
 
     new_records = [r[:] for r in records]
@@ -159,7 +160,7 @@ def check1(records, len_threshold=180, flag=-12, val_index=2):
     return new_records
 
 
-def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
+def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), logger=None):
     """
     Check "controllo valori ripetuti" for the input records.
     Assumes all records are sorted by station, date.
@@ -171,8 +172,11 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param exclude_values: iterable of values to be excluded from the check for the input records
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
@@ -197,7 +201,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=()):
     return new_records
 
 
-def check3(records, min_not_null=None, flag=-15, val_index=2):
+def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
     Assumes all records are sorted by station, date.
@@ -208,11 +212,14 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
     # TODO: ASK: of course, grouping by station, isn't it?
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
 
     new_records = [r[:] for r in records]
@@ -253,7 +260,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2):
     return new_records
 
 
-def check4(records, min_not_null=None, flag=-17, val_index=2):
+def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
     Assumes all records are sorted by station, date.
@@ -264,11 +271,14 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
     :param min_not_null: lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
     # TODO: ASK: check in the same time series both prec and temp, or do
     #       a sequence of different checks?
     # TODO: ASK: of course, grouping by station, isn't it?
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
@@ -313,7 +323,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2):
     return new_records
 
 
-def check5(records, len_threshold=10, flag=-19):
+def check5(records, len_threshold=10, flag=-19, logger=None):
     """
     Check "controllo TMAX=TMIN".
     Assumes all records are sorted by station, date.
@@ -323,8 +333,11 @@ def check5(records, len_threshold=10, flag=-19):
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param len_threshold: minimum lenght of the consecutive zeros to find
     :param flag: the value of the flag to set for found records
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s)" % (len_threshold, flag))
 
     group_by_station = operator.itemgetter(0)
@@ -350,7 +363,7 @@ def check5(records, len_threshold=10, flag=-19):
     return new_records
 
 
-def check6(records, flag=-20):
+def check6(records, flag=-20, logger=None):
     """
     Check "controllo TMAX=TMIN=0"
     Assumes all records are sorted by station, date.
@@ -359,8 +372,11 @@ def check6(records, flag=-20):
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag: the value of the flag to set for found records
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s)" % flag)
 
     new_records = [r[:] for r in records]
@@ -378,7 +394,7 @@ def check6(records, flag=-20):
     return new_records
 
 
-def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2):
+def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2, logger=None):
     """
     Check "controllo world excedence" for the input records.
     Assumes all records are sorted by station, date.
@@ -391,8 +407,11 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     :param max_threshold: maximum value in the check
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s)" \
           % (min_threshold, max_threshold, flag, val_index))
 
@@ -455,7 +474,8 @@ def gap_bottom_checks(terms, threshold):
     return -math.inf
 
 
-def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val_index=2):
+def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val_index=2,
+           logger=None):
     """
     Check "controllo gap checks" for the input records.
     If split = False: case of "controllo gap checks  precipitazione" (see documentation)
@@ -476,6 +496,8 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     """
     # TODO: ASK to accumulate distribution on all years of a month, or to do a month a time?
     # TODO: ASK split by median: '>=' and '<=', or '>' and '<'?
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s, %s)"
                 % (threshold, split, flag_sup, flag_inf, val_index))
 
@@ -536,7 +558,8 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     return new_records
 
 
-def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_index=2):
+def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_index=2,
+           logger=None):
     """
     Check "controllo z-score checks temperatura"
     Assumes all records are sorted by station, date.
@@ -549,11 +572,13 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     :param min_num: the minimum size of the values to be found inside the window
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
     if not (window_days % 2):
         raise ValueError('window_days must be odd')
-
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s, %s)"
                 % (num_dev_std, window_days, min_num, flag, val_index))
 
@@ -615,7 +640,7 @@ def split_days_by_average_temp(temp_records):
 
 
 def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, min_num=20,
-            flag=-25, val_index=2):
+            flag=-25, val_index=2, logger=None):
     """
     Check "controllo z-score checks precipitazione [ghiaccio]".
     Assumes all records are sorted by station, date.
@@ -630,11 +655,13 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     :param min_num: the minimum size of the values to be found inside the window
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
     if not (window_days % 2):
         raise ValueError('window_days must be odd')
-
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s, %s, %s)"
                 % (times_perc, percentile, window_days, min_num, flag, val_index))
 
@@ -680,7 +707,7 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     return new_records
 
 
-def check11(records, max_diff=18, flag=-27, val_index=2):
+def check11(records, max_diff=18, flag=-27, val_index=2, logger=None):
     """
     Check "controllo jump checks" for the input records.
     Assumes all records are sorted by station, date.
@@ -691,8 +718,11 @@ def check11(records, max_diff=18, flag=-27, val_index=2):
     :param max_diff: module of the threshold increase between consecutive days
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (max_diff, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
@@ -727,7 +757,7 @@ def check11(records, max_diff=18, flag=-27, val_index=2):
     return new_records
 
 
-def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
+def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4), logger=None):
     """
     Check "controllo TMAX < TMIN" for the input records.
     Assumes all records are sorted by station, date.
@@ -738,9 +768,12 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
     :param min_diff: threshold difference between vars[0] and vars[1]
     :param flag: the value of the flag to set for found records
     :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :param logger: logging object where to report actions
     :return: new_records
     """
     # TODO: ASK: really check that TMAX >= Tmin -5 ? not TMAX >= Tmin +5
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_diff, flag, val_indexes))
 
     new_records = [r[:] for r in records]
@@ -761,7 +794,7 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4)):
     return new_records
 
 
-def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
+def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=None):
     """
     Check "controllo dtr (diurnal temperature range)".
     Operators is applied in the formula:
@@ -784,11 +817,14 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4)):
     :param jump: the jump to apply in the formula
     :param flag: the value of the flag to set for found records
     :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :param logger: logging object where to report actions
     :return: new_records
     """
     # TODO: ASK: to invalidate tmax0 and [tmin-1, tmin0, tmin1] ?
     # TODO: ASK: the flags are to be reset at the end, not during the execution of the algorithm,
     #            isn't it?
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s)"
                 % (repr(operators), jump, flag, val_indexes))
 

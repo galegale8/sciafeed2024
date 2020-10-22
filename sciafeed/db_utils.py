@@ -6,7 +6,6 @@ import logging
 from sqlalchemy import engine_from_config, MetaData, Table
 from sciafeed import LOG_NAME
 
-logger = logging.getLogger(LOG_NAME)
 
 USER = 'scia'
 PASSWORD = 'scia'
@@ -72,7 +71,7 @@ def get_table_columns(table_name):
     return [c.name for c in table_obj.columns]
 
 
-def update_prec_flags(conn, records, schema='dailypdbanpacarica'):
+def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__preci.
@@ -81,7 +80,10 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica'):
     :param conn: db connection object
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param schema: database schema to use
+    :param logger: logging object where to report actions
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info('start process for update of PREC flags')
     pre_sql_cmds = [
         'DROP TABLE IF EXISTS updates_table',
@@ -119,7 +121,8 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica'):
     logger.debug('temp folder removed')
 
 
-def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxgg', flag_index=2):
+def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxgg', flag_index=2,
+                      logger=None):
     """
     Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__t200.
@@ -130,7 +133,10 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     :param schema: database schema to use
     :param db_field: name of the database field related to the flag
     :param flag_index: index of the flag value in each record
+    :param logger: logging object where to report actions
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info('start process for update of TEMP flags (%s)' % db_field)
     pre_sql_cmds = [
         'DROP TABLE IF EXISTS updates_table2',

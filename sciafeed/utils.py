@@ -196,7 +196,7 @@ def extract_gz(input_path, output_path, rm_source=False):
 
 
 def gettime(thefunction):
-    "decorator to print start and ending time"
+    """decorator to print start and ending time"""
     name = thefunction.__name__
 
     def wrapper(*args, **kwargs):
@@ -214,7 +214,7 @@ def gettime(thefunction):
 
 def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message)s'):
     log_datefmt = '%d-%m-%Y %H:%M:%S'
-    log_name = LOG_NAME
+    log_name = LOG_NAME + datetime.now().isoformat()
     level_for_standard_output = logging.INFO
     level_for_report_file = logging.INFO
 
@@ -237,3 +237,4 @@ def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message
     file_handler.setLevel(level_for_report_file)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+    return logger

@@ -15,8 +15,6 @@ from sciafeed import parsing
 from sciafeed import querying
 from sciafeed import utils
 
-logger = logging.getLogger(LOG_NAME)
-
 
 def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_checks=True,
                 parameters_filepath=None, limiting_params=None):
@@ -137,13 +135,17 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
     return msgs, computed_indicators
 
 
-def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica'):
+def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=None):
     """
     Start a chain of checks on records of the database from a set of monitoring stations selected.
 
     :param dburi: db connection URI
     :param stations_ids: primary keys of the stations (if None: no filtering by stations)
+    :param schema: database schema to use
+    :param logger: logging object where to report actions
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info('== Start process ==')
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()

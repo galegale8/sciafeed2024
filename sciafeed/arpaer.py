@@ -16,7 +16,6 @@ from sciafeed import TEMPLATES_PATH, this_path, LOG_NAME
 from sciafeed import gdrive_utils
 from sciafeed import utils
 
-logger = logging.getLogger(LOG_NAME)
 
 JSON_ANY_MARKER = '999999'
 HISTORICAL_GDRIVE_FOLDER_ID = '0B7KLnPu6vjdPRjZzNWFReTd0MDQ'
@@ -97,14 +96,17 @@ def build_sql(table_name, start=None, end=None, limit=None, only_bcodes=None, **
     return sql
 
 
-def sql2results(sql, timeout=None):
+def sql2results(sql, timeout=None, logger=None):
     """
     Make a query to the ARPAER database
 
     :param sql: the sql string
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
+    :param logger: logging object where to report actions
     :return: the list of dictionaries of the results
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     payload = {'sql': sql}
     logger.debug(sql)
     rr = requests.get(DATASTORE_QUERY_URL, params=payload, timeout=timeout)
@@ -234,7 +236,7 @@ def query_recent_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, on
 
 # entry point candidate
 def download_er(download_folder, start=None, end=None, parameters_filepath=PARAMETERS_FILEPATH,
-                credentials_folder=DEFAULT_CREDENTIALS_FOLDER):
+                credentials_folder=DEFAULT_CREDENTIALS_FOLDER, logger=None):
     """
     Download data from Emilia-Romagna dataset from an interval of dates.
 
@@ -243,7 +245,10 @@ def download_er(download_folder, start=None, end=None, parameters_filepath=PARAM
     :param end: end datetime (default is now)
     :param parameters_filepath: path to the CSV file containing info about stored parameters
     :param credentials_folder: folder with google credential files
+    :param logger: logging object where to report actions
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info("try to connect to the historical folder to get the list of files")
     filelist = gdrive_utils.get_gdrive_filelist(HISTORICAL_GDRIVE_FOLDER_ID, credentials_folder)
     historical_months_map = dict()

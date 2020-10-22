@@ -120,7 +120,7 @@ def stations2csv(stations, stations_path, extra_fields=()):
             writer.writerow(row)
 
 
-def csv2items(csv_path, required_fields=(), ignore_fields=()):
+def csv2items(csv_path, required_fields=(), ignore_fields=(), ignore_empty_fields=False):
     """
     Get a CSV located at `csv_path` and return a list of dictionaries according to the CSV rows.
     If some required fields are missing, raise an error.
@@ -128,6 +128,7 @@ def csv2items(csv_path, required_fields=(), ignore_fields=()):
     :param csv_path: CSV path
     :param required_fields: list of required fields (if black, raise ValueError)
     :param ignore_fields: list of fields to ignore
+    :param ignore_empty_fields: if True, ignore the empty fields
     :return: a list of of dictionaries according to the CSV rows
     """
     items = []
@@ -140,6 +141,8 @@ def csv2items(csv_path, required_fields=(), ignore_fields=()):
                     continue
                 value = field_value.strip()
                 if value == '':
+                    if ignore_empty_fields:
+                        continue
                     item[field_name] = None
                     if field_name in required_fields:
                         raise ValueError("Line %i of %r: required field %r is missing"

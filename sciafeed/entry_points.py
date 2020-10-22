@@ -3,7 +3,7 @@ This modules provides the functions of the SCIA FEED package's entry points
 """
 from datetime import datetime
 from os import listdir, mkdir
-from os.path import exists, isdir, isfile, join
+from os.path import exists, isdir, isfile, join, splitext
 import sys
 
 import click
@@ -290,6 +290,7 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
 def insert_data(data_folder, dburi, report_path, policy, schema):
     logger = utils.setup_log(report_path)
+    logger.info('starting process of inserting data')
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
     children = sorted(listdir(data_folder))
@@ -297,4 +298,14 @@ def insert_data(data_folder, dburi, report_path, policy, schema):
         csv_table_path = join(data_folder, child)
         if not isfile(csv_table_path):
             continue
-        upsert.upsert_from_csv_table(conn, csv_table_path, policy, logger, schema, )
+        table_name = splitext(child)[0]
+        table_cols = db_utils.get_table_columns(table_name, schema=schema)
+        if not table_cols:
+            logger.warning('ignoring file %s: not found the table %s.%s'
+                           % (child, schema, table_name))
+        logger.info('- reading data from file %s' % child)
+        items = export.csv2items(csv_table_path,ignore_empty_fields=True)
+        logger.info('- preparing data for insert' % child)
+        items = upsert.prepare_items(items)
+        logger.info('- start insert of data from file %s' % child)
+        upsert.upsert_items(conn, items, policy, logger, schema, table_name)

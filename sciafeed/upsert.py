@@ -1,8 +1,11 @@
 
+import functools
+import itertools
 import logging
 
 from sqlalchemy import MetaData, Table
 
+from sciafeed import LOG_NAME
 from sciafeed import db_utils
 from sciafeed import export
 from sciafeed import querying
@@ -56,30 +59,67 @@ def upsert_stations(dburi, stations_path):
     return msgs, num_inserted_stations, num_updated_stations
 
 
-def upsert_from_csv_table(conn, csv_table_path, policy, logger, schema="dailypdbanpacarica"):
+def prepare_items(conn, items, logger=None):
     """
-    Load data from a CSV file and insert it in the table with the same name
+    Prepare items to the insert into the database
 
-    :param conn:
-    :param csv_table_path:
-    :param policy:
-    :param logger:
-    :param schema:
-    :return:
+    :param conn: db connection object
+    :param items: iterable of records of a db table
+    :param logger: logging object where to report actions
+    :return: a new version of items ready to be inserted
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    # TODO
-    # for each row of the CSV:
-    #   open a transaction
-    #   find the primary key pk (date, id_staz)
-    #   query db to decide if to do an insert or an update
-    #   if update:
-    #      find the list of values not None of the record to be updated
-    #        (to avoid to set None the not-null fields for the existing records)
-    #        (avoid in general to set values None, in case do not insert the record at all)
-    #      create and execute the update sql
-    #   else:  (insert)
-    #      create the insert sql from the csv row and execute it
-    #   close transaction
+    meta = MetaData()
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
+                       schema='dailypdbadmclima')
 
+    items.sort(key=lambda x: (x['cod_staz'], x['data_i']))
+    group_by_station = lambda x: x['cod_staz']
+    group_by_date = lambda x: x['data_i']
+    records = []
+    # TODO: loading the full set of station could increase performance?
+    for station, station_records in itertools.groupby(items, group_by_station):
+        cod_rete, cod_utente = station.split('--', 2)
+        cod_staz = querying.get_db_station(
+            conn, anag_table, cod_rete=cod_rete, cod_utente=cod_utente)
+        if not cod_staz:
+            logger.error("station cod_rete=%s, cod_utente=%s not found. Records ignored."
+                         % (cod_rete, cod_utente))
+            continue
+        for day, day_records in itertools.groupby(station_records, group_by_date):
+            # day_obj = datetime.strptime(day, '%Y-%m-%d')
+            record = functools.reduce(lambda a,b: a.update(b) or a, day_records, {})
+            record['cod_staz'] = cod_staz
+            # record['data_i'] = day_obj
+            records.append(record)
+    return records
+
+
+def upsert_items(conn, items, policy, logger, schema, table_name):
+    """
+    Insert a list of items in a table in the database.
+
+    :param conn: db connection object
+    :param items: iterable of records of a db table
+    :param policy: 'onlyinsert' or 'upsert'
+    :param logger: logging object where to report actions
+    :param schema: database schema to use
+    :param table_name: name of the table
+    """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    pkey_constraint_name = '%s_pkey' % table_name
+    for item in items:
+        cod_staz = item['cod_staz']
+        data_i = item['data_i']
+        fields, values = list(zip(*item.items()))
+        if policy == 'onlyinsert':
+            action = 'NOTHING'
+        else:
+            action = "UPDATE SET %r = %r WHERE cod_staz = '%s' AND data_i = '%s'" \
+                     % (fields, values, cod_staz, data_i)
+        sql = "INSERT INTO %s.%s %r VALUES %r ON CONFLICT ON CONSTRAINT %s DO %s" \
+              % (schema, table_name, fields, values, pkey_constraint_name, action)
+        logger.debug(sql)
+        conn.execute(sql)

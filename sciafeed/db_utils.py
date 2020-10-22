@@ -52,18 +52,16 @@ def ensure_engine(db_uri='sqlite:///:memory:'):
     return ENGINE
 
 
-def get_table_columns(table_name):
+def get_table_columns(table_name, schema='public'):
     """
     Return the list of column names of a table named `table_name`.
 
     :param table_name: the table name
+    :param schema: the database schema
     :return: the list of column names
     """
     meta = MetaData()
     engine = ensure_engine()
-    schema = 'public'
-    if '.' in table_name:
-        schema, table_name = table_name.split('.', 1)
     try:
         table_obj = Table(table_name, meta, autoload=True, autoload_with=engine, schema=schema)
     except:

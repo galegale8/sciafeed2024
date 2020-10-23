@@ -75,7 +75,6 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     meta = MetaData()
     anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
                        schema='dailypdbadmclima')
-
     items.sort(key=lambda x: (x['cod_staz'], x['data_i']))
     group_by_station = lambda x: x['cod_staz']
     group_by_date = lambda x: x['data_i']
@@ -94,7 +93,6 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
                          % (cod_rete, cod_utente))
             continue
         cod_staz = stat_obj.id_staz
-        import pdb; pdb.set_trace()
         for day, day_records in itertools.groupby(station_records, group_by_date):
             # day_obj = datetime.strptime(day, '%Y-%m-%d')
             record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
@@ -112,18 +110,150 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
 
 
 def expand_fields(record):
-    fields_map = {
-        'bagna': ['bagna.flag.ndati', 'bagna.flag.wht', 'bagna.val_md',
-                  'bagna.val_vr', 'bagna.val_mx', 'bagna.val_tot'],
-        # TODO: add others
+    # default is 'dailypdbanpacarica.stat0_obj'
+    field2class_map = {
+        'bagna': 'dailypdbanpacarica.bagna1_obj',
+        'elio': 'dailypdbanpacarica.stat2_obj',
+        'prec24': 'dailypdbanpacarica.prec24_obj',
+        'cl_prec24': 'dailypdbanpacarica.classi_prec_obj',
+        'prec01': 'dailypdbanpacarica.prec_obj',
+        'prec06': 'dailypdbanpacarica.prec_obj',
+        'cl_prec06': 'dailypdbanpacarica.classi_prec_obj',
+        'prec12': 'dailypdbanpacarica.prec_obj',
+        'cl_prec12': 'dailypdbanpacarica.classi_prec_obj',
+        'ggneve': 'dailypdbanpacarica.nxxx_obj',
+        'storm': 'dailypdbanpacarica.nxxx_obj',
+        'ggstorm': 'dailypdbanpacarica.nxxx_obj',
+        'press': 'dailypdbanpacarica.stat0_obj',
+        'radglob': 'dailypdbanpacarica.stat0_obj',
+        'tmxgg': 'dailypdbanpacarica.estremi_t_obj',
+        'cl_tmxgg': 'dailypdbanpacarica.classi_tmx_obj',
+        'tmngg': 'dailypdbanpacarica.estremi_t_obj',
+        'cl_tmngg': 'dailypdbanpacarica.classi_tmn_obj',
+        'tmdgg': 'dailypdbanpacarica.stat1_obj',
+        'tmdgg1': 'dailypdbanpacarica.stat1_obj',
+        'deltagg': 'dailypdbanpacarica.stat0_obj',
+        'day_gelo': 'dailypdbanpacarica.nxxx_obj',
+        'cl_tist': 'dailypdbanpacarica.classi_tist_obj',
+        't00': 'dailypdbanpacarica.stat0_obj',
+        't01': 'dailypdbanpacarica.stat0_obj',
+        't02': 'dailypdbanpacarica.stat0_obj',
+        't03': 'dailypdbanpacarica.stat0_obj',
+        't04': 'dailypdbanpacarica.stat0_obj',
+        't05': 'dailypdbanpacarica.stat0_obj',
+        't06': 'dailypdbanpacarica.stat0_obj',
+        't07': 'dailypdbanpacarica.stat0_obj',
+        't08': 'dailypdbanpacarica.stat0_obj',
+        't09': 'dailypdbanpacarica.stat0_obj',
+        't10': 'dailypdbanpacarica.stat0_obj',
+        't11': 'dailypdbanpacarica.stat0_obj',
+        't12': 'dailypdbanpacarica.stat0_obj',
+        't13': 'dailypdbanpacarica.stat0_obj',
+        't14': 'dailypdbanpacarica.stat0_obj',
+        't15': 'dailypdbanpacarica.stat0_obj',
+        't16': 'dailypdbanpacarica.stat0_obj',
+        't17': 'dailypdbanpacarica.stat0_obj',
+        't18': 'dailypdbanpacarica.stat0_obj',
+        't19': 'dailypdbanpacarica.stat0_obj',
+        't20': 'dailypdbanpacarica.stat0_obj',
+        't21': 'dailypdbanpacarica.stat0_obj',
+        't22': 'dailypdbanpacarica.stat0_obj',
+        't23': 'dailypdbanpacarica.stat0_obj',
+        'ur': 'dailypdbanpacarica.stat01_obj',
+        'ur00': 'dailypdbanpacarica.stat1_obj',
+        'ur01': 'dailypdbanpacarica.stat1_obj',
+        'ur02': 'dailypdbanpacarica.stat1_obj',
+        'ur03': 'dailypdbanpacarica.stat1_obj',
+        'ur04': 'dailypdbanpacarica.stat1_obj',
+        'ur05': 'dailypdbanpacarica.stat1_obj',
+        'ur06': 'dailypdbanpacarica.stat1_obj',
+        'ur07': 'dailypdbanpacarica.stat1_obj',
+        'ur08': 'dailypdbanpacarica.stat1_obj',
+        'ur09': 'dailypdbanpacarica.stat1_obj',
+        'ur10': 'dailypdbanpacarica.stat1_obj',
+        'ur11': 'dailypdbanpacarica.stat1_obj',
+        'ur12': 'dailypdbanpacarica.stat1_obj',
+        'ur13': 'dailypdbanpacarica.stat1_obj',
+        'ur14': 'dailypdbanpacarica.stat1_obj',
+        'ur15': 'dailypdbanpacarica.stat1_obj',
+        'ur16': 'dailypdbanpacarica.stat1_obj',
+        'ur17': 'dailypdbanpacarica.stat1_obj',
+        'ur18': 'dailypdbanpacarica.stat1_obj',
+        'ur19': 'dailypdbanpacarica.stat1_obj',
+        'ur20': 'dailypdbanpacarica.stat1_obj',
+        'ur21': 'dailypdbanpacarica.stat1_obj',
+        'ur22': 'dailypdbanpacarica.stat1_obj',
+        'ur23': 'dailypdbanpacarica.stat1_obj',
+        'cl_ur06': 'dailypdbanpacarica.classi_ur_obj',
+        'cl_ur12': 'dailypdbanpacarica.classi_ur_obj',
+        'vntmxgg': 'dailypdbanpacarica.vntmxgg_obj',
+        'vnt': 'dailypdbanpacarica.vnt16_obj',
+        'prs_ff': 'dailypdbanpacarica.prs_ff_obj',
+        'prs_dd': 'dailypdbanpacarica.prs_dd_obj',
+        'vntmd': 'dailypdbanpacarica.vntmd_obj',
+    }
+    class2subfields_map = {
+        'dailypdbanpacarica.bagna1_obj':
+            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_tot'],
+        'dailypdbanpacarica.stat2_obj':
+            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx'],
+        'dailypdbanpacarica.prec24_obj':
+            ['flag.ndati', 'flag.wht', 'val_tot', 'val_mx', 'data_mx'],
+        'dailypdbanpacarica.classi_prec_obj':
+            ['dry', 'wet_01', 'wet_02', 'wet_03', 'wet_04', 'wet_05'],
+        'dailypdbanpacarica.nxxx_obj': ['flag.ndati', 'flag.wht', 'num'],
+        'dailypdbanpacarica.stat0_obj':
+            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_mn'],
+        'dailypdbanpacarica.estremi_t_obj':
+            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_x', 'data_x'],
+        'dailypdbanpacarica.classi_tmx_obj':
+            ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07',
+             'cl_08', 'cl_09', 'cl_10', 'cl_11'],
+        'dailypdbanpacarica.classi_tmn_obj':
+            ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07', 'cl_08', 'cl_09'],
+        'dailypdbanpacarica.stat1_obj': ['flag.ndati', 'flag.wht', 'val_md', 'val_vr'],
+        'dailypdbanpacarica.classi_tist_obj': [
+            'flag.ndati', 'flag.wht', 'cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06',
+            'cl_07', 'cl_08', 'cl_09', 'cl_10', 'cl_11', 'cl_12', 'cl_13', 'cl_14'],
+        'dailypdbanpacarica.stat01_obj': [
+            'flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'flag1.ndati', 'flag1.wht',
+            'val_mx', 'val_mn'],
+        'dailypdbanpacarica.classi_ur_obj': ['cl_01', 'cl_02', 'cl_03', 'cl_04'],
+        'dailypdbanpacarica.vntmxgg_obj': ['flag.ndati', 'flag.wht', 'ff', 'dd'],
+        'dailypdbanpacarica.vnt16_obj': [
+            'flag.ndati', 'flag.wht', 'frq_calme',
+            'frq_s01c1', 'frq_s01c2', 'frq_s01c3', 'frq_s01c4',
+            'frq_s02c1', 'frq_s02c2', 'frq_s02c3', 'frq_s02c4',
+            'frq_s03c1', 'frq_s03c2', 'frq_s03c3', 'frq_s03c4',
+            'frq_s04c1', 'frq_s04c2', 'frq_s04c3', 'frq_s04c4',
+            'frq_s05c1', 'frq_s05c2', 'frq_s05c3', 'frq_s05c4',
+            'frq_s06c1', 'frq_s06c2', 'frq_s06c3', 'frq_s06c4',
+            'frq_s07c1', 'frq_s07c2', 'frq_s07c3', 'frq_s07c4',
+            'frq_s08c1', 'frq_s08c2', 'frq_s08c3', 'frq_s08c4',
+            'frq_s09c1', 'frq_s09c2', 'frq_s09c3', 'frq_s09c4',
+            'frq_s10c1', 'frq_s10c2', 'frq_s10c3', 'frq_s10c4',
+            'frq_s11c1', 'frq_s11c2', 'frq_s11c3', 'frq_s11c4',
+            'frq_s12c1', 'frq_s12c2', 'frq_s12c3', 'frq_s12c4',
+            'frq_s13c1', 'frq_s13c2', 'frq_s13c3', 'frq_s13c4',
+            'frq_s14c1', 'frq_s14c2', 'frq_s14c3', 'frq_s14c4',
+            'frq_s15c1', 'frq_s15c2', 'frq_s15c3', 'frq_s15c4',
+            'frq_s16c1', 'frq_s16c2', 'frq_s16c3', 'frq_s16c4'],
+        'dailypdbanpacarica.prs_ff_obj': ['n0', 'n1', 'n2', 'n3', 'n4'],
+        'dailypdbanpacarica.prs_dd_obj': [
+            'n01', 'ff01', 'n02', 'ff02', 'n03', 'ff03', 'n04', 'ff04',
+            'n05', 'ff05', 'n06', 'ff06', 'n07', 'ff07', 'n08', 'ff08',
+            'n09', 'ff09', 'n10', 'ff10', 'n11', 'ff11', 'n12', 'ff12',
+            'n13', 'ff13', 'n14', 'ff14', 'n15', 'ff15', 'n16', 'ff16'],
+        'dailypdbanpacarica.vntmd_obj': ['flag.ndati', 'flag.wht', 'ff']
     }
     record_cp = record.copy()
     for field, value in record_cp.items():
-        if field in fields_map:
-            value = value.replace('(', '').replace(')', '')
+        if field in field2class_map:
+            klass = field2class_map[field]
+            subfields = class2subfields_map[klass]
             new_values = [r.strip() not in ('', 'None') and r.strip() or 'NULL'
                           for r in value.replace('(', '').replace(')', '').split(',')]
-            for i, extra_field in enumerate(fields_map[field]):
-                record[extra_field] = new_values[i]
+            for i, subfield in enumerate(subfields):
+                record["%s.%s" % (field, subfield)] = new_values[i]
             del record[field]
     return record

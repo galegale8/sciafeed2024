@@ -14,27 +14,27 @@ import statistics
 
 ROUND_PRECISION = 1
 INDICATORS_TABLES = {
-    'sciapgg.ds__bagna': ['data_i', 'cod_staz', 'cod_aggr', 'bagna'],
-    'sciapgg.ds__elio': ['data_i', 'cod_staz', 'cod_aggr', 'elio'],
-    'sciapgg.ds__preci': ['data_i', 'cod_staz', 'cod_aggr', 'prec24',
-                          'cl_prec24', 'prec01', 'prec06', 'cl_prec06',
-                          'prec12', 'cl_prec12', 'ggneve', 'storm', 'ggstorm'],
-    'sciapgg.ds__press': ['data_i', 'cod_staz', 'cod_aggr', 'press'],
-    'sciapgg.ds__radglob': ['data_i', 'cod_staz', 'cod_aggr', 'radglob'],
-    'sciapgg.ds__t200': ['data_i', 'cod_staz', 'cod_aggr', 'tmxgg',
-                         'cl_tmxgg', 'tmngg', 'cl_tmngg', 'tmdgg',
-                         'tmdgg1', 'deltagg', 'day_gelo', 'cl_tist',
-                         't00', 't01', 't02', 't03', 't04', 't05',
-                         't06', 't07', 't08', 't09', 't10', 't11',
-                         't12', 't13', 't14', 't15', 't16', 't17',
-                         't18', 't19', 't20', 't21', 't22', 't23'],
-    'sciapgg.ds__urel': ['data_i', 'cod_staz', 'cod_aggr', 'ur', 'ur00',
-                         'ur01', 'ur02', 'ur03', 'ur04', 'ur05', 'ur06',
-                         'cl_ur06', 'ur07', 'ur08', 'ur09', 'ur10', 'ur11',
-                         'ur12', 'cl_ur12', 'ur13', 'ur14', 'ur15', 'ur16',
-                         'ur17', 'ur18', 'ur19', 'ur20', 'ur21', 'ur22', 'ur23'],
-    'sciapgg.ds__vnt10': ['data_i', 'cod_staz', 'cod_aggr', 'vntmxgg',
-                          'vnt', 'prs_ff', 'prs_dd', 'vntmd']
+    'ds__bagna': ['data_i', 'cod_staz', 'cod_aggr', 'bagna'],
+    'ds__elio': ['data_i', 'cod_staz', 'cod_aggr', 'elio'],
+    'ds__preci': ['data_i', 'cod_staz', 'cod_aggr', 'prec24',
+                  'cl_prec24', 'prec01', 'prec06', 'cl_prec06',
+                  'prec12', 'cl_prec12', 'ggneve', 'storm', 'ggstorm'],
+    'ds__press': ['data_i', 'cod_staz', 'cod_aggr', 'press'],
+    'ds__radglob': ['data_i', 'cod_staz', 'cod_aggr', 'radglob'],
+    'ds__t200': ['data_i', 'cod_staz', 'cod_aggr', 'tmxgg',
+                 'cl_tmxgg', 'tmngg', 'cl_tmngg', 'tmdgg',
+                 'tmdgg1', 'deltagg', 'day_gelo', 'cl_tist',
+                 't00', 't01', 't02', 't03', 't04', 't05',
+                 't06', 't07', 't08', 't09', 't10', 't11',
+                 't12', 't13', 't14', 't15', 't16', 't17',
+                 't18', 't19', 't20', 't21', 't22', 't23'],
+    'ds__urel': ['data_i', 'cod_staz', 'cod_aggr', 'ur', 'ur00',
+                 'ur01', 'ur02', 'ur03', 'ur04', 'ur05', 'ur06',
+                 'cl_ur06', 'ur07', 'ur08', 'ur09', 'ur10', 'ur11',
+                 'ur12', 'cl_ur12', 'ur13', 'ur14', 'ur15', 'ur16',
+                 'ur17', 'ur18', 'ur19', 'ur20', 'ur21', 'ur22', 'ur23'],
+    'ds__vnt10': ['data_i', 'cod_staz', 'cod_aggr', 'vntmxgg',
+                  'vnt', 'prs_ff', 'prs_dd', 'vntmd']
 }
 # -------------- GENERIC UTILITIES --------------
 
@@ -140,7 +140,7 @@ def compute_flag(day_records, at_least_perc):
 def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione cumulata giornaliera". It will fill the field 'prec24' of
-    table 'sciapgg.ds__preci'.
+    table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_tot, val_mx, data_mx) where:
     ::
@@ -177,7 +177,7 @@ def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
 def compute_cl_prec24(day_records):
     """
     Compute "distribuzione precipitazione cumulata giornaliera".
-    It will fill the field 'cl_prec24' of table 'sciapgg.ds__preci'.
+    It will fill the field 'cl_prec24' of table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
     ::
@@ -201,7 +201,7 @@ def compute_cl_prec24(day_records):
 def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione max cumulata su 1 ora". It will fill the field 'prec01' of
-    table 'sciapgg.ds__preci'.
+    table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_mx, data_mx) where:
     ::
@@ -234,7 +234,7 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
 def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione cumulata su 6 ore". It will fill the field 'prec06' of
-    table 'sciapgg.ds__preci'.
+    table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_mx, data_mx) where:
     ::
@@ -269,7 +269,7 @@ def compute_prec06(day_records, at_least_perc=0.9, force_flag=None):
 def compute_cl_prec06(day_records):
     """
     Compute "distribuzione precipitazione cumulata su 6 ore".
-    It will fill the field 'cl_prec06' of table 'sciapgg.ds__preci'.
+    It will fill the field 'cl_prec06' of table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
     ::
@@ -294,7 +294,7 @@ def compute_cl_prec06(day_records):
 def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
     """
     Compute "precipitazione cumulata su 12 ore". It will fill the field 'prec12' of
-    table 'sciapgg.ds__preci'.
+    table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (flag, val_mx, data_mx) where:
     ::
@@ -328,7 +328,7 @@ def compute_prec12(day_records, at_least_perc=0.9, force_flag=None):
 def compute_cl_prec12(day_records):
     """
     Compute "distribuzione precipitazione cumulata su 12 ore".
-    It will fill the field 'cl_prec12' of table 'sciapgg.ds__preci'.
+    It will fill the field 'cl_prec12' of table 'ds__preci'.
     `day_records' is a list of `data` objects of PREC for a fixed day and a fixed station.
     It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
     ::
@@ -389,7 +389,7 @@ def compute_temperature_flag(input_records, perc_day=0.75, perc_night=0.75,
 def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "media e varianza della temperatura giornaliera".
-    It will fill the field 'tmdgg' of table 'sciapgg.ds__t200'.
+    It will fill the field 'tmdgg' of table 'ds__t200'.
     It assumes day_records is of par_code='Tmedia'.
     It returns the tuple (flag, val_md, val_vr) where:
     ::
@@ -422,7 +422,7 @@ def compute_tmdgg(day_records, at_least_perc=0.75, force_flag=None):
 def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "massimo della temperatura giornaliera".
-    It will fill the field 'tmxgg' of table 'sciapgg.ds__t200'.
+    It will fill the field 'tmxgg' of table 'ds__t200'.
     It assumes day_records is of par_code='Tmax' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
@@ -461,7 +461,7 @@ def compute_tmxgg(day_records, at_least_perc=0.75, force_flag=None):
 def compute_tmngg(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "minimo della temperatura giornaliera".
-    It will fill the field 'tmngg' of table 'sciapgg.ds__t200'.
+    It will fill the field 'tmngg' of table 'ds__t200'.
     It assumes day_records is of par_code='Tmin' or par_code='Tmedia' (not both).
     It returns the tuple (flag, val_md, val_vr, val_x, data_x) where:
     ::
@@ -504,7 +504,7 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
                   force_flag=None):
     """
     Compute "pressione atmosferica media, massima e minima".
-    It will fill the field 'press' of table 'sciapgg.ds__press'.
+    It will fill the field 'press' of table 'ds__press'.
     It assumes day_records is of the same station and day.
     It returns the tuple (flag, val_md, val_vr, val_mx, val_mn) where:
     ::
@@ -556,7 +556,7 @@ def compute_press(day_records_pmedia, day_records_pmax, day_records_pmin, at_lea
 def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "bagnatura fogliare giornaliera".
-    It will fill the field 'bagna' of table 'sciapgg.ds__bagna'.
+    It will fill the field 'bagna' of table 'ds__bagna'.
     It assumes day_records is of the same station and day, and values are in minutes.
     It returns the tuple (flag, val_md, val_vr, val_mx, val_mn, val_tot) where:
     ::
@@ -598,7 +598,7 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
 def compute_elio(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "eliofania giornaliera".
-    It will fill the field 'elio' of table 'sciapgg.ds__elio'.
+    It will fill the field 'elio' of table 'ds__elio'.
     It assumes day_records is of the same station and day, and values are in minutes,
     and the par_code is INSOL or INSOL_00 (not both).
     It returns the tuple (flag, val_md, val_vr, val_mx) where:
@@ -637,7 +637,7 @@ def compute_elio(day_records, at_least_perc=0.75, force_flag=None):
 def compute_radglob(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "radiazione globale media giornaliera".
-    It will fill the field 'radglob' of table 'sciapgg.ds__radglob'.
+    It will fill the field 'radglob' of table 'ds__radglob'.
     It assumes day_records is of the same station and day, and values are in cal/cm2,
     and the par_code is RADSOL.
     It returns the tuple (flag, val_md, val_vr, val_mx, val_mn) where:
@@ -679,7 +679,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
                at_least_perc=0.75, force_flag=None):
     """
     Compute "umidità relativa dell'aria giornaliera media, massima e minima".
-    It will fill the field 'ur' of table 'sciapgg.ds__urel'.
+    It will fill the field 'ur' of table 'ds__urel'.
     It assumes day_records is of the same station and day.
     It returns the tuple (flag, val_md, val_vr, flag1, val_mx, val_mn) where:
     ::
@@ -728,7 +728,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
             val_mn = round(min(urmedia_values), ROUND_PRECISION)
     return flag, val_md, val_vr, flag1, val_mx, val_mn
 
-# TODO ask because sciapgg.ds__urel has more fields
+# TODO ask because ds__urel has more fields
 
 # ----------------     WIND     -----------------
 
@@ -736,7 +736,7 @@ def compute_ur(day_records_urmedia, day_records_urmax, day_records_urmin,
 def compute_vntmd(day_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "velocità media giornaliera del vento".
-    It will fill the field 'vntmd' of table 'sciapgg.ds__vnt10'.
+    It will fill the field 'vntmd' of table 'ds__vnt10'.
     It assumes day_records is of par_code='FF'.
     It returns the tuple (flag, ff) where:
     ::
@@ -786,7 +786,7 @@ def compute_wind_flag(day_ff_records, day_dd_records, at_least_perc=0.75):
 def compute_vntmxgg(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "intensità e direzione massima giornaliera del vento".
-    It will fill the field 'vntmxgg' of table 'sciapgg.ds__vnt10'.
+    It will fill the field 'vntmxgg' of table 'ds__vnt10'.
     It returns the tuple (flag, ff, dd) where:
     ::
 
@@ -874,7 +874,7 @@ def wind_dd_partition(input_records):
 def compute_vnt(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=None):
     """
     Compute "frequenza di intensità e direzione giornaliera del vento".
-    It will fill the field 'vnt' of table 'sciapgg.ds__vnt10'.
+    It will fill the field 'vnt' of table 'ds__vnt10'.
     It returns the tuple: (flag, frq_calme, ....frq_s(i)c(j) for i=[1,...16], j=[1,...4] )
     where:
     ::
@@ -950,7 +950,7 @@ def compute_day_indicators(measures):
     prec_day_records = [m for m in measures if m[2] == 'PREC']
     prec_flag = compute_flag(prec_day_records, at_least_perc=0.9)
     if prec_flag[0]:
-        ret_value['sciapgg.ds__preci'] = {
+        ret_value['ds__preci'] = {
             'prec01': compute_prec01(prec_day_records, force_flag=prec_flag),
             'prec06': compute_prec06(prec_day_records, force_flag=prec_flag),
             'prec12': compute_prec12(prec_day_records, force_flag=prec_flag),
@@ -965,14 +965,14 @@ def compute_day_indicators(measures):
     tmin_day_records = [m for m in measures if m[2] == 'Tmin']
     tmax_day_records = [m for m in measures if m[2] == 'Tmax']
     if tmedia_day_records or tmin_day_records or tmax_day_records:
-        ret_value['sciapgg.ds__t200'] = dict()
+        ret_value['ds__t200'] = dict()
         if tmedia_day_records:
-            ret_value['sciapgg.ds__t200']['tmdgg'] = compute_tmdgg(tmedia_day_records)
+            ret_value['ds__t200']['tmdgg'] = compute_tmdgg(tmedia_day_records)
         if tmedia_day_records or tmin_day_records:
-            ret_value['sciapgg.ds__t200']['tmngg'] = compute_tmngg(
+            ret_value['ds__t200']['tmngg'] = compute_tmngg(
                 tmin_day_records or tmedia_day_records)
         if tmedia_day_records or tmax_day_records:
-            ret_value['sciapgg.ds__t200']['tmxgg'] = compute_tmxgg(
+            ret_value['ds__t200']['tmxgg'] = compute_tmxgg(
                 tmax_day_records or tmedia_day_records)
 
     # PRESSURE
@@ -980,14 +980,14 @@ def compute_day_indicators(measures):
     pmin_day_records = [m for m in measures if m[2] == 'Pmin']
     pmax_day_records = [m for m in measures if m[2] == 'Pmax']
     if pmedia_day_records or pmax_day_records or pmin_day_records:
-        ret_value['sciapgg.ds__press'] = {
+        ret_value['ds__press'] = {
             'press': compute_press(pmedia_day_records, pmax_day_records, pmin_day_records)
         }
 
     # BAGNATURA FOGLIARE
     bagna_day_records = [m for m in measures if m[2] == 'Bagnatura_f']
     if bagna_day_records:
-        ret_value['sciapgg.ds__bagna'] = {
+        ret_value['ds__bagna'] = {
             'bagna': compute_bagna(bagna_day_records),
         }
 
@@ -995,14 +995,14 @@ def compute_day_indicators(measures):
     elio_day_records = [m for m in measures if m[2] == 'INSOL']
     elio00_day_records = [m for m in measures if m[2] == 'INSOL_00']
     if elio_day_records or elio00_day_records:
-        ret_value['sciapgg.ds__elio'] = {
+        ret_value['ds__elio'] = {
             'elio': compute_elio(elio_day_records or elio00_day_records)
         }
 
     # RADIAZIONE SOLARE
     radsol_day_records = [m for m in measures if m[2] == 'RADSOL']
     if radsol_day_records:
-        ret_value['sciapgg.ds__radglob'] = {
+        ret_value['ds__radglob'] = {
             'radglob': compute_radglob(radsol_day_records)
         }
 
@@ -1011,7 +1011,7 @@ def compute_day_indicators(measures):
     urmin_day_records = [m for m in measures if m[2] == 'UR min']
     urmax_day_records = [m for m in measures if m[2] == 'UR max']
     if urmedia_day_records or urmax_day_records or urmin_day_records:
-        ret_value['sciapgg.ds__urel'] = {
+        ret_value['ds__urel'] = {
             'ur': compute_ur(urmedia_day_records, urmax_day_records, urmin_day_records)
         }
 
@@ -1019,12 +1019,12 @@ def compute_day_indicators(measures):
     ff_day_records = [m for m in measures if m[2] == 'FF']
     dd_day_records = [m for m in measures if m[2] == 'DD']
     if ff_day_records:
-        ret_value['sciapgg.ds__vnt10'] = dict()
-        ret_value['sciapgg.ds__vnt10']['vntmd'] = compute_vntmd(ff_day_records)
+        ret_value['ds__vnt10'] = dict()
+        ret_value['ds__vnt10']['vntmd'] = compute_vntmd(ff_day_records)
         if dd_day_records:
-            ret_value['sciapgg.ds__vnt10']['vntmxgg'] = compute_vntmxgg(
+            ret_value['ds__vnt10']['vntmxgg'] = compute_vntmxgg(
                 ff_day_records, dd_day_records)
-            ret_value['sciapgg.ds__vnt10']['vnt'] = compute_vnt(ff_day_records, dd_day_records)
+            ret_value['ds__vnt10']['vnt'] = compute_vnt(ff_day_records, dd_day_records)
     return ret_value
 
 
@@ -1052,8 +1052,8 @@ def compute_and_store(data, writers, table_map):
             data_sorted, key=group_same_day):
         # measures are of a station and of a date
         measures = list(measures_it)
-        cod_staz = "%s--%s" % (cod_utente, cod_rete)  # TODO: to convert to id_staz
-        station_date_str = station_day.strftime('%Y-%m-%d')
+        cod_staz = "%s--%s" % (cod_utente, cod_rete)
+        station_date_str = station_day.strftime('%Y-%m-%d 00:00:00')
         # msg = "- computing day indicators for cod_staz=%s, day=%s" \
         #        % (cod_staz, station_date_str)
         # msgs.append(msg)

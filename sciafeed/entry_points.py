@@ -304,8 +304,6 @@ def insert_data(data_folder, dburi, report_path, policy, schema):
             logger.warning('ignoring file %s: not found the table %s.%s'
                            % (child, schema, table_name))
         logger.info('- reading data from file %s' % child)
-        items = export.csv2items(csv_table_path,ignore_empty_fields=True)
-        logger.info('- preparing data for insert' % child)
-        items = upsert.prepare_items(items)
-        logger.info('- start insert of data from file %s' % child)
-        upsert.upsert_items(conn, items, policy, logger, schema, table_name)
+        items = export.csv2items(csv_table_path, ignore_empty_fields=True)
+        logger.info('- start insert of %s records from file %s' % (len(items), child))
+        upsert.upsert_items(conn, items, policy, schema, table_name, logger)

@@ -229,7 +229,7 @@ def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message
     logger.addHandler(std_output_handler)
 
     if not report_path:
-        return
+        return logger
 
     # setup report file
     log_filepath = os.path.abspath(report_path)

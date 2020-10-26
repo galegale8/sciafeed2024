@@ -19,3 +19,12 @@ entry_points
 
 .. click:: sciafeed.entry_points:upsert_stations
    :prog: upsert_stations
+
+.. click:: sciafeed.entry_points:check_chain
+   :prog: check_chain
+
+.. click:: sciafeed.entry_points:download_er
+   :prog: download_er
+
+.. click:: sciafeed.entry_points:insert_data
+   :prog: insert_data

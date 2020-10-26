@@ -162,60 +162,6 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     return num_of_updates
 
 
-def upsert_items(conn, items, policy, schema, table_name, logger=None):
-    """
-    Insert (or update if not exists) items into the database
-
-    :param conn: db connection object
-    :param items: iterable of records of a db table
-    :param policy: 'onlyinsert' or 'upsert'
-    :param schema: database schema to use
-    :param table_name: name of the table
-    :param logger: logging object where to report actions
-    :return number of updates
-    """
-    if logger is None:
-        logger = logging.getLogger(LOG_NAME)
-    meta = MetaData()
-    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
-                       schema='dailypdbadmclima')
-    items.sort(key=lambda x: (x['cod_staz'], x['data_i']))
-    group_by_station = lambda x: x['cod_staz']
-    group_by_date = lambda x: x['data_i']
-    pkey_constraint_name = '%s_pkey' % table_name
-    num_of_updates = 0
-    if policy == 'onlyinsert':
-        action = 'NOTHING'
-    else:
-        action = "UPDATE SET (%(fields)s) = %(values)s " \
-                 "WHERE excluded.cod_staz = '%(cod_staz)s' AND excluded.data_i = '%(data_i)s'"
-    for station, station_records in itertools.groupby(items, group_by_station):
-        cod_utente, cod_rete = station.split('--', 2)
-        stat_obj = querying.get_db_station(
-            conn, anag_table, cod_rete=cod_rete, cod_utente=cod_utente)
-        if not stat_obj:
-            logger.error("station cod_rete=%s, cod_utente=%s not found. Records ignored."
-                         % (cod_rete, cod_utente))
-            continue
-        cod_staz = stat_obj.id_staz
-        for day, day_records in itertools.groupby(station_records, group_by_date):
-            # day_obj = datetime.strptime(day, '%Y-%m-%d')
-            record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
-            record['cod_staz'] = cod_staz
-            record = expand_fields(record)
-            fields, values = list(zip(*record.items()))
-            fields = ','.join(fields)
-            values = repr(values).replace("'NULL'", 'NULL')
-            action = action % {'fields': fields, 'values': values,
-                               'cod_staz': cod_staz, 'data_i': day}
-            sql = "INSERT INTO %s.%s (%s) VALUES %s ON CONFLICT ON CONSTRAINT %s DO %s" \
-                  % (schema, table_name, fields, values, pkey_constraint_name, action)
-            logger.debug(sql)
-            result = conn.execute(sql)
-            num_of_updates += result.rowcount
-    return num_of_updates
-
-
 def expand_fields(record):
     # default is 'dailypdbanpacarica.stat0_obj'
     field2class_map = {
@@ -358,9 +304,64 @@ def expand_fields(record):
         if field in field2class_map:
             klass = field2class_map[field]
             subfields = class2subfields_map[klass]
-            new_values = [r.strip() not in ('', 'None') and r.strip() or 'NULL'
-                          for r in value.replace('(', '').replace(')', '').split(',')]
+            new_values = [
+                r.strip() not in ('', 'None') and r.strip() or 'NULL'
+                for r in value.replace('(', '').replace(')', '').replace("'", "").split(',')]
             for i, subfield in enumerate(subfields):
                 record["%s.%s" % (field, subfield)] = new_values[i]
             del record[field]
     return record
+
+
+def upsert_items(conn, items, policy, schema, table_name, logger=None):
+    """
+    Insert (or update if not exists) items into the database
+
+    :param conn: db connection object
+    :param items: iterable of records of a db table
+    :param policy: 'onlyinsert' or 'upsert'
+    :param schema: database schema to use
+    :param table_name: name of the table
+    :param logger: logging object where to report actions
+    :return number of updates
+    """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    meta = MetaData()
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
+                       schema='dailypdbadmclima')
+    items.sort(key=lambda x: (x['cod_staz'], x['data_i']))
+    group_by_station = lambda x: x['cod_staz']
+    group_by_date = lambda x: x['data_i']
+    pkey_constraint_name = '%s_pkey' % table_name
+    num_of_updates = 0
+    if policy == 'onlyinsert':
+        action = 'NOTHING'
+    else:
+        action = "UPDATE SET (%(fields)s) = %(values)s " \
+                 "WHERE excluded.cod_staz = '%(cod_staz)s' AND excluded.data_i = '%(data_i)s'"
+    for station, station_records in itertools.groupby(items, group_by_station):
+        cod_utente, cod_rete = station.split('--', 2)
+        stat_obj = querying.get_db_station(
+            conn, anag_table, cod_rete=cod_rete, cod_utente=cod_utente)
+        if not stat_obj:
+            logger.error("station cod_rete=%s, cod_utente=%s not found. Records ignored."
+                         % (cod_rete, cod_utente))
+            continue
+        cod_staz = stat_obj.id_staz
+        for day, day_records in itertools.groupby(station_records, group_by_date):
+            # day_obj = datetime.strptime(day, '%Y-%m-%d')
+            record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
+            record['cod_staz'] = cod_staz
+            record = expand_fields(record)
+            fields, values = list(zip(*record.items()))
+            fields = ','.join(fields)
+            values = repr(values).replace("'NULL'", 'NULL')
+            action = action % {'fields': fields, 'values': values,
+                               'cod_staz': cod_staz, 'data_i': day}
+            sql = "INSERT INTO %s.%s (%s) VALUES %s ON CONFLICT ON CONSTRAINT %s DO %s" \
+                  % (schema, table_name, fields, values, pkey_constraint_name, action)
+            logger.debug(sql)
+            result = conn.execute(sql)
+            num_of_updates += result.rowcount
+    return num_of_updates

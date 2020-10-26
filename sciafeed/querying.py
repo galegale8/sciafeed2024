@@ -2,6 +2,8 @@
 This module contains functions and utilities that extracts information from SCIA `database`.
 """
 import functools
+import itertools
+import operator
 from os import listdir
 from os.path import isfile, join, splitext
 
@@ -116,6 +118,27 @@ def get_stations_by_where(dburi, station_where=None):
     results = [r[0] for r in conn.execute(sql).fetchall()]
     conn.close()
     return results
+
+
+def load_main_station_groups(conn, group_table_name, schema="dailypdbanpacarica"):
+    """
+    Return a dictionary of kind {group_id: id_staz} where id_staz is the main reference station
+    of the group.
+
+    :param conn: db connection object
+    :param group_table_name: table name with the station equivalences
+    :param schema: db schema of the table
+    :return: dictionary of main station for each group
+    """
+    ret_value = dict()
+    sql = "SELECT idgruppo, id_staz FROM %s.%s ORDER BY id_gruppo, progstazione" \
+          % (schema, group_table_name)
+    results = conn.execute(sql)
+
+    group_by_idgruppo = operator.itemgetter(0)
+    for group_id, group_stations in itertools.groupby(results, group_by_idgruppo):
+        ret_value[group_id ] = list(group_stations)[0]
+    return ret_value
 
 
 def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypdbanpacarica',

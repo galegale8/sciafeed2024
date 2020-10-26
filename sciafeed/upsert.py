@@ -318,7 +318,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     Insert (or update if not exists) items into the database
 
     :param conn: db connection object
-    :param items: iterable of records of a db table
+    :param items: iterable of records of a db table. Each record is a dictionary
     :param policy: 'onlyinsert' or 'upsert'
     :param schema: database schema to use
     :param table_name: name of the table
@@ -365,3 +365,28 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
             result = conn.execute(sql)
             num_of_updates += result.rowcount
     return num_of_updates
+
+
+def merge_records(records, master_field):
+    """
+    Return a merged version of the input records. In case of conflict of values, the winner value
+    belongs to the first of the input records that has a valid value.
+    The key 'cod_stazprinc' is assigned to the first id_staz that has the 'master field' in the
+    merged result.
+
+    :param records: iterable of input records to merge
+    :param master_field:
+    :return: the merged record
+    """
+    import functools
+    records = list(records)[::-1]
+    merged = functools.reduce(lambda a, b: a.update(b) or a, records, {})
+    for record in records:
+        if record[master_field] == merged[master_field]:
+            record['cod_stazprinc'] = record['cod_staz']
+    return record
+
+
+def table_insert(table_obj, record):
+    insert_obj = table_obj.insert()
+    conn.execute(insert_obj.values(new_stations))

@@ -307,3 +307,22 @@ def insert_data(data_folder, dburi, report_path, policy, schema):
         items = export.csv2items(csv_table_path, ignore_empty_fields=True)
         logger.info('- start insert of %s records from file %s' % (len(items), child))
         upsert.upsert_items(conn, items, policy, schema, table_name, logger)
+
+
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--startschema', '-s', default='dailypdbanpacarica',
+              help="""database schema to use for data input. Default is 'dailypdbanpacarica'""")
+@click.option('--targetschema', '-t', default='dailypdbanpaclima',
+              help="""database schema to use. Default is 'dailypdbanpaclima'""")
+def load_unique_data(dburi, report_path, startschema, targetschema):
+    logger = utils.setup_log(report_path)
+    logger.info('starting process of loading unique data (from %s to %s)'
+                % (startschema, targetschema))
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    process.load_unique_data(conn, startschema, targetschema, logger)
+    logger.info('process concluded')

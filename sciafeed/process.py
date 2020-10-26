@@ -1,10 +1,14 @@
 """
 This module contains functions and utilities that involve more components of sciafeed.
 """
+import functools
+import itertools
 import logging
 import operator
 from os import listdir
 from os.path import isfile, join, splitext
+
+from sqlalchemy import MetaData, Table
 
 from sciafeed import LOG_NAME
 from sciafeed import checks
@@ -259,3 +263,69 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
 
     logger.info('== End process ==')
+
+
+def merge_records(records, master_field):
+    """
+    Return a merged version of the input records (ignoring null values or flagged as invalid).
+    In case of conflict of values, the winner value belongs to the first of the input
+    records that has a valid value.
+    The key 'cod_stazprinc' is assigned to the first id_staz that has the 'master field' in the
+    merged result.
+
+    :param records: iterable of input records to merge
+    :param master_field:
+    :return: the merged record
+    """
+    records = list(records)[::-1]
+
+    def merge_function(a, b):
+        a2 = {k: v for k, v in a.items() if v is not None and not str(v).startswith('("(0,')}
+        b2 = {k: v for k, v in b.items() if v is not None and not str(v).startswith('("(0,')}
+        return a2.update(b2) or a2
+
+    merged = functools.reduce(merge_function, records, {})
+    master_value = merged.get(master_field)
+    if master_value is None:
+        return None
+    for record in records:
+        if record[master_field] == master_value:
+            merged['cod_stazprinc'] = record['cod_staz']
+    return merged
+
+
+def load_unique_data(conn, startschema, targetschema, logger):
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    meta = MetaData()
+    gruppi_tname = 'tabgruppistazioni'
+    gruppi_tschema = 'dailypdbanpacarica'
+    logger.info("loading tabgruppistazioni")
+    group2mainstation = querying.load_main_station_groups(conn, gruppi_tname, gruppi_tschema)
+    group_funct = lambda r: (r[0], r[1])
+    tables = [
+        # TODO: all data tables
+        # TODO: ASK: list of master fields for all tables (above all: temp)
+        ('ds__preci', 'prec24'),
+        ('ds__t200', 'tmxgg'),
+    ]
+    for table_name, master_field in tables:
+        logger.info('* start working on table %s' % table_name)
+        table_obj = Table(table_name, meta, autoload=True, autoload_with=conn.engine,
+                          schema=targetschema)
+        insert_obj = table_obj.insert()
+        sql = """SELECT idgruppo, data_i, %s.%s.* FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
+                 ORDER BY idgruppo, data_i, progstazione""" \
+              % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
+        results = conn.execute(sql)
+        inserted = 0
+        for group_attrs, group_records in itertools.groupby(results, group_funct):
+            groupid, data_i = group_attrs
+            main_station = group2mainstation[groupid]
+            new_record = merge_records(group_records, master_field)
+            if new_record:
+                new_record['id_staz'] = main_station
+                conn.execute(insert_obj.values([new_record]))
+                inserted += 1
+        logger.info('inserted %s records' % inserted)
+

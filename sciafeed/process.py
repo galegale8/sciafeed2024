@@ -14,6 +14,7 @@ from sciafeed import export
 from sciafeed import parsing
 from sciafeed import querying
 from sciafeed import utils
+from sciafeed import upsert
 
 
 def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_checks=True,
@@ -253,8 +254,8 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
         temp_records, operators, jump=-35, flag=-31, val_indexes=(2, 4))
 
     logger.info('* final set of flags records...')
-    db_utils.update_prec_flags(conn, prec_records, schema=schema)
-    db_utils.update_temp_flags(conn, temp_records, schema=schema, db_field='tmxgg', flag_index=3)
-    db_utils.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
+    upsert.update_prec_flags(conn, prec_records, schema=schema)
+    upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmxgg', flag_index=3)
+    upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
 
     logger.info('== End process ==')

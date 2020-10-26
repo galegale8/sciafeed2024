@@ -172,6 +172,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     :param schema: database schema to use
     :param table_name: name of the table
     :param logger: logging object where to report actions
+    :return number of updates
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
@@ -182,6 +183,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     group_by_station = lambda x: x['cod_staz']
     group_by_date = lambda x: x['data_i']
     pkey_constraint_name = '%s_pkey' % table_name
+    num_of_updates = 0
     if policy == 'onlyinsert':
         action = 'NOTHING'
     else:
@@ -209,7 +211,9 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
             sql = "INSERT INTO %s.%s (%s) VALUES %s ON CONFLICT ON CONSTRAINT %s DO %s" \
                   % (schema, table_name, fields, values, pkey_constraint_name, action)
             logger.debug(sql)
-            conn.execute(sql)
+            result = conn.execute(sql)
+            num_of_updates += result.rowcount
+    return num_of_updates
 
 
 def expand_fields(record):

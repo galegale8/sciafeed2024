@@ -1,9 +1,13 @@
 
 from datetime import datetime
 from decimal import Decimal
+from os.path import join
 
+from sciafeed import export
 from sciafeed import querying
 from sciafeed import upsert
+
+from . import TEST_DATA_PATH
 
 
 def test_update_prec_flags(conn):
@@ -61,3 +65,13 @@ def test_set_temp_flags(conn):
         assert test_record not in records
     for new_record in with_flags_changed:
         assert new_record in records
+
+
+def test_upsert_items(conn):
+    # temperature
+    table_name = 'ds__t200'
+    data_path = join(TEST_DATA_PATH, 'indicators', 'expected', '%s.csv' % table_name)
+    items = export.csv2items(data_path, ignore_empty_fields=True)
+    policy = 'onlyinsert'
+    # import pdb; pdb.set_trace()
+    #num_updates = upsert.upsert_items(conn, items, policy, schema='test', table_name=table_name)

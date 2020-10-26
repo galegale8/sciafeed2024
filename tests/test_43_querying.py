@@ -45,14 +45,8 @@ def test_find_new_stations():
     msgs, new_stations = querying.find_new_stations(data_folder, dburi)
     assert msgs == [
         "Examined 2880 records", "Found 1 distinct stations",
-        "Number of NEW stations: 1", " - new station: cod_utente='9', cod_rete='38'"]
-    assert len(new_stations) == 1
-    assert ('9', '38') in new_stations
-    assert new_stations[('9', '38')] == {
-        'cod_rete': '38', 'cod_utente': '9',
-        'source': '38_ARSIALLazio/loc01_00009_201801010100_201901010100.dat',
-        'lat': '', 'lon': ''
-    }
+        "Number of NEW stations: 0"]
+    assert len(new_stations) == 0
 
 
 def test_get_stations_by_where():

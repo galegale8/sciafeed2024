@@ -131,13 +131,13 @@ def load_main_station_groups(conn, group_table_name, schema="dailypdbanpacarica"
     :return: dictionary of main station for each group
     """
     ret_value = dict()
-    sql = "SELECT idgruppo, id_staz FROM %s.%s ORDER BY id_gruppo, progstazione" \
+    sql = "SELECT idgruppo, id_staz FROM %s.%s ORDER BY idgruppo, progstazione" \
           % (schema, group_table_name)
     results = conn.execute(sql)
 
     group_by_idgruppo = operator.itemgetter(0)
     for group_id, group_stations in itertools.groupby(results, group_by_idgruppo):
-        ret_value[group_id ] = list(group_stations)[0]
+        ret_value[group_id] = list(group_stations)[0][1]
     return ret_value
 
 

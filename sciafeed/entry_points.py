@@ -309,6 +309,7 @@ def insert_data(data_folder, dburi, report_path, policy, schema):
         upsert.upsert_items(conn, items, policy, schema, table_name, logger)
 
 
+@click.command()
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
                    "default is %s" % db_utils.DEFAULT_DB_URI)
@@ -324,5 +325,5 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
                 % (startschema, targetschema))
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
-    process.load_unique_data(conn, startschema, targetschema, logger)
+    upsert.load_unique_data(conn, startschema, targetschema, logger)
     logger.info('process concluded')

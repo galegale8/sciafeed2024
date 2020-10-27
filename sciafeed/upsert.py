@@ -11,6 +11,144 @@ from sciafeed import export
 from sciafeed import querying
 
 
+field2class_map = {
+    'bagna': 'dailypdbanpacarica.bagna1_obj',
+    'elio': 'dailypdbanpacarica.stat2_obj',
+    'prec24': 'dailypdbanpacarica.prec24_obj',
+    'cl_prec24': 'dailypdbanpacarica.classi_prec_obj',
+    'prec01': 'dailypdbanpacarica.prec_obj',
+    'prec06': 'dailypdbanpacarica.prec_obj',
+    'cl_prec06': 'dailypdbanpacarica.classi_prec_obj',
+    'prec12': 'dailypdbanpacarica.prec_obj',
+    'cl_prec12': 'dailypdbanpacarica.classi_prec_obj',
+    'ggneve': 'dailypdbanpacarica.nxxx_obj',
+    'storm': 'dailypdbanpacarica.nxxx_obj',
+    'ggstorm': 'dailypdbanpacarica.nxxx_obj',
+    'press': 'dailypdbanpacarica.stat0_obj',
+    'radglob': 'dailypdbanpacarica.stat0_obj',
+    'tmxgg': 'dailypdbanpacarica.estremi_t_obj',
+    'cl_tmxgg': 'dailypdbanpacarica.classi_tmx_obj',
+    'tmngg': 'dailypdbanpacarica.estremi_t_obj',
+    'cl_tmngg': 'dailypdbanpacarica.classi_tmn_obj',
+    'tmdgg': 'dailypdbanpacarica.stat1_obj',
+    'tmdgg1': 'dailypdbanpacarica.stat1_obj',
+    'deltagg': 'dailypdbanpacarica.stat0_obj',
+    'day_gelo': 'dailypdbanpacarica.nxxx_obj',
+    'cl_tist': 'dailypdbanpacarica.classi_tist_obj',
+    't00': 'dailypdbanpacarica.stat0_obj',
+    't01': 'dailypdbanpacarica.stat0_obj',
+    't02': 'dailypdbanpacarica.stat0_obj',
+    't03': 'dailypdbanpacarica.stat0_obj',
+    't04': 'dailypdbanpacarica.stat0_obj',
+    't05': 'dailypdbanpacarica.stat0_obj',
+    't06': 'dailypdbanpacarica.stat0_obj',
+    't07': 'dailypdbanpacarica.stat0_obj',
+    't08': 'dailypdbanpacarica.stat0_obj',
+    't09': 'dailypdbanpacarica.stat0_obj',
+    't10': 'dailypdbanpacarica.stat0_obj',
+    't11': 'dailypdbanpacarica.stat0_obj',
+    't12': 'dailypdbanpacarica.stat0_obj',
+    't13': 'dailypdbanpacarica.stat0_obj',
+    't14': 'dailypdbanpacarica.stat0_obj',
+    't15': 'dailypdbanpacarica.stat0_obj',
+    't16': 'dailypdbanpacarica.stat0_obj',
+    't17': 'dailypdbanpacarica.stat0_obj',
+    't18': 'dailypdbanpacarica.stat0_obj',
+    't19': 'dailypdbanpacarica.stat0_obj',
+    't20': 'dailypdbanpacarica.stat0_obj',
+    't21': 'dailypdbanpacarica.stat0_obj',
+    't22': 'dailypdbanpacarica.stat0_obj',
+    't23': 'dailypdbanpacarica.stat0_obj',
+    'ur': 'dailypdbanpacarica.stat01_obj',
+    'ur00': 'dailypdbanpacarica.stat1_obj',
+    'ur01': 'dailypdbanpacarica.stat1_obj',
+    'ur02': 'dailypdbanpacarica.stat1_obj',
+    'ur03': 'dailypdbanpacarica.stat1_obj',
+    'ur04': 'dailypdbanpacarica.stat1_obj',
+    'ur05': 'dailypdbanpacarica.stat1_obj',
+    'ur06': 'dailypdbanpacarica.stat1_obj',
+    'ur07': 'dailypdbanpacarica.stat1_obj',
+    'ur08': 'dailypdbanpacarica.stat1_obj',
+    'ur09': 'dailypdbanpacarica.stat1_obj',
+    'ur10': 'dailypdbanpacarica.stat1_obj',
+    'ur11': 'dailypdbanpacarica.stat1_obj',
+    'ur12': 'dailypdbanpacarica.stat1_obj',
+    'ur13': 'dailypdbanpacarica.stat1_obj',
+    'ur14': 'dailypdbanpacarica.stat1_obj',
+    'ur15': 'dailypdbanpacarica.stat1_obj',
+    'ur16': 'dailypdbanpacarica.stat1_obj',
+    'ur17': 'dailypdbanpacarica.stat1_obj',
+    'ur18': 'dailypdbanpacarica.stat1_obj',
+    'ur19': 'dailypdbanpacarica.stat1_obj',
+    'ur20': 'dailypdbanpacarica.stat1_obj',
+    'ur21': 'dailypdbanpacarica.stat1_obj',
+    'ur22': 'dailypdbanpacarica.stat1_obj',
+    'ur23': 'dailypdbanpacarica.stat1_obj',
+    'cl_ur06': 'dailypdbanpacarica.classi_ur_obj',
+    'cl_ur12': 'dailypdbanpacarica.classi_ur_obj',
+    'vntmxgg': 'dailypdbanpacarica.vntmxgg_obj',
+    'vnt': 'dailypdbanpacarica.vnt16_obj',
+    'prs_ff': 'dailypdbanpacarica.prs_ff_obj',
+    'prs_dd': 'dailypdbanpacarica.prs_dd_obj',
+    'vntmd': 'dailypdbanpacarica.vntmd_obj',
+}
+class2subfields_map = {
+    'dailypdbanpacarica.bagna1_obj':
+        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_tot'],
+    'dailypdbanpacarica.stat2_obj':
+        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx'],
+    'dailypdbanpacarica.prec_obj': ['flag.ndati', 'flag.wht', 'val_mx', 'data_mx'],
+    'dailypdbanpacarica.prec24_obj':
+        ['flag.ndati', 'flag.wht', 'val_tot', 'val_mx', 'data_mx'],
+    'dailypdbanpacarica.classi_prec_obj':
+        ['dry', 'wet_01', 'wet_02', 'wet_03', 'wet_04', 'wet_05'],
+    'dailypdbanpacarica.nxxx_obj': ['flag.ndati', 'flag.wht', 'num'],
+    'dailypdbanpacarica.stat0_obj':
+        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_mn'],
+    'dailypdbanpacarica.estremi_t_obj':
+        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_x', 'data_x'],
+    'dailypdbanpacarica.classi_tmx_obj':
+        ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07',
+         'cl_08', 'cl_09', 'cl_10', 'cl_11'],
+    'dailypdbanpacarica.classi_tmn_obj':
+        ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07', 'cl_08', 'cl_09'],
+    'dailypdbanpacarica.stat1_obj': ['flag.ndati', 'flag.wht', 'val_md', 'val_vr'],
+    'dailypdbanpacarica.classi_tist_obj': [
+        'flag.ndati', 'flag.wht', 'cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06',
+        'cl_07', 'cl_08', 'cl_09', 'cl_10', 'cl_11', 'cl_12', 'cl_13', 'cl_14'],
+    'dailypdbanpacarica.stat01_obj': [
+        'flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'flag1.ndati', 'flag1.wht',
+        'val_mx', 'val_mn'],
+    'dailypdbanpacarica.classi_ur_obj': ['cl_01', 'cl_02', 'cl_03', 'cl_04'],
+    'dailypdbanpacarica.vntmxgg_obj': ['flag.ndati', 'flag.wht', 'ff', 'dd'],
+    'dailypdbanpacarica.vnt16_obj': [
+        'flag.ndati', 'flag.wht', 'frq_calme',
+        'frq_s01c1', 'frq_s01c2', 'frq_s01c3', 'frq_s01c4',
+        'frq_s02c1', 'frq_s02c2', 'frq_s02c3', 'frq_s02c4',
+        'frq_s03c1', 'frq_s03c2', 'frq_s03c3', 'frq_s03c4',
+        'frq_s04c1', 'frq_s04c2', 'frq_s04c3', 'frq_s04c4',
+        'frq_s05c1', 'frq_s05c2', 'frq_s05c3', 'frq_s05c4',
+        'frq_s06c1', 'frq_s06c2', 'frq_s06c3', 'frq_s06c4',
+        'frq_s07c1', 'frq_s07c2', 'frq_s07c3', 'frq_s07c4',
+        'frq_s08c1', 'frq_s08c2', 'frq_s08c3', 'frq_s08c4',
+        'frq_s09c1', 'frq_s09c2', 'frq_s09c3', 'frq_s09c4',
+        'frq_s10c1', 'frq_s10c2', 'frq_s10c3', 'frq_s10c4',
+        'frq_s11c1', 'frq_s11c2', 'frq_s11c3', 'frq_s11c4',
+        'frq_s12c1', 'frq_s12c2', 'frq_s12c3', 'frq_s12c4',
+        'frq_s13c1', 'frq_s13c2', 'frq_s13c3', 'frq_s13c4',
+        'frq_s14c1', 'frq_s14c2', 'frq_s14c3', 'frq_s14c4',
+        'frq_s15c1', 'frq_s15c2', 'frq_s15c3', 'frq_s15c4',
+        'frq_s16c1', 'frq_s16c2', 'frq_s16c3', 'frq_s16c4'],
+    'dailypdbanpacarica.prs_ff_obj': ['n0', 'n1', 'n2', 'n3', 'n4'],
+    'dailypdbanpacarica.prs_dd_obj': [
+        'n01', 'ff01', 'n02', 'ff02', 'n03', 'ff03', 'n04', 'ff04',
+        'n05', 'ff05', 'n06', 'ff06', 'n07', 'ff07', 'n08', 'ff08',
+        'n09', 'ff09', 'n10', 'ff10', 'n11', 'ff11', 'n12', 'ff12',
+        'n13', 'ff13', 'n14', 'ff14', 'n15', 'ff15', 'n16', 'ff16'],
+    'dailypdbanpacarica.vntmd_obj': ['flag.ndati', 'flag.wht', 'ff']
+}
+
+
 def upsert_stations(dburi, stations_path):
     """
     Load a list of stations from a CSV file located at `stations_path` and insert them
@@ -163,142 +301,6 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
 
 
 def expand_fields(record):
-    # default is 'dailypdbanpacarica.stat0_obj'
-    field2class_map = {
-        'bagna': 'dailypdbanpacarica.bagna1_obj',
-        'elio': 'dailypdbanpacarica.stat2_obj',
-        'prec24': 'dailypdbanpacarica.prec24_obj',
-        'cl_prec24': 'dailypdbanpacarica.classi_prec_obj',
-        'prec01': 'dailypdbanpacarica.prec_obj',
-        'prec06': 'dailypdbanpacarica.prec_obj',
-        'cl_prec06': 'dailypdbanpacarica.classi_prec_obj',
-        'prec12': 'dailypdbanpacarica.prec_obj',
-        'cl_prec12': 'dailypdbanpacarica.classi_prec_obj',
-        'ggneve': 'dailypdbanpacarica.nxxx_obj',
-        'storm': 'dailypdbanpacarica.nxxx_obj',
-        'ggstorm': 'dailypdbanpacarica.nxxx_obj',
-        'press': 'dailypdbanpacarica.stat0_obj',
-        'radglob': 'dailypdbanpacarica.stat0_obj',
-        'tmxgg': 'dailypdbanpacarica.estremi_t_obj',
-        'cl_tmxgg': 'dailypdbanpacarica.classi_tmx_obj',
-        'tmngg': 'dailypdbanpacarica.estremi_t_obj',
-        'cl_tmngg': 'dailypdbanpacarica.classi_tmn_obj',
-        'tmdgg': 'dailypdbanpacarica.stat1_obj',
-        'tmdgg1': 'dailypdbanpacarica.stat1_obj',
-        'deltagg': 'dailypdbanpacarica.stat0_obj',
-        'day_gelo': 'dailypdbanpacarica.nxxx_obj',
-        'cl_tist': 'dailypdbanpacarica.classi_tist_obj',
-        't00': 'dailypdbanpacarica.stat0_obj',
-        't01': 'dailypdbanpacarica.stat0_obj',
-        't02': 'dailypdbanpacarica.stat0_obj',
-        't03': 'dailypdbanpacarica.stat0_obj',
-        't04': 'dailypdbanpacarica.stat0_obj',
-        't05': 'dailypdbanpacarica.stat0_obj',
-        't06': 'dailypdbanpacarica.stat0_obj',
-        't07': 'dailypdbanpacarica.stat0_obj',
-        't08': 'dailypdbanpacarica.stat0_obj',
-        't09': 'dailypdbanpacarica.stat0_obj',
-        't10': 'dailypdbanpacarica.stat0_obj',
-        't11': 'dailypdbanpacarica.stat0_obj',
-        't12': 'dailypdbanpacarica.stat0_obj',
-        't13': 'dailypdbanpacarica.stat0_obj',
-        't14': 'dailypdbanpacarica.stat0_obj',
-        't15': 'dailypdbanpacarica.stat0_obj',
-        't16': 'dailypdbanpacarica.stat0_obj',
-        't17': 'dailypdbanpacarica.stat0_obj',
-        't18': 'dailypdbanpacarica.stat0_obj',
-        't19': 'dailypdbanpacarica.stat0_obj',
-        't20': 'dailypdbanpacarica.stat0_obj',
-        't21': 'dailypdbanpacarica.stat0_obj',
-        't22': 'dailypdbanpacarica.stat0_obj',
-        't23': 'dailypdbanpacarica.stat0_obj',
-        'ur': 'dailypdbanpacarica.stat01_obj',
-        'ur00': 'dailypdbanpacarica.stat1_obj',
-        'ur01': 'dailypdbanpacarica.stat1_obj',
-        'ur02': 'dailypdbanpacarica.stat1_obj',
-        'ur03': 'dailypdbanpacarica.stat1_obj',
-        'ur04': 'dailypdbanpacarica.stat1_obj',
-        'ur05': 'dailypdbanpacarica.stat1_obj',
-        'ur06': 'dailypdbanpacarica.stat1_obj',
-        'ur07': 'dailypdbanpacarica.stat1_obj',
-        'ur08': 'dailypdbanpacarica.stat1_obj',
-        'ur09': 'dailypdbanpacarica.stat1_obj',
-        'ur10': 'dailypdbanpacarica.stat1_obj',
-        'ur11': 'dailypdbanpacarica.stat1_obj',
-        'ur12': 'dailypdbanpacarica.stat1_obj',
-        'ur13': 'dailypdbanpacarica.stat1_obj',
-        'ur14': 'dailypdbanpacarica.stat1_obj',
-        'ur15': 'dailypdbanpacarica.stat1_obj',
-        'ur16': 'dailypdbanpacarica.stat1_obj',
-        'ur17': 'dailypdbanpacarica.stat1_obj',
-        'ur18': 'dailypdbanpacarica.stat1_obj',
-        'ur19': 'dailypdbanpacarica.stat1_obj',
-        'ur20': 'dailypdbanpacarica.stat1_obj',
-        'ur21': 'dailypdbanpacarica.stat1_obj',
-        'ur22': 'dailypdbanpacarica.stat1_obj',
-        'ur23': 'dailypdbanpacarica.stat1_obj',
-        'cl_ur06': 'dailypdbanpacarica.classi_ur_obj',
-        'cl_ur12': 'dailypdbanpacarica.classi_ur_obj',
-        'vntmxgg': 'dailypdbanpacarica.vntmxgg_obj',
-        'vnt': 'dailypdbanpacarica.vnt16_obj',
-        'prs_ff': 'dailypdbanpacarica.prs_ff_obj',
-        'prs_dd': 'dailypdbanpacarica.prs_dd_obj',
-        'vntmd': 'dailypdbanpacarica.vntmd_obj',
-    }
-    class2subfields_map = {
-        'dailypdbanpacarica.bagna1_obj':
-            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_tot'],
-        'dailypdbanpacarica.stat2_obj':
-            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx'],
-        'dailypdbanpacarica.prec24_obj':
-            ['flag.ndati', 'flag.wht', 'val_tot', 'val_mx', 'data_mx'],
-        'dailypdbanpacarica.classi_prec_obj':
-            ['dry', 'wet_01', 'wet_02', 'wet_03', 'wet_04', 'wet_05'],
-        'dailypdbanpacarica.nxxx_obj': ['flag.ndati', 'flag.wht', 'num'],
-        'dailypdbanpacarica.stat0_obj':
-            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_mn'],
-        'dailypdbanpacarica.estremi_t_obj':
-            ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_x', 'data_x'],
-        'dailypdbanpacarica.classi_tmx_obj':
-            ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07',
-             'cl_08', 'cl_09', 'cl_10', 'cl_11'],
-        'dailypdbanpacarica.classi_tmn_obj':
-            ['cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06', 'cl_07', 'cl_08', 'cl_09'],
-        'dailypdbanpacarica.stat1_obj': ['flag.ndati', 'flag.wht', 'val_md', 'val_vr'],
-        'dailypdbanpacarica.classi_tist_obj': [
-            'flag.ndati', 'flag.wht', 'cl_01', 'cl_02', 'cl_03', 'cl_04', 'cl_05', 'cl_06',
-            'cl_07', 'cl_08', 'cl_09', 'cl_10', 'cl_11', 'cl_12', 'cl_13', 'cl_14'],
-        'dailypdbanpacarica.stat01_obj': [
-            'flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'flag1.ndati', 'flag1.wht',
-            'val_mx', 'val_mn'],
-        'dailypdbanpacarica.classi_ur_obj': ['cl_01', 'cl_02', 'cl_03', 'cl_04'],
-        'dailypdbanpacarica.vntmxgg_obj': ['flag.ndati', 'flag.wht', 'ff', 'dd'],
-        'dailypdbanpacarica.vnt16_obj': [
-            'flag.ndati', 'flag.wht', 'frq_calme',
-            'frq_s01c1', 'frq_s01c2', 'frq_s01c3', 'frq_s01c4',
-            'frq_s02c1', 'frq_s02c2', 'frq_s02c3', 'frq_s02c4',
-            'frq_s03c1', 'frq_s03c2', 'frq_s03c3', 'frq_s03c4',
-            'frq_s04c1', 'frq_s04c2', 'frq_s04c3', 'frq_s04c4',
-            'frq_s05c1', 'frq_s05c2', 'frq_s05c3', 'frq_s05c4',
-            'frq_s06c1', 'frq_s06c2', 'frq_s06c3', 'frq_s06c4',
-            'frq_s07c1', 'frq_s07c2', 'frq_s07c3', 'frq_s07c4',
-            'frq_s08c1', 'frq_s08c2', 'frq_s08c3', 'frq_s08c4',
-            'frq_s09c1', 'frq_s09c2', 'frq_s09c3', 'frq_s09c4',
-            'frq_s10c1', 'frq_s10c2', 'frq_s10c3', 'frq_s10c4',
-            'frq_s11c1', 'frq_s11c2', 'frq_s11c3', 'frq_s11c4',
-            'frq_s12c1', 'frq_s12c2', 'frq_s12c3', 'frq_s12c4',
-            'frq_s13c1', 'frq_s13c2', 'frq_s13c3', 'frq_s13c4',
-            'frq_s14c1', 'frq_s14c2', 'frq_s14c3', 'frq_s14c4',
-            'frq_s15c1', 'frq_s15c2', 'frq_s15c3', 'frq_s15c4',
-            'frq_s16c1', 'frq_s16c2', 'frq_s16c3', 'frq_s16c4'],
-        'dailypdbanpacarica.prs_ff_obj': ['n0', 'n1', 'n2', 'n3', 'n4'],
-        'dailypdbanpacarica.prs_dd_obj': [
-            'n01', 'ff01', 'n02', 'ff02', 'n03', 'ff03', 'n04', 'ff04',
-            'n05', 'ff05', 'n06', 'ff06', 'n07', 'ff07', 'n08', 'ff08',
-            'n09', 'ff09', 'n10', 'ff10', 'n11', 'ff11', 'n12', 'ff12',
-            'n13', 'ff13', 'n14', 'ff14', 'n15', 'ff15', 'n16', 'ff16'],
-        'dailypdbanpacarica.vntmd_obj': ['flag.ndati', 'flag.wht', 'ff']
-    }
     record_cp = record.copy()
     for field, value in record_cp.items():
         if field in field2class_map:
@@ -306,11 +308,24 @@ def expand_fields(record):
             subfields = class2subfields_map[klass]
             new_values = [
                 r.strip() not in ('', 'None') and r.strip() or 'NULL'
-                for r in value.replace('(', '').replace(')', '').replace("'", "").split(',')]
+                for r in value.replace('(', '').replace(')', '').replace("'", "").
+                replace('"', '').split(',')]
             for i, subfield in enumerate(subfields):
                 record["%s.%s" % (field, subfield)] = new_values[i]
             del record[field]
     return record
+
+
+def get_record_items(record, insert_mode=True):
+    if insert_mode:
+        # don't consider to set NULL values for empty fields
+        record = {k: v for k, v in record.items()
+                  if v is not None and list(filter(lambda r: r.isdigit(), str(v)))}
+    record = expand_fields(record)
+    fields, values = list(zip(*record.items()))
+    fields = ','.join(fields)
+    values = repr(values)[1:-1].replace("'NULL'", 'NULL')
+    return fields, values
 
 
 def upsert_items(conn, items, policy, schema, table_name, logger=None):
@@ -338,7 +353,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     if policy == 'onlyinsert':
         action = 'NOTHING'
     else:
-        action = "UPDATE SET (%(fields)s) = %(values)s " \
+        action = "UPDATE SET (%(fields)s) = (%(values)s) " \
                  "WHERE excluded.cod_staz = '%(cod_staz)s' AND excluded.data_i = '%(data_i)s'"
     for station, station_records in itertools.groupby(items, group_by_station):
         cod_utente, cod_rete = station.split('--', 2)
@@ -353,13 +368,10 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
             # day_obj = datetime.strptime(day, '%Y-%m-%d')
             record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
             record['cod_staz'] = cod_staz
-            record = expand_fields(record)
-            fields, values = list(zip(*record.items()))
-            fields = ','.join(fields)
-            values = repr(values).replace("'NULL'", 'NULL')
+            fields, values = get_record_items(record, insert_mode=False)
             action = action % {'fields': fields, 'values': values,
                                'cod_staz': cod_staz, 'data_i': day}
-            sql = "INSERT INTO %s.%s (%s) VALUES %s ON CONFLICT ON CONSTRAINT %s DO %s" \
+            sql = "INSERT INTO %s.%s (%s) VALUES (%s) ON CONFLICT ON CONSTRAINT %s DO %s" \
                   % (schema, table_name, fields, values, pkey_constraint_name, action)
             logger.debug(sql)
             result = conn.execute(sql)
@@ -369,8 +381,9 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
 
 def merge_records(records, master_field):
     """
-    Return a merged version of the input records. In case of conflict of values, the winner value
-    belongs to the first of the input records that has a valid value.
+    Return a merged version of the input records (ignoring null values or flagged as invalid).
+    In case of conflict of values, the winner value belongs to the first of the input
+    records that has a valid value.
     The key 'cod_stazprinc' is assigned to the first id_staz that has the 'master field' in the
     merged result.
 
@@ -378,15 +391,70 @@ def merge_records(records, master_field):
     :param master_field:
     :return: the merged record
     """
-    import functools
     records = list(records)[::-1]
-    merged = functools.reduce(lambda a, b: a.update(b) or a, records, {})
+
+    def merge_function(a, b):
+        a2 = {k: v for k, v in a.items() if v is not None and not str(v).startswith('("(0,')}
+        b2 = {k: v for k, v in b.items() if v is not None and not str(v).startswith('("(0,')}
+        return a2.update(b2) or a2
+
+    merged = functools.reduce(merge_function, records, {})
+    master_value = merged.get(master_field)
+    if master_value is None:
+        return None
     for record in records:
-        if record[master_field] == merged[master_field]:
-            record['cod_stazprinc'] = record['cod_staz']
-    return record
+        if record[master_field] == master_value:
+            merged['cod_stazprinc'] = record['cod_staz']
+    return merged
 
 
-def table_insert(table_obj, record):
-    insert_obj = table_obj.insert()
-    conn.execute(insert_obj.values(new_stations))
+def load_unique_data(conn, startschema, targetschema, logger, only_tables=None):
+    """
+    Load data from `startschema` to `targetschema`, merging data from duplicate stations.
+
+    :param conn: db connection object
+    :param startschema: db schema where to find input data tables
+    :param targetschema: db schema where to put merged records
+    :param logger: logger object for reporting
+    :param only_tables: if not None, list of names of data tables to work on
+    """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    gruppi_tname = 'tabgruppistazioni'
+    gruppi_tschema = 'dailypdbanpacarica'
+    logger.info("loading tabgruppistazioni")
+    group2mainstation = querying.load_main_station_groups(conn, gruppi_tname, gruppi_tschema)
+    group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
+    tables = [
+        ('ds__preci', 'prec24'),
+        ('ds__t200', 'tmxgg'),  # TODO: ASK: master field?
+        ('ds__bagna', 'bagna'),
+        ('ds__elio', 'elio'),
+        ('ds__press', 'press'),
+        ('ds__urel', 'ur'),
+        ('ds__radglob', 'radglob'),
+        ('ds__vnt10', 'vntmd'),  # TODO: ASK: master field?
+    ]
+    if only_tables is not None:
+        tables = [t for t in tables if t[0] in tables]
+    for table_name, master_field in tables:
+        logger.info('* start working on table %s' % table_name)
+        sql = """SELECT idgruppo, data_i::varchar, %s.%s.* FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
+                 ORDER BY (idgruppo, data_i, progstazione)""" \
+              % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
+        results = conn.execute(sql)
+        inserted = 0
+        for group_attrs, group_records in itertools.groupby(results, group_funct):
+            groupid, data_i = group_attrs
+            main_station = group2mainstation[groupid]
+            new_record = merge_records(group_records, master_field)
+            if new_record:
+                del new_record['idgruppo']
+                new_record['cod_staz'] = main_station
+                new_record['data_i'] = data_i
+                fields, values = get_record_items(new_record)
+                sql = "INSERT INTO %s.%s (%s) VALUES (%s)" \
+                      % (targetschema, table_name, fields, values)
+                conn.execute(sql)
+                inserted += 1
+        logger.info('inserted %s records' % inserted)

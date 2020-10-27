@@ -209,3 +209,38 @@ def test_upsert_items(conn):
          None, '("(24,1)",1.5,3.0,6.2,"2018-01-10 05:00:00")', None, '("(24,1)",6.7,3.0)', None,
          None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
          None, None, None, None, None, None, None, None, None, None, None, None)]
+
+
+def test_merge_records():
+    records = [
+        {'progstazione': 2, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 9157, 'cod_aggr': 4,
+         'prec24': '("(0,1)",0.8,,)', 'cl_prec24': '(0,1,0,0,0,0)', 'prec01': None,
+         'prec06': '("(0,1)",0.8,,)',
+         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': None, 'storm': 0,
+         'ggstorm': None},
+        {'progstazione': 2, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 9158, 'cod_aggr': 4,
+         'prec24': '("(1,1)",0.2,,)', 'cl_prec24': '(1,0,0,0,0,0)', 'prec01': '("(0,1)",1.8,,)',
+         'prec06': None,
+         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': 1, 'storm': 0,
+         'ggstorm': None},
+        {'progstazione': 3, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 12894, 'cod_aggr': 4,
+         'prec24': '("(1,1)",0,,)', 'cl_prec24': '(1,0,0,0,0,0)', 'prec01': None,
+         'prec06': '("(1,1)",0.8,,)',
+         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': None, 'storm': None,
+         'ggstorm': 1}
+    ]
+    merged = upsert.merge_records(records, 'prec24')
+    expected_merged = {
+        'cl_prec24': '(0,1,0,0,0,0)',
+        'cod_aggr': 4,
+        'cod_staz': 9157,
+        'cod_stazprinc': 9158,
+        'data_i': datetime(2008, 1, 1, 0, 0),
+        'ggneve': 1,
+        'ggstorm': 1,
+        'prec24': '("(1,1)",0.2,,)',
+        'prec06': '("(1,1)",0.8,,)',
+        'progstazione': 2,
+        'storm': 0
+    }
+    assert merged == expected_merged

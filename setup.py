@@ -58,6 +58,7 @@ setup(
             'check_chain = sciafeed.entry_points:check_chain',
             'download_er = sciafeed.entry_points:download_er',
             'insert_data = sciafeed.entry_points:insert_data',
+            'load_unique_data = sciafeed.entry_points:load_unique_data'
         ],
     },
 )

@@ -316,6 +316,18 @@ def expand_fields(record):
     return record
 
 
+def expanded_fields(fields):
+    new_fields = []
+    for field in fields:
+        if field in field2class_map:
+            klass = field2class_map[field]
+            subfields = ["%s.%s" % (field, subfield) for subfield in class2subfields_map[klass]]
+            new_fields.extend(subfields)
+        else:
+            new_fields.append(field)
+    return new_fields
+
+
 def get_record_items(record, insert_mode=True):
     if insert_mode:
         # don't consider to set NULL values for empty fields
@@ -408,7 +420,26 @@ def merge_records(records, master_field):
     return merged
 
 
-def load_unique_data(conn, startschema, targetschema, logger, only_tables=None):
+def create_insert(table_name, schema, fields, data):
+    if not data:
+        return
+    fields_str = ','.join(fields)
+    values_str = ''
+    for item in data:
+        cur_values_str = '('
+        for field in fields:
+            if field in item:
+                value = "'%s'," % item[field]
+            else:
+                value = 'NULL,'
+            cur_values_str += value
+        values_str += cur_values_str[:-1] + '),'
+    values_str = values_str[:-1]
+    sql = "INSERT INTO %s.%s (%s) VALUES %s" % (schema, table_name, fields_str, values_str)
+    return sql
+
+
+def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=None):
     """
     Load data from `startschema` to `targetschema`, merging data from duplicate stations.
 
@@ -428,22 +459,28 @@ def load_unique_data(conn, startschema, targetschema, logger, only_tables=None):
     tables = [
         ('ds__preci', 'prec24'),
         ('ds__t200', 'tmxgg'),  # TODO: ASK: master field?
-        ('ds__bagna', 'bagna'),
-        ('ds__elio', 'elio'),
-        ('ds__press', 'press'),
-        ('ds__urel', 'ur'),
-        ('ds__radglob', 'radglob'),
-        ('ds__vnt10', 'vntmd'),  # TODO: ASK: master field?
+        # ('ds__bagna', 'bagna'),
+        # ('ds__elio', 'elio'),
+        # ('ds__press', 'press'),
+        # ('ds__urel', 'ur'),
+        # ('ds__radglob', 'radglob'),
+        # ('ds__vnt10', 'vntmd'),  # TODO: ASK: master field?
     ]
     if only_tables is not None:
-        tables = [t for t in tables if t[0] in tables]
+        tables = [t for t in tables if t[0] in only_tables]
     for table_name, master_field in tables:
         logger.info('* start working on table %s' % table_name)
-        sql = """SELECT idgruppo, data_i::varchar, %s.%s.* FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
+        logger.info(' selecting data')
+        sql = """SELECT idgruppo, data_i::varchar, %s.%s.* 
+                 FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
                  ORDER BY (idgruppo, data_i, progstazione)""" \
               % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
         results = conn.execute(sql)
         inserted = 0
+        logger.info(' start merge&insert')
+        cols = db_utils.get_table_columns(targetschema, table_name)
+        fields = expanded_fields(cols)
+        data = []
         for group_attrs, group_records in itertools.groupby(results, group_funct):
             groupid, data_i = group_attrs
             main_station = group2mainstation[groupid]
@@ -452,9 +489,18 @@ def load_unique_data(conn, startschema, targetschema, logger, only_tables=None):
                 del new_record['idgruppo']
                 new_record['cod_staz'] = main_station
                 new_record['data_i'] = data_i
-                fields, values = get_record_items(new_record)
-                sql = "INSERT INTO %s.%s (%s) VALUES (%s)" \
-                      % (targetschema, table_name, fields, values)
-                conn.execute(sql)
+                new_record = expand_fields(new_record)
+                new_record = {
+                    k: v for k, v in new_record.items()
+                    if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+                }
+                data.append(new_record)
                 inserted += 1
+                if divmod(inserted, 10000)[1] == 0:  # flush in blocks of 10000
+                    sql = create_insert(table_name, targetschema, fields, data)
+                    conn.execute(sql)
+                    data = []
+        if data:
+            sql = create_insert(table_name, targetschema, fields, data)
+            conn.execute(sql)
         logger.info('inserted %s records' % inserted)

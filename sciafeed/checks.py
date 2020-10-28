@@ -406,8 +406,8 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    logger.info("starting check (parameters: %s, %s, %s, %s)" \
-          % (min_threshold, max_threshold, flag, val_index))
+    logger.info("starting check (parameters: %s, %s, %s, %s)"
+                % (min_threshold, max_threshold, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
@@ -486,6 +486,7 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     :param flag_inf: value of the flag to be set for found records with split=True for the
                      bottom part of the split
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param logger: logging object where to report actions
     :return: new_records
     """
     if logger is None:
@@ -855,3 +856,29 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
     logger.info("Found %s flags reset to %s" % (num_invalid_flags, flag))
     logger.info("Check completed")
     return new_records
+
+
+def force_flags(records, flag_map, flag_index=3):
+    """
+    Update the flags of input `records` according to a dictionary that maps (station, date)
+    with the flag to apply. The flag is at the index `flag_index` for each record.
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param flag_map: dictionary of changes to apply: {(cod_staz,data_i): flag}
+    :param flag_index: index of the flag to change in the record
+    :return: records with updated flags
+    """
+    if not flag_map:
+        return records
+    for record in records:
+        key = (record[0], record[1])
+        if key in flag_map:
+            record[flag_index] = flag_map[key]
+    return records
+
+
+def create_flag_map(records, flag_index=3):
+    flag_map = dict()
+    for record in records:
+        flag_map[(record[0], record[1])] = record[flag_index]
+    return flag_map

@@ -142,7 +142,8 @@ def load_main_station_groups(conn, group_table_name, schema="dailypdbanpacarica"
 
 
 def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypdbanpacarica',
-                        flag_threshold=1, exclude_values=(), exclude_null=True):
+                        include_flag_values=None, exclude_flag_interval=(-9, 0), exclude_values=(),
+                        exclude_null=True):
     """
     Select all the records of the table dailypdbadmclima.ds__preci order by station, date.
     If  stations_ids is not None, filter also for station ids.
@@ -152,7 +153,8 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     :param sql_fields: sql string of field selection
     :param stations_ids: list of station ids (if None: no filter by station)
     :param schema: database schema to consider
-    :param flag_threshold: if not None, consider where prec24.flag >= this threshold
+    :param include_flag_values: if not None, select where prec24.flag belongs to this values
+    :param exclude_flag_interval: if not None, exclude where prec24.flag belongs to this interval
     :param exclude_values: query excludes not none values in this iterable
     :param exclude_null: if True, excludes NULL values
     :return: the iterable of the results
@@ -161,8 +163,11 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     where_clauses = []
     if stations_ids:
         where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
-    if flag_threshold is not None:
-        where_clauses.append('((prec24).flag).wht >= %s' % flag_threshold)
+    if include_flag_values is not None:
+        where_clauses.append('((prec24).flag).wht in %s' % repr(tuple(include_flag_values)))
+    if exclude_flag_interval is not None:
+        where_clauses.append('((prec24).flag).wht < %s' % exclude_flag_interval[0])
+        where_clauses.append('((prec24).flag).wht > %s' % exclude_flag_interval[1])
     if exclude_values:
         where_clauses.append('(prec24).val_tot NOT IN (%s)' % repr(list(exclude_values))[1:-1])
     if exclude_null:
@@ -176,7 +181,8 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
 
 
 def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
-                        schema='dailypdbanpacarica', flag_threshold=1, exclude_values=(),
+                        schema='dailypdbanpacarica', include_flag_values=None,
+                        exclude_flag_interval=(-9, 0), exclude_values=(),
                         exclude_null=True, where_sql=None):
     """
     Select all the records of the table dailypdbadmclima.ds__t200 order by station, date.
@@ -189,7 +195,8 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     :param sql_fields: sql string of field selection
     :param stations_ids: list of station ids (if None: no filter by station)
     :param schema: database schema to consider
-    :param flag_threshold: if not None, consider where prec24.flag >= this threshold
+    :param include_flag_values: if not None, select fields where the flag belongs to this values
+    :param exclude_flag_interval: if not None, exclude fields where flag belongs to this interval
     :param exclude_values: query excludes not none values in this iterable
     :param exclude_null: if True, excludes NULL values
     :param where_sql: if not None, add the selected where clause in sql
@@ -199,9 +206,14 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     where_clauses = []
     if stations_ids:
         where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
-    if flag_threshold is not None:
+    if include_flag_values is not None:
         for field in fields:
-            where_clauses.append('((%s).flag).wht >= %s' % (field, flag_threshold))
+            where_clauses.append('((%s).flag).wht in %s'
+                                 % (field, repr(tuple(include_flag_values))))
+    if exclude_flag_interval is not None:
+        for field in fields:
+            where_clauses.append('((%s).flag).wht < %s' % (field, exclude_flag_interval[0]))
+            where_clauses.append('((%s).flag).wht > %s' % (field, exclude_flag_interval[1]))
     if exclude_values:
         for field in fields:
             where_clauses.append('(%s).val_md NOT IN (%s)'

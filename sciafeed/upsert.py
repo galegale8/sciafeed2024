@@ -480,12 +480,12 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
     tables = [
         ('ds__preci', 'prec24.val_tot'),
         ('ds__t200', 'tmxgg.val_md'),
-        # ('ds__bagna', 'bagna'),
-        # ('ds__elio', 'elio'),
-        # ('ds__press', 'press'),
-        # ('ds__urel', 'ur'),
-        # ('ds__radglob', 'radglob'),
-        # ('ds__vnt10', 'vntmd'),
+        ('ds__bagna', 'bagna.val_md'),
+        ('ds__elio', 'elio.val_md'),
+        ('ds__press', 'press.val_md'),
+        ('ds__urel', 'ur.val_md'),
+        ('ds__radglob', 'radglob.val_md'),
+        ('ds__vnt10', 'vntmd.ff'),
     ]
     if only_tables is not None:
         tables = [t for t in tables if t[0] in only_tables]

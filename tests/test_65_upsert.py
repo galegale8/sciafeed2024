@@ -210,39 +210,41 @@ def test_upsert_items(conn):
     )
 
 
-def test_merge_records():
+def test_choose_main_record():
     records = [
-        {'progstazione': 2, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 9157, 'cod_aggr': 4,
-         'prec24': '("(0,1)",0.8,,)', 'cl_prec24': '(0,1,0,0,0,0)', 'prec01': None,
-         'prec06': '("(0,1)",0.8,,)',
-         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': None, 'storm': 0,
-         'ggstorm': None},
-        {'progstazione': 2, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 9158, 'cod_aggr': 4,
-         'prec24': '("(1,1)",0.2,,)', 'cl_prec24': '(1,0,0,0,0,0)', 'prec01': '("(0,1)",1.8,,)',
-         'prec06': None,
-         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': 1, 'storm': 0,
-         'ggstorm': None},
-        {'progstazione': 3, 'data_i': datetime(2008, 1, 1, 0, 0), 'cod_staz': 12894, 'cod_aggr': 4,
-         'prec24': '("(1,1)",0,,)', 'cl_prec24': '(1,0,0,0,0,0)', 'prec01': None,
-         'prec06': '("(1,1)",0.8,,)',
-         'cl_prec06': None, 'prec12': None, 'cl_prec12': None, 'ggneve': None, 'storm': None,
-         'ggstorm': 1}
+        {'data_i': '2010-01-01 00:00:00', 'cod_staz': 5540, 'cod_aggr': 4,
+         'prec24.flag.ndati': '24', 'prec24.flag.wht': '-33', 'prec24.val_tot': '5.5',
+         'cl_prec24.dry': '1', 'cl_prec24.wet_02': '3'},
+        {'data_i': '2010-01-01 00:00:00', 'cod_staz': 5541, 'cod_aggr': 4,
+         'prec24.flag.ndati': '24', 'prec24.flag.wht': '1', 'prec24.val_tot': '5.6',
+         'cl_prec24.dry': '4', 'cl_prec24.wet_01': 'NULL', 'cl_prec24.wet_02': '6'},
+        {'data_i': '2010-01-01 00:00:00', 'cod_staz': 5542, 'cod_aggr': 4,
+         'prec24.flag.ndati': '24', 'prec24.flag.wht': '1', 'prec24.val_tot': '5.7',
+         'cl_prec24.dry': '7', 'cl_prec24.wet_01': '8', 'cl_prec24.wet_02': '9'},
     ]
-    merged = upsert.merge_records(records, 'prec24')
-    expected_merged = {
-        'cl_prec24': '(0,1,0,0,0,0)',
-        'cod_aggr': 4,
-        'cod_staz': 9157,
-        'cod_stazprinc': 9158,
-        'data_i': datetime(2008, 1, 1, 0, 0),
-        'ggneve': 1,
-        'ggstorm': 1,
-        'prec24': '("(1,1)",0.2,,)',
-        'prec06': '("(1,1)",0.8,,)',
-        'progstazione': 2,
-        'storm': 0
+    chosen = upsert.choose_main_record(records, 'prec24.val_tot')
+    assert chosen == {
+        'data_i': '2010-01-01 00:00:00', 'cod_staz': 5541, 'cod_aggr': 4,
+        'prec24.flag.ndati': '24', 'prec24.flag.wht': '1', 'prec24.val_tot': '5.6',
+        'cl_prec24.dry': '4', 'cl_prec24.wet_01': 'NULL', 'cl_prec24.wet_02': '6',
+        'cod_stazprinc': 5541
     }
-    assert merged == expected_merged
+    chosen = upsert.choose_main_record(records, 'cl_prec24.dry')
+    assert chosen == {
+        'data_i': '2010-01-01 00:00:00', 'cod_staz': 5540, 'cod_aggr': 4,
+        'prec24.flag.ndati': '24', 'prec24.flag.wht': '-33', 'prec24.val_tot': '5.5',
+        'cl_prec24.dry': '1', 'cl_prec24.wet_02': '3',
+        'cod_stazprinc': 5540
+    }
+    chosen = upsert.choose_main_record(records, 'cl_prec24.wet_01')
+    assert chosen == {
+        'data_i': '2010-01-01 00:00:00', 'cod_staz': 5542, 'cod_aggr': 4,
+        'prec24.flag.ndati': '24', 'prec24.flag.wht': '1', 'prec24.val_tot': '5.7',
+        'cl_prec24.dry': '7', 'cl_prec24.wet_01': '8', 'cl_prec24.wet_02': '9',
+        'cod_stazprinc': 5542
+    }
+    chosen = upsert.choose_main_record(records, 'cl_prec24.wet_04')
+    assert not chosen
 
 
 def test_load_unique_data(conn):

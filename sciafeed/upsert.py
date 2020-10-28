@@ -435,33 +435,29 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     return upserted
 
 
-def merge_records(records, master_field):
+def choose_main_record(records, master_field):
     """
-    Return a merged version of the input records (ignoring null values or flagged as invalid).
-    In case of conflict of values, the winner value belongs to the first of the input
-    records that has a valid value.
-    The key 'cod_stazprinc' is assigned to the first id_staz that has the 'master field' in the
-    merged result.
+    Choose the first one of the input records that has the field `master_field` valid and not null.
+    The key 'cod_stazprinc' is assigned to the chosen id_staz.
 
     :param records: iterable of input records to merge
     :param master_field:
     :return: the merged record
     """
-    records = list(records)[::-1]
-
-    def merge_function(a, b):
-        a2 = {k: v for k, v in a.items() if v is not None and not str(v).startswith('("(0,')}
-        b2 = {k: v for k, v in b.items() if v is not None and not str(v).startswith('("(0,')}
-        return a2.update(b2) or a2
-
-    merged = functools.reduce(merge_function, records, {})
-    master_value = merged.get(master_field)
-    if master_value is None:
-        return None
+    result = None
+    master_flag = "%s.flag.wht" % master_field.rsplit('.', 1)[0]
     for record in records:
-        if record[master_field] == master_value:
-            merged['cod_stazprinc'] = record['cod_staz']
-    return merged
+        if master_flag in record:
+            flag = str(record[master_flag])
+            if flag.isdigit() and int(flag) > 0 and record.get(master_field) not in (None, 'NULL'):
+                result = record.copy()
+                result['cod_stazprinc'] = record['cod_staz']
+                break
+        elif record.get(master_field) not in (None, 'NULL'):
+            result = record.copy()
+            result['cod_stazprinc'] = record['cod_staz']
+            break
+    return result
 
 
 def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=None):
@@ -482,14 +478,14 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
     group2mainstation = querying.load_main_station_groups(conn, gruppi_tname, gruppi_tschema)
     group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
     tables = [
-        ('ds__preci', 'prec24'),
-        ('ds__t200', 'tmxgg'),  # TODO: ASK: master field?
+        ('ds__preci', 'prec24.val_tot'),
+        ('ds__t200', 'tmxgg.val_md'),
         # ('ds__bagna', 'bagna'),
         # ('ds__elio', 'elio'),
         # ('ds__press', 'press'),
         # ('ds__urel', 'ur'),
         # ('ds__radglob', 'radglob'),
-        # ('ds__vnt10', 'vntmd'),  # TODO: ASK: master field?
+        # ('ds__vnt10', 'vntmd'),
     ]
     if only_tables is not None:
         tables = [t for t in tables if t[0] in only_tables]
@@ -509,17 +505,14 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
         for group_attrs, group_records in itertools.groupby(results, group_funct):
             groupid, data_i = group_attrs
             main_station = group2mainstation[groupid]
-            new_record = merge_records(group_records, master_field)
-            if new_record:
-                del new_record['idgruppo']
-                new_record['cod_staz'] = main_station
-                new_record['data_i'] = data_i
-                new_record = expand_fields(new_record)
-                new_record = {
-                    k: v for k, v in new_record.items()
-                    if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
-                }
-                data.append(new_record)
+            expanded_group_records = [expand_fields(dict(r)) for r in group_records]
+            main_record = choose_main_record(expanded_group_records, master_field)
+            if main_record:
+                del main_record['idgruppo']
+                main_record['cod_staz'] = main_station
+                main_record['data_i'] = data_i
+                main_record = {k: v for k, v in main_record.items() if v not in (None, 'NULL')}
+                data.append(main_record)
                 inserted += 1
                 if divmod(inserted, 10000)[1] == 0:  # flush in blocks of 10000
                     sql = create_insert(table_name, targetschema, fields, data)

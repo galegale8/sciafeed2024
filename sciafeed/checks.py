@@ -215,9 +215,6 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     :param logger: logging object where to report actions
     :return: new_records
     """
-    # TODO: ASK: check in the same time series both prec and temp, or do
-    #       a sequence of different checks?
-    # TODO: ASK: of course, grouping by station, isn't it?
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
@@ -274,9 +271,6 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
     :param logger: logging object where to report actions
     :return: new_records
     """
-    # TODO: ASK: check in the same time series both prec and temp, or do
-    #       a sequence of different checks?
-    # TODO: ASK: of course, grouping by station, isn't it?
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
@@ -494,8 +488,6 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :return: new_records
     """
-    # TODO: ASK to accumulate distribution on all years of a month, or to do a month a time?
-    # TODO: ASK split by median: '>=' and '<=', or '>' and '<'?
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s, %s)"
@@ -531,8 +523,8 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
         for month, month_values in months_values_dict.items():
             if split:
                 median = statistics.median(month_values)
-                top_values = [g for g in month_values if g >= median]
-                bottom_values = [g for g in month_values if g <= median]
+                top_values = [g for g in month_values if g > median]
+                bottom_values = [g for g in month_values if g < median]
             else:
                 top_values = month_values
                 bottom_values = []
@@ -771,7 +763,6 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4), logger=None):
     :param logger: logging object where to report actions
     :return: new_records
     """
-    # TODO: ASK: really check that TMAX >= Tmin -5 ? not TMAX >= Tmin +5
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (min_diff, flag, val_indexes))
@@ -820,9 +811,6 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
     :param logger: logging object where to report actions
     :return: new_records
     """
-    # TODO: ASK: to invalidate tmax0 and [tmin-1, tmin0, tmin1] ?
-    # TODO: ASK: the flags are to be reset at the end, not during the execution of the algorithm,
-    #            isn't it?
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s)"

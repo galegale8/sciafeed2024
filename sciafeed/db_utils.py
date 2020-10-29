@@ -94,6 +94,7 @@ def force_flags(records, flag_map, flag_index=3):
     """
     if not flag_map:
         return records
+    records = list(records)
     for record in records:
         key = (record[0], record[1])
         if key in flag_map:

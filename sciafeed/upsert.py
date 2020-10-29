@@ -229,6 +229,7 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     logger.debug('created temp folder')
     meta = MetaData()
     table_obj = Table(tmp_table_name, meta, autoload=True, autoload_with=conn.engine)
+    # TODO try/except/finally clause? (to ensure the drop of temp folder)
     data = [{'cod_staz': r[0], 'data_i': r[1], 'flag': r[3]} for r in records]
     conn.execute(table_obj.insert(), data)
     logger.debug('filled temp folder')
@@ -244,6 +245,7 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     """ % (schema, tmp_table_name)
     result = conn.execute(update_sql)
     num_of_updates = result.rowcount
+
     logger.info('update completed: %s flags updated' % num_of_updates)
     post_cmd = 'DROP TABLE %s' % tmp_table_name
     conn.execute(post_cmd)
@@ -533,50 +535,55 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
 
 def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
                targetschema='dailypdbanpacarica', logger=None):
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     # PRECI
     logger.info('querying table %s.ds__preci for flags %r' % (sourceschema, flags))
     sql_fields = "cod_stazprinc, data_i, (prec24).val_tot, ((prec24).flag).wht"
     prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
-        include_flag_values=(-9, 5), exclude_null=True)
+        include_flag_values=(-9, 5), exclude_null=True, no_order=True)
     prec_flag_map = db_utils.create_flag_map(prec_records, flag_index=3)
 
     logger.info('querying table %s.ds__preci to be updated' % targetschema)
     sql_fields = "cod_staz, data_i, (prec24).val_tot, ((prec24).flag).wht"
     prec_records = querying.select_prec_records(
-        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True,
+        no_order=True)
     prec_records = db_utils.force_flags(prec_records, prec_flag_map)
     logger.info('update flags of table %s.ds__preci' % targetschema)
     update_prec_flags(conn, prec_records, schema=targetschema, logger=logger)
 
     # TMAX
     logger.info('querying table %s.ds__t200 (TMAX) for flags %r' % (sourceschema, flags))
-    sql_fields = "cod_stazprinc, data_i, (tmxgg).val_tot, ((tmxgg).flag).wht"
+    sql_fields = "cod_stazprinc, data_i, (tmxgg).val_md, ((tmxgg).flag).wht"
     tmax_records = querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
-        include_flag_values=(-9, 5), exclude_null=True)
+        include_flag_values=(-9, 5), exclude_null=True, no_order=True)
     tmax_flag_map = db_utils.create_flag_map(tmax_records, flag_index=3)
 
     logger.info('querying table %s.ds__t200 (TMAX) to be updated' % targetschema)
-    sql_fields = "cod_staz, data_i, (tmxgg).val_tot, ((tmxgg).flag).wht"
+    sql_fields = "cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht"
     tmax_records = querying.select_temp_records(
-        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+        conn, fields=['tmxgg'], sql_fields=sql_fields, stations_ids=None, schema=targetschema,
+        exclude_null=True, no_order=True)
     tmax_records = db_utils.force_flags(tmax_records, tmax_flag_map)
     logger.info('update flags of table %s.ds__t200 (TMAX)' % targetschema)
     update_temp_flags(conn, tmax_records, schema=targetschema, db_field='tmxgg', logger=logger)
 
     # TMIN
     logger.info('querying table %s.ds__t200 (TMIN) for flags %r' % (sourceschema, flags))
-    sql_fields = "cod_stazprinc, data_i, (tmngg).val_tot, ((tmngg).flag).wht"
+    sql_fields = "cod_stazprinc, data_i, (tmngg).val_md, ((tmngg).flag).wht"
     tmin_records = querying.select_temp_records(
         conn, fields=['tmngg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
-        include_flag_values=(-9, 5), exclude_null=True)
+        include_flag_values=(-9, 5), exclude_null=True, no_order=True)
     tmin_flag_map = db_utils.create_flag_map(tmin_records, flag_index=3)
 
     logger.info('querying table %s.ds__t200 (TMIN) to be updated' % targetschema)
-    sql_fields = "cod_staz, data_i, (tmngg).val_tot, ((tmngg).flag).wht"
+    sql_fields = "cod_staz, data_i, (tmngg).val_md, ((tmngg).flag).wht"
     tmin_records = querying.select_temp_records(
-        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+        conn, fields=['tmngg'], sql_fields=sql_fields, stations_ids=None, schema=targetschema,
+        exclude_null=True, no_order=True)
     tmin_records = db_utils.force_flags(tmin_records, tmin_flag_map)
     logger.info('update flags of table %s.ds__t200 (TMIN)' % targetschema)
     update_temp_flags(conn, tmin_records, schema=targetschema, db_field='tmngg', logger=logger)

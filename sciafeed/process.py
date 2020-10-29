@@ -186,6 +186,7 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     logger.info("== STARTING CHECK CHAIN ==")
     logger.info("* 'controllo valori ripetuti = 0' for variable PREC")
     prec_records = checks.check1(prec_records, len_threshold=180, flag=-12)
+    logger.info("forcing flags of prec...")
     prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
 
     logger.info("* 'controllo valori ripetuti' for variable PREC")
@@ -195,10 +196,12 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     logger.info("* 'controllo valori ripetuti' for variable Tmax")
     temp_records = checks.check2(
         temp_records, len_threshold=20, flag=-13, exclude_values=(None, ))
+    logger.info("forcing flags of tmax...")
     temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo valori ripetuti' for variable Tmin")
     temp_records = checks.check2(
         temp_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
+    logger.info("forcing flags of tmin...")
     temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo mesi duplicati (stesso anno)' for variable PREC")
@@ -301,7 +304,7 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info('* final set of flags records on database...')
-    upsert.update_prec_flags(conn, prec_records, schema=schema)
+    upsert.update_prec_flags(conn, prec_records, schema=schema)  # FIXME: 234 upsert.py
     upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmxgg', flag_index=3)
     upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
 

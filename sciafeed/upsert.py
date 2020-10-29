@@ -293,7 +293,7 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
         UPDATE %s.ds__t200 t SET %s.flag.wht = u.flag
         FROM %s u
         WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i AND ((t.%s).flag).wht <> u.flag
-    """ % (schema, tmp_table_name, db_field, db_field)
+    """ % (schema, db_field, tmp_table_name, db_field)
     result = conn.execute(update_sql)
     num_of_updates = result.rowcount
     logger.info('update completed: %s flags updated for %s' % (num_of_updates, db_field))

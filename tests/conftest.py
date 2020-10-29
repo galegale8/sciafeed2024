@@ -9,6 +9,7 @@ def conn():
     engine = db_utils.ensure_engine()
     connection = engine.connect()
     connection.execute("drop schema if exists test cascade")
+    connection.execute("drop schema if exists test2 cascade")
     connection.execute('create schema if not exists test')
     connection.execute('create schema if not exists test2')
     # 1.896.409 records of TEMP

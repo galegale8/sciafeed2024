@@ -73,8 +73,8 @@ def test_select_prec_records(conn):
     records = querying.select_prec_records(conn, sql_fields=sql_fields, schema='test',
                                            stations_ids=stations_ids)
     results = [r for r in records]
-    assert len(results) == 26015
-    assert results[0] == [5600, datetime(1990, 1, 1, 0, 0), Decimal('0')]
+    assert len(results) == 26038
+    assert results[0] == [5600, datetime(1989, 12, 31, 0, 0), Decimal('0')]
     assert results[-1] == [5602, datetime(2019, 12, 31, 0, 0), Decimal('0')]
 
     sql_fields = "cod_staz, data_i"
@@ -82,8 +82,8 @@ def test_select_prec_records(conn):
     records = querying.select_prec_records(conn, sql_fields=sql_fields, schema='test',
                                            stations_ids=stations_ids)
     results = [r for r in records]
-    assert len(results) == 26015
-    assert results[0] == [5600, datetime(1990, 1, 1, 0, 0)]
+    assert len(results) == 26038
+    assert results[0] == [5600, datetime(1989, 12, 31, 0, 0)]
     assert results[-1] == [5602, datetime(2019, 12, 31, 0, 0)]
 
     sql_fields = "cod_staz, data_i, (prec24).val_tot"
@@ -91,7 +91,7 @@ def test_select_prec_records(conn):
     records = querying.select_prec_records(conn, sql_fields=sql_fields, stations_ids=stations_ids,
                                            schema='test', exclude_values=exclude_values)
     results = [r for r in records]
-    assert len(results) == 5649
+    assert len(results) == 5654
     assert results[0] == [5600, datetime(1990, 1, 27, 0, 0), Decimal('2')]
     assert results[-1] == [5602, datetime(2019, 12, 22, 0, 0), Decimal('10')]
 
@@ -101,12 +101,11 @@ def test_select_temp_records(conn):
     stations_ids = [5600, 5601, 5602]
     records = querying.select_temp_records(conn, fields, stations_ids=stations_ids, schema='test')
     results = [r for r in records]
-    assert len(results) == 25941
+    assert len(results) == 26049
     assert len(results[0]) == 36
     assert results[0][:10] == [
-        datetime(1990, 1, 1, 0, 0), 5600, 4, '("(24,1)",-3.1,,,)', '(0,1,0,0,0,0,0,0,0,0,0)',
-        '("(24,1)",-4.9,,,)', '(0,0,0,0,1,0,0,0,0)', '("(24,1)",-4.1,0.6)', '("(24,1)",-4,)',
-        '("(24,1)",1.8,,,)']
+        datetime(1989, 12, 31, 0, 0), 5600, 4, '("(1,0)",-4.3,,,)', '(,,,,,,,,,,)',
+        '("(1,0)",-4.3,,,)', '(,,,,,,,,)', '("(1,0)",-4.3,0)', '("(1,0)",-4.3,)', '("(,)",,,,)']
     assert results[-1][:10] == [
         datetime(2019, 12, 31, 0, 0), 5602, 4, '("(24,1)",7.5,,,)', '(0,0,0,1,0,0,0,0,0,0,0)',
         '("(24,1)",-2.7,,,)', '(0,0,0,0,1,0,0,0,0)', '("(24,1)",1.7,3.2)', '("(24,1)",2.4,)',
@@ -118,16 +117,16 @@ def test_select_temp_records(conn):
         conn, fields, sql_fields=sql_fields, stations_ids=stations_ids, schema='test',
         exclude_values=exclude_values)
     results = [r for r in records]
-    assert len(results) == 25872
+    assert len(results) == 25979
     assert len(results[0]) == 3
-    assert results[0] == [5600, datetime(1990, 1, 2, 0, 0), Decimal('-1.9')]
+    assert results[0] == [5600, datetime(1989, 12, 31, 0, 0), Decimal('-4.3')]
     assert results[-1] == [5602, datetime(2019, 12, 30, 0, 0), Decimal('5.1')]
 
     fields = ['tmngg']
-    records = querying.select_temp_records(conn, fields, sql_fields=sql_fields, schema='test',
-                                           stations_ids=stations_ids)
+    records = querying.select_temp_records(
+        conn, fields, sql_fields=sql_fields, stations_ids=stations_ids, schema='test')
     results = [r for r in records]
-    assert len(results) == 25940
+    assert len(results) == 31782
     assert len(results[0]) == 3
-    assert results[0] == [5600, datetime(1990, 1, 1, 0, 0), Decimal('-3.1')]
+    assert results[0] == [5600, datetime(1989, 12, 31, 0, 0), Decimal('-4.3')]
     assert results[-1] == [5602, datetime(2019, 12, 31, 0, 0), Decimal('7.5')]

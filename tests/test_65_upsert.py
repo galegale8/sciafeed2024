@@ -7,13 +7,18 @@ from sciafeed import export
 from sciafeed import querying
 from sciafeed import upsert
 
+import pytest
+
 from . import TEST_DATA_PATH
+
+# ignore some useless SAWarnings in this module
+pytestmark = pytest.mark.filterwarnings("ignore:.*Did not recognize type.*::sqlalchemy[.*]")
 
 
 def test_update_prec_flags(conn):
     records = list(querying.select_prec_records(
         conn, sql_fields='cod_staz, data_i, (prec24).val_tot, ((prec24).flag).wht',
-        stations_ids=[5800, 5700, 5600], schema='test', flag_threshold=1))
+        stations_ids=[5800, 5700, 5600], schema='test', include_flag_values=(1, 5)))
     some_existing_records = [
         [5800, datetime(1992, 12, 1, 0, 0), Decimal('0'), 1],
         [5700, datetime(1992, 12, 1, 0, 0), Decimal('0'), 1],
@@ -31,7 +36,7 @@ def test_update_prec_flags(conn):
     assert num_changed == 3
     records = list(querying.select_prec_records(
         conn, sql_fields='cod_staz, data_i, (prec24).val_tot, ((prec24).flag).wht',
-        stations_ids=[5800, 5700, 5600], schema='test', flag_threshold=None))
+        stations_ids=[5800, 5700, 5600], schema='test'))
     for test_record in some_existing_records:
         assert test_record not in records
     for new_record in with_flags_changed:
@@ -41,7 +46,7 @@ def test_update_prec_flags(conn):
 def test_set_temp_flags(conn):
     records = list(querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
-        stations_ids=[5800, 5700, 5600], schema='test', flag_threshold=1))
+        stations_ids=[5800, 5700, 5600], schema='test', include_flag_values=(1, 5)))
     some_existing_records = [
         [5800, datetime(1992, 12, 1, 0, 0), Decimal('4.5'), 1],
         [5700, datetime(1992, 1, 1, 0, 0), Decimal('6.8'), 1],
@@ -60,7 +65,7 @@ def test_set_temp_flags(conn):
     assert num_changed == 3
     records = list(querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
-        stations_ids=[5800, 5700, 5600], schema='test', flag_threshold=None))
+        stations_ids=[5800, 5700, 5600], schema='test'))
     for test_record in some_existing_records:
         assert test_record not in records
     for new_record in with_flags_changed:
@@ -251,4 +256,4 @@ def test_load_unique_data(conn):
     startschema = 'test'
     targetschema = 'test2'
     # TODO
-    upsert.load_unique_data(conn, startschema, targetschema, only_tables=['ds__preci'])
+    # upsert.load_unique_data(conn, startschema, targetschema, only_tables=['ds__preci'])

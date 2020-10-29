@@ -142,7 +142,7 @@ def load_main_station_groups(conn, group_table_name, schema="dailypdbanpacarica"
 
 
 def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypdbanpacarica',
-                        include_flag_values=None, exclude_flag_interval=(-9, 0), exclude_values=(),
+                        include_flag_values=None, exclude_flag_interval=None, exclude_values=(),
                         exclude_null=True):
     """
     Select all the records of the table dailypdbadmclima.ds__preci order by station, date.
@@ -182,7 +182,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
 
 def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
                         schema='dailypdbanpacarica', include_flag_values=None,
-                        exclude_flag_interval=(-9, 0), exclude_values=(),
+                        exclude_flag_interval=None, exclude_values=(),
                         exclude_null=True, where_sql=None):
     """
     Select all the records of the table dailypdbadmclima.ds__t200 order by station, date.

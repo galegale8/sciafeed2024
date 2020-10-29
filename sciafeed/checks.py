@@ -524,8 +524,8 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
         for month, month_values in months_values_dict.items():
             if split:
                 median = statistics.median(month_values)
-                top_values = [g for g in month_values if g > median]
-                bottom_values = [g for g in month_values if g < median]
+                top_values = [g for g in month_values if g >= median]
+                bottom_values = [g for g in month_values if g <= median]
             else:
                 top_values = month_values
                 bottom_values = []

@@ -43,7 +43,7 @@ def test_update_prec_flags(conn):
         assert new_record in records
 
 
-def test_set_temp_flags(conn):
+def test_update_temp_flags(conn):
     records = list(querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
         stations_ids=[5800, 5700, 5600], schema='test', include_flag_values=(1, 5)))
@@ -72,7 +72,7 @@ def test_set_temp_flags(conn):
         assert new_record in records
 
 
-def test_expand_fields():
+def test_expand_record():
     # not empty fields
     record = {
         'data_i': '2018-01-01 00:00:00', 'cod_staz': 12502, 'cod_aggr': '4',
@@ -80,7 +80,7 @@ def test_expand_fields():
         'tmngg': "((24, 1), 4.7, 1.9, 8.8, '2018-01-01T20:00:00')",
         'tmdgg': '((24, 1), 9.3, 1.6)'
     }
-    new_record = upsert.expand_fields(record)
+    new_record = upsert.expand_record(record)
     assert new_record == {
         'data_i': '2018-01-01 00:00:00', 'cod_staz': 12502, 'cod_aggr': '4',
         'tmxgg.flag.ndati': '24', 'tmxgg.flag.wht': '1', 'tmxgg.val_md': '11.5',
@@ -96,7 +96,7 @@ def test_expand_fields():
         'tmngg': "((24, 1), 4.7, 1.9, 8.8, '2018-01-01T20:00:00')",
         'tmdgg': '((24, 1), 9.3,)'
     }
-    new_record = upsert.expand_fields(record)
+    new_record = upsert.expand_record(record)
     assert new_record == {
         'data_i': '2018-01-01 00:00:00', 'cod_staz': 12502, 'cod_aggr': '4',
         'tmxgg.flag.ndati': '24', 'tmxgg.flag.wht': '1', 'tmxgg.val_md': 'NULL',
@@ -105,6 +105,63 @@ def test_expand_fields():
         'tmngg.val_vr': '1.9', 'tmngg.val_x': '8.8', 'tmngg.data_x': '2018-01-01T20:00:00',
         'tmdgg.flag.ndati': '24', 'tmdgg.flag.wht': '1', 'tmdgg.val_md': '9.3',
         'tmdgg.val_vr': 'NULL'}
+
+
+def test_expand_fields():
+    fields = ['data_i', 'tmxgg', 'bagna', 'cod_staz']
+    res = upsert.expand_fields(fields)
+    assert res == [
+        'data_i', 'tmxgg.flag.ndati', 'tmxgg.flag.wht', 'tmxgg.val_md',
+        'tmxgg.val_vr', 'tmxgg.val_x', 'tmxgg.data_x', 'bagna.flag.ndati',
+        'bagna.flag.wht', 'bagna.val_md', 'bagna.val_vr', 'bagna.val_mx',
+        'bagna.val_tot', 'cod_staz'
+    ]
+
+
+def test_create_insert():
+    data = []
+    fields = ['col1', 'col2', 'col3']
+    sql = upsert.create_insert('atable', 'aschema', fields, data)
+    assert not sql
+
+    data = [{'col1': 1, 'col2': '2'}, {'col3': 3}]
+    fields = []
+    sql = upsert.create_insert('atable', 'aschema', fields, data)
+    assert not sql
+
+    fields = ['col1', 'col2', 'col3']
+    sql = upsert.create_insert('atable', 'aschema', fields, data)
+    assert sql == "INSERT INTO aschema.atable (col1,col2,col3) " \
+                  "VALUES ('1','2',NULL),(NULL,NULL,'3')"
+
+
+def test_create_upsert():
+    for policy in ['onlyinsert', 'upsert']:
+        data = []
+        fields = ['col1', 'col2', 'col3']
+        sql = upsert.create_upsert('atable', 'aschema', fields, data, policy)
+        assert not sql
+
+        data = [{'col1': 1, 'col2': '2'}, {'col3': 3}]
+        fields = []
+        sql = upsert.create_insert('atable', 'aschema', fields, data)
+        assert not sql
+
+    policy = 'onlyinsert'
+    data = [{'col1': 1, 'col2': '2'}, {'col3': 3}]
+    fields = ['col1', 'col2', 'col3']
+    sql = upsert.create_upsert('atable', 'aschema', fields, data, policy)
+    assert sql == "INSERT INTO aschema.atable (col1,col2,col3) " \
+                  "VALUES ('1','2',NULL),(NULL,NULL,'3') " \
+                  "ON CONFLICT ON CONSTRAINT atable_pkey DO NOTHING"
+
+    policy = 'upsert'
+    sql = upsert.create_upsert('atable', 'aschema', fields, data, policy)
+    assert sql == "INSERT INTO aschema.atable (col1,col2,col3) " \
+                  "VALUES ('1','2',NULL),(NULL,NULL,'3') " \
+                  "ON CONFLICT ON CONSTRAINT atable_pkey DO " \
+                  "UPDATE SET (col1,col2,col3) = (EXCLUDED.col1,EXCLUDED.col2,EXCLUDED.col3) " \
+                  "WHERE atable.cod_staz = EXCLUDED.cod_staz AND atable.data_i = EXCLUDED.data_i"
 
 
 def test_upsert_items(conn):

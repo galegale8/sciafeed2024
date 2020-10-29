@@ -1,5 +1,5 @@
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from os.path import join
 
@@ -130,3 +130,11 @@ def test_select_temp_records(conn):
     assert len(results[0]) == 3
     assert results[0] == [5600, datetime(1989, 12, 31, 0, 0), Decimal('-4.3')]
     assert results[-1] == [5602, datetime(2019, 12, 31, 0, 0), Decimal('7.5')]
+
+
+def test_load_main_station_groups(conn):
+    res = querying.load_main_station_groups(conn, 'tabgruppistazioni')
+    assert len(res) == 11868
+    assert 1 in res
+    assert res[1] == 1621
+    assert res[208] == 8883

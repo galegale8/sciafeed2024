@@ -303,7 +303,16 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     return num_of_updates
 
 
-def expand_fields(record):
+def expand_record(record):
+    """
+    Get an input record (dictionary) and return a new record with the not null values specified
+    by the complete name of the key.
+    For example: {'prec24': '("(1,2)",,,)'} -> {'prec24.flag.ndati':1, 'prec24.flag.wht':2}
+    Values blank or 'None' are returned with the string 'NULL'.
+
+    :param record: input record (as dictionary)
+    :return: new record with not null values expanded.
+    """
     record_cp = record.copy()
     for field, value in record_cp.items():
         if field in field2class_map:
@@ -319,7 +328,14 @@ def expand_fields(record):
     return record
 
 
-def expanded_fields(fields):
+def expand_fields(fields):
+    """
+    Get an input list of fields and return a list of fields with the complete names specified.
+    For example: ['prec24'] -> ['prec24.flag.ndati', 'prec24.flag.wht', ...]
+
+    :param fields: iterable of the fields
+    :return: new list with the complete names
+    """
     new_fields = []
     for field in fields:
         if field in field2class_map:
@@ -331,20 +347,8 @@ def expanded_fields(fields):
     return new_fields
 
 
-def get_record_items(record, insert_mode=True):
-    if insert_mode:
-        # don't consider to set NULL values for empty fields
-        record = {k: v for k, v in record.items()
-                  if v is not None and list(filter(lambda r: r.isdigit(), str(v)))}
-    record = expand_fields(record)
-    fields, values = list(zip(*record.items()))
-    fields = ','.join(fields)
-    values = repr(values)[1:-1].replace("'NULL'", 'NULL')
-    return fields, values
-
-
 def create_insert(table_name, schema, fields, data):
-    if not data:
+    if not data or not fields:
         return
     fields_str = ','.join(fields)
     values_str = ''
@@ -363,7 +367,7 @@ def create_insert(table_name, schema, fields, data):
 
 
 def create_upsert(table_name, schema, fields, data, policy):
-    if not data:
+    if not data or not fields:
         return
     insert_sql = create_insert(table_name, schema, fields, data)
     insert_sql += " ON CONFLICT ON CONSTRAINT %s_pkey DO " % table_name
@@ -410,7 +414,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     group_by_date = lambda x: x['data_i']
     upserted = 0
     cols = db_utils.get_table_columns(table_name, schema)
-    fields = expanded_fields(cols)
+    fields = expand_fields(cols)
 
     for station, station_records in itertools.groupby(items, group_by_station):
         data = []
@@ -426,7 +430,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
             # day_obj = datetime.strptime(day, '%Y-%m-%d')
             record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
             record['cod_staz'] = cod_staz
-            record = expand_fields(record)
+            record = expand_record(record)
             record = {
                 k: v for k, v in record.items()
                 if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
@@ -503,12 +507,12 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
         inserted = 0
         logger.info(' start merge&insert')
         cols = db_utils.get_table_columns(table_name, targetschema)
-        fields = expanded_fields(cols)
+        fields = expand_fields(cols)
         data = []
         for group_attrs, group_records in itertools.groupby(results, group_funct):
             groupid, data_i = group_attrs
             main_station = group2mainstation[groupid]
-            expanded_group_records = [expand_fields(dict(r)) for r in group_records]
+            expanded_group_records = [expand_record(dict(r)) for r in group_records]
             main_record = choose_main_record(expanded_group_records, master_field)
             if main_record:
                 del main_record['idgruppo']

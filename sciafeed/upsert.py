@@ -2,6 +2,7 @@
 import functools
 import itertools
 import logging
+import time
 
 from sqlalchemy import MetaData, Table
 
@@ -212,21 +213,22 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info('start process for update of PREC flags')
+    tmp_table_name = "updates_preci%s" % round(time.time())
     pre_sql_cmds = [
-        'DROP TABLE IF EXISTS updates_table',
+        'DROP TABLE IF EXISTS %s' % tmp_table_name,
         '''
-    CREATE TABLE IF NOT EXISTS updates_table (
+    CREATE TABLE IF NOT EXISTS %s (
         cod_staz integer NOT NULL,
         data_i timestamp without time zone NOT NULL,
         flag integer,
         PRIMARY KEY (cod_staz, data_i)
-        )''',
+        )''' % tmp_table_name,
     ]
     for cmd in pre_sql_cmds:
         conn.execute(cmd)
     logger.debug('created temp folder')
     meta = MetaData()
-    table_obj = Table('updates_table', meta, autoload=True, autoload_with=conn.engine)
+    table_obj = Table(tmp_table_name, meta, autoload=True, autoload_with=conn.engine)
     data = [{'cod_staz': r[0], 'data_i': r[1], 'flag': r[3]} for r in records]
     conn.execute(table_obj.insert(), data)
     logger.debug('filled temp folder')
@@ -237,13 +239,13 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
             prec06.flag.wht,
             prec12.flag.wht
             ) = (u.flag, u.flag, u.flag, u.flag)
-        FROM updates_table u
+        FROM %s u
         WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i AND ((t.prec24).flag).wht <> u.flag
-    """ % schema
+    """ % (schema, tmp_table_name)
     result = conn.execute(update_sql)
     num_of_updates = result.rowcount
     logger.info('update completed: %s flags updated' % num_of_updates)
-    post_cmd = 'DROP TABLE updates_table'
+    post_cmd = 'DROP TABLE %s' % tmp_table_name
     conn.execute(post_cmd)
     logger.debug('temp folder removed')
     return num_of_updates
@@ -267,34 +269,35 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info('start process for update of TEMP flags (%s)' % db_field)
+    tmp_table_name = "updates_temp%s" % round(time.time())
     pre_sql_cmds = [
-        'DROP TABLE IF EXISTS updates_table2',
+        'DROP TABLE IF EXISTS %s' % tmp_table_name,
         '''
-    CREATE TABLE IF NOT EXISTS updates_table2 (
+    CREATE TABLE IF NOT EXISTS %s (
         cod_staz integer NOT NULL,
         data_i timestamp without time zone NOT NULL,
         flag integer,
         PRIMARY KEY (cod_staz, data_i)
-        )''',
+        )''' % tmp_table_name,
     ]
     for cmd in pre_sql_cmds:
         conn.execute(cmd)
     logger.debug('created temp folder')
     meta = MetaData()
-    table_obj = Table('updates_table2', meta, autoload=True, autoload_with=conn.engine)
+    table_obj = Table(tmp_table_name, meta, autoload=True, autoload_with=conn.engine)
     data = [{'id_record': i, 'cod_staz': r[0], 'data_i': r[1], 'flag': r[flag_index]}
             for i, r in enumerate(records, 1)]
     conn.execute(table_obj.insert(), data)
     logger.debug('filled temp folder')
     update_sql = """
         UPDATE %s.ds__t200 t SET %s.flag.wht = u.flag
-        FROM updates_table2 u
+        FROM %s u
         WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i AND ((t.%s).flag).wht <> u.flag
-    """ % (schema, db_field, db_field)
+    """ % (schema, tmp_table_name, db_field, db_field)
     result = conn.execute(update_sql)
     num_of_updates = result.rowcount
     logger.info('update completed: %s flags updated for %s' % (num_of_updates, db_field))
-    post_cmd = 'DROP TABLE updates_table2'
+    post_cmd = 'DROP TABLE %s' % tmp_table_name
     conn.execute(post_cmd)
     logger.debug('temp folder removed')
     return num_of_updates
@@ -522,3 +525,54 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
             sql = create_insert(table_name, targetschema, fields, data)
             conn.execute(sql)
         logger.info('inserted %s records' % inserted)
+
+
+def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
+               targetschema='dailypdbanpacarica', logger=None):
+    # PRECI
+    logger.info('querying table %s.ds__preci for flags %r' % (sourceschema, flags))
+    sql_fields = "cod_stazprinc, data_i, (prec24).val_tot, ((prec24).flag).wht"
+    prec_records = querying.select_prec_records(
+        conn, sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
+        include_flag_values=(-9, 5), exclude_null=True)
+    prec_flag_map = db_utils.create_flag_map(prec_records, flag_index=3)
+
+    logger.info('querying table %s.ds__preci to be updated' % targetschema)
+    sql_fields = "cod_staz, data_i, (prec24).val_tot, ((prec24).flag).wht"
+    prec_records = querying.select_prec_records(
+        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map)
+    logger.info('update flags of table %s.ds__preci' % targetschema)
+    update_prec_flags(conn, prec_records, schema=targetschema, logger=logger)
+
+    # TMAX
+    logger.info('querying table %s.ds__t200 (TMAX) for flags %r' % (sourceschema, flags))
+    sql_fields = "cod_stazprinc, data_i, (tmxgg).val_tot, ((tmxgg).flag).wht"
+    tmax_records = querying.select_temp_records(
+        conn, fields=['tmxgg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
+        include_flag_values=(-9, 5), exclude_null=True)
+    tmax_flag_map = db_utils.create_flag_map(tmax_records, flag_index=3)
+
+    logger.info('querying table %s.ds__t200 (TMAX) to be updated' % targetschema)
+    sql_fields = "cod_staz, data_i, (tmxgg).val_tot, ((tmxgg).flag).wht"
+    tmax_records = querying.select_temp_records(
+        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+    tmax_records = db_utils.force_flags(tmax_records, tmax_flag_map)
+    logger.info('update flags of table %s.ds__t200 (TMAX)' % targetschema)
+    update_temp_flags(conn, tmax_records, schema=targetschema, db_field='tmxgg', logger=logger)
+
+    # TMIN
+    logger.info('querying table %s.ds__t200 (TMIN) for flags %r' % (sourceschema, flags))
+    sql_fields = "cod_stazprinc, data_i, (tmngg).val_tot, ((tmngg).flag).wht"
+    tmin_records = querying.select_temp_records(
+        conn, fields=['tmngg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
+        include_flag_values=(-9, 5), exclude_null=True)
+    tmin_flag_map = db_utils.create_flag_map(tmin_records, flag_index=3)
+
+    logger.info('querying table %s.ds__t200 (TMIN) to be updated' % targetschema)
+    sql_fields = "cod_staz, data_i, (tmngg).val_tot, ((tmngg).flag).wht"
+    tmin_records = querying.select_temp_records(
+        conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True)
+    tmin_records = db_utils.force_flags(tmin_records, tmin_flag_map)
+    logger.info('update flags of table %s.ds__t200 (TMIN)' % targetschema)
+    update_temp_flags(conn, tmin_records, schema=targetschema, db_field='tmngg', logger=logger)

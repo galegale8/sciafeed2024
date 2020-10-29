@@ -65,3 +65,37 @@ def get_table_columns(table_name, schema='public'):
     except:
         return []
     return [c.name for c in table_obj.columns]
+
+
+def create_flag_map(records, flag_index=3):
+    """
+    Return a dictionary that maps the tuple (cod_staz, data_i) with a flag.
+    Assume (cod_staz, data_i, flag) are at indexes (0, 1, `flag_index`).
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param flag_index: index of the flag to change in the record
+    :return: dictionary {(cod_staz, data_i): flag}
+    """
+    flag_map = dict()
+    for record in records:
+        flag_map[(record[0], record[1])] = record[flag_index]
+    return flag_map
+
+
+def force_flags(records, flag_map, flag_index=3):
+    """
+    Update the flags of input `records` according to a dictionary that maps (station, date)
+    with the flag to apply. The flag is at the index `flag_index` for each record.
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param flag_map: dictionary of changes to apply: {(cod_staz,data_i): flag}
+    :param flag_index: index of the flag to change in the record
+    :return: records with updated flags
+    """
+    if not flag_map:
+        return records
+    for record in records:
+        key = (record[0], record[1])
+        if key in flag_map:
+            record[flag_index] = flag_map[key]
+    return records

@@ -152,8 +152,9 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
 
-    # TODO: read from dailyanpaclima the set of values with flag +5, -9 and set the corresponding
-    #   records of dailyanpacarica (equivalence group)
+    logger.info('* synchronization of flags +5 and -9 loading from schema dailypdbanpaclima...')
+    upsert.sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima', targetschema=schema,
+                      logger=logger)
 
     logger.info('* initial query to get records of PREC...')
     sql_fields = "cod_staz, data_i, (prec24).val_tot, 1 as flag"
@@ -164,7 +165,7 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     prec_records5 = querying.select_prec_records(
         conn, sql_fields=sql5_fields, stations_ids=stations_ids, schema=schema,
         include_flag_values=(5, ), exclude_null=True)
-    prec_flag_map5 = checks.create_flag_map(prec_records5, flag_index=3)
+    prec_flag_map5 = db_utils.create_flag_map(prec_records5, flag_index=3)
 
     logger.info('* initial query to get records of temperature...')
     sql_fields = "cod_staz, data_i, (tmxgg).val_md, 1 as flag_tmxgg, " \
@@ -176,128 +177,128 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     tmax_records5 = querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
         stations_ids=stations_ids, schema=schema, include_flag_values=(5, ), exclude_null=True)
-    tmax_flag_map5 = checks.create_flag_map(tmax_records5, flag_index=3)
+    tmax_flag_map5 = db_utils.create_flag_map(tmax_records5, flag_index=3)
     tmin_records5 = querying.select_temp_records(
         conn, fields=['tmngg'], sql_fields="cod_staz, data_i, (tmngg).val_md, ((tmngg).flag).wht",
         stations_ids=stations_ids, schema=schema, include_flag_values=(5, ), exclude_null=True)
-    tmin_flag_map5 = checks.create_flag_map(tmin_records5, flag_index=3)
+    tmin_flag_map5 = db_utils.create_flag_map(tmin_records5, flag_index=3)
 
     logger.info("== STARTING CHECK CHAIN ==")
     logger.info("* 'controllo valori ripetuti = 0' for variable PREC")
     prec_records = checks.check1(prec_records, len_threshold=180, flag=-12)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
 
     logger.info("* 'controllo valori ripetuti' for variable PREC")
     prec_records = checks.check2(
         prec_records, len_threshold=20, flag=-13, exclude_values=(0, None))
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo valori ripetuti' for variable Tmax")
     temp_records = checks.check2(
         temp_records, len_threshold=20, flag=-13, exclude_values=(None, ))
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo valori ripetuti' for variable Tmin")
     temp_records = checks.check2(
         temp_records, len_threshold=20, flag=-13, exclude_values=(None, ), val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo mesi duplicati (stesso anno)' for variable PREC")
     prec_records = checks.check3(prec_records, flag=-15, min_not_null=5)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo mesi duplicati (stesso anno)' for variable Tmax")
     temp_records = checks.check3(temp_records, flag=-15)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo mesi duplicati (stesso anno)' for variable Tmin")
     temp_records = checks.check3(temp_records, flag=-15, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo mesi duplicati (anni differenti)' for variable PREC")
     prec_records = checks.check4(prec_records, flag=-17, min_not_null=5)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo mesi duplicati (anni differenti)' for variable Tmax")
     temp_records = checks.check4(temp_records, flag=-17)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo mesi duplicati (anni differenti)' for variable Tmin")
     temp_records = checks.check4(temp_records, flag=-17, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* controllo TMAX=TMIN")
     temp_records = checks.check5(temp_records, len_threshold=10, flag=-19)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* controllo TMAX=TMIN=0")
     temp_records = checks.check6(temp_records, flag=-20)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo world excedence' for PREC")
     prec_records = checks.check7(prec_records, max_threshold=800, flag=-21)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo world excedence' for Tmax")
     temp_records = checks.check7(temp_records, min_threshold=-30, max_threshold=50, flag=-21)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo world excedence' for Tmin")
     temp_records = checks.check7(
         temp_records, min_threshold=-40, max_threshold=40, flag=-21, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info('* controllo gap checks  precipitazione')
     prec_records = checks.check8(prec_records, threshold=300, split=False, flag_sup=-23)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo gap checks temperatura' for Tmax")
     temp_records = checks.check8(
         temp_records, threshold=10, split=True, flag_sup=-23, flag_inf=-24)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo gap checks temperatura' for Tmin")
     temp_records = checks.check8(
         temp_records, threshold=10, split=True, flag_sup=-23, flag_inf=-24, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo z-score checks temperatura' for Tmax")
     temp_records = checks.check9(
         temp_records, num_dev_std=6, window_days=15, min_num=100, flag=-25)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo z-score checks temperatura' for Tmin")
     temp_records = checks.check9(
         temp_records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo z-score checks precipitazione'")
     pos_temp_days, neg_temp_days = checks.split_days_by_average_temp(temp_records)
     prec_records = checks.check10(
         prec_records, pos_temp_days, times_perc=9, percentile=95, window_days=29,
         min_num=20, flag=-25)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
     logger.info("* 'controllo z-score checks precipitazione ghiaccio'")
     prec_records = checks.check10(
         prec_records, neg_temp_days, times_perc=5, percentile=95, window_days=29,
         min_num=20, flag=-26)
-    prec_records = checks.force_flags(prec_records, prec_flag_map5)
+    prec_records = db_utils.force_flags(prec_records, prec_flag_map5)
 
     logger.info("* 'controllo jump checks' for Tmax")
     temp_records = checks.check11(temp_records, max_diff=18, flag=-27)
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     logger.info("* 'controllo jump checks' for Tmin")
     temp_records = checks.check11(temp_records, max_diff=18, flag=-27, val_index=4)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo Tmax < Tmin'")
     temp_records = checks.check12(temp_records, min_diff=-5, flag=-29, val_indexes=(2, 4))
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info("* 'controllo dtr (diurnal temperature range)' for Tmax")
     operators = max, operator.ge
     temp_records = checks.check13(
         temp_records, operators, jump=35, flag=-31, val_indexes=(2, 4))
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
     logger.info("* 'controllo dtr (diurnal temperature range)' for Tmin")
     operators = min, operator.le
     temp_records = checks.check13(
         temp_records, operators, jump=-35, flag=-31, val_indexes=(2, 4))
-    temp_records = checks.force_flags(temp_records, tmax_flag_map5)
-    temp_records = checks.force_flags(temp_records, tmin_flag_map5, flag_index=5)
+    temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
+    temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
     logger.info('* final set of flags records on database...')
     upsert.update_prec_flags(conn, prec_records, schema=schema)

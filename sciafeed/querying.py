@@ -76,6 +76,7 @@ def find_new_stations(data_folder, dburi):
                     station_props['cod_utente'] = record_md['cod_utente']
                 else:  # workaround to manage Emilia Romagna: try to find by name
                     station_props['nome'] = record_md['cod_utente']
+                    # TODO: check also coordinates?
                 db_station = get_db_station(conn, anag_table, **station_props)
                 all_stations[station_key] = db_station
                 if not db_station:  # NOT FOUND in the database
@@ -145,7 +146,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
                         include_flag_values=None, exclude_flag_interval=None, exclude_values=(),
                         exclude_null=True, no_order=False):
     """
-    Select all the records of the table dailypdbadmclima.ds__preci order by station, date.
+    Select all the records of the table ds__preci order by station, date.
     If  stations_ids is not None, filter also for station ids.
     By default, only not NULL values and flagged as valid are queried.
 
@@ -190,7 +191,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
                         exclude_flag_interval=None, exclude_values=(),
                         exclude_null=True, where_sql=None, no_order=False):
     """
-    Select all the records of the table dailypdbadmclima.ds__t200 order by station, date.
+    Select all the records of the table ds__t200 order by station, date.
     If  stations_ids is not None, filter also for station ids.
     By default, only not NULL values and flagged as valid are queried, but additional
     parameters can change the filtering.
@@ -230,6 +231,54 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     if exclude_null:
         for field in fields:
             where_clauses.append('(%s).val_md IS NOT NULL' % field)
+    if where_sql:
+        where_clauses.append(where_sql)
+    if where_clauses:
+        sql += ' WHERE %s' % (' AND '.join(where_clauses))
+    if not no_order:
+        sql += ' ORDER BY cod_staz, data_i'
+    # each record must be a list to make flag changeable:
+    results = map(list, conn.execute(sql))
+    return results
+
+
+def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
+                   schema='dailypdbanpacarica', include_flag_values=None,
+                   exclude_flag_interval=None, where_sql=None, no_order=False):
+    """
+    Select all the records of the table `table` order by station, date.
+    If  stations_ids is not None, filter also for station ids.
+    By default, only not NULL values and flagged as valid are queried, but additional
+    parameters can change the filtering.
+
+    :param conn: db connection object
+    :param table: table name where to select
+    :param fields: list of field names, i.e. 'tmxgg' or 'tmngg', where to apply filters
+    :param sql_fields: sql string of field selection
+    :param stations_ids: list of station ids (if None: no filter by station)
+    :param schema: database schema to consider
+    :param include_flag_values: if not None, select fields where the flag belongs to this values
+    :param exclude_flag_interval: if not None, exclude fields where flag belongs to this interval
+    :param exclude_null: if True, excludes NULL values
+    :param where_sql: if not None, add the selected where clause in sql
+    :param no_order: if True, sort results by station, date
+    :return: the iterable of the results
+    """
+    sql = "SELECT %s FROM %s.%s" % (sql_fields, schema, table)
+    where_clauses = []
+    if stations_ids:
+        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+    if include_flag_values is not None:
+        include_sql_str = repr(tuple(include_flag_values))
+        if len(include_flag_values) == 1:
+            include_sql_str = '(%s)' % include_flag_values[0]
+        for field in fields:
+            where_clauses.append('((%s).flag).wht in %s' % (field, include_sql_str))
+    if exclude_flag_interval is not None:
+        for field in fields:
+            clause = '(((%s).flag).wht < %s) OR (((%s).flag).wht > %s)' \
+                     % (field, exclude_flag_interval[0], field, exclude_flag_interval[1])
+            where_clauses.append(clause)
     if where_sql:
         where_clauses.append(where_sql)
     if where_clauses:

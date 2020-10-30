@@ -43,7 +43,7 @@ def test_update_prec_flags(conn):
         assert new_record in records
 
 
-def test_update_temp_flags(conn):
+def test_update_flags(conn):
     records = list(querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
         stations_ids=[5800, 5700, 5600], schema='test', include_flag_values=(1, 5)))
@@ -60,8 +60,8 @@ def test_update_temp_flags(conn):
         [5700, datetime(1992, 1, 1, 0, 0), Decimal('6.8'), -2],
         [5600, datetime(1990, 1, 1, 0, 0), Decimal('-3.1'), -3]
     ]
-    num_changed = upsert.update_temp_flags(conn, with_flags_changed, schema='test',
-                                           db_field='tmxgg')
+    num_changed = upsert.update_flags(conn, with_flags_changed, 'ds__t200', schema='test',
+                                      db_field='tmxgg')
     assert num_changed == 3
     records = list(querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",

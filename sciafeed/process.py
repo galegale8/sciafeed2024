@@ -294,7 +294,8 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
 
     logger.info('* final set of flags records on database...')
     upsert.update_prec_flags(conn, prec_records, schema=schema)
-    upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmxgg', flag_index=3)
-    upsert.update_temp_flags(conn, temp_records, schema=schema, db_field='tmngg', flag_index=5)
+    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmxgg')
+    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmngg',
+                        flag_index=5)
 
     logger.info('== End process ==')

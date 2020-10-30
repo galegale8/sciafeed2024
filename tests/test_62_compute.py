@@ -324,7 +324,7 @@ def test_compute_bagna():
     ]
     flag, val_md, val_vr, val_mx, val_mn, val_tot = compute.compute_bagna(day_records)
     assert (flag, val_md, val_vr, val_mx, val_mn, val_tot) == \
-           ((11, 0), 0.4, 0.3, 0.8, 0.1, 4.9)
+           ((11, 0), 4.9, 0.3, 0.8, 0.1, 0.4)
 
 
 def test_compute_elio():
@@ -1120,7 +1120,7 @@ def test_compute_day_indicators():
     ]
     res = compute.compute_day_indicators(measures)
     assert res == {
-        'ds__bagna': {'bagna': ((11, 0), 0.4, 0.3, 0.8, 0.1, 4.9)},
+        'ds__bagna': {'bagna': ((11, 0), 4.9, 0.3, 0.8, 0.1, 0.4)},
         'ds__elio': {'elio': ((9, 0), 4.4, 0.3, None)},
         'ds__preci': {
             'cl_prec06': (0, 0, 0, 0, 0, 3),

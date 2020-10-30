@@ -562,11 +562,11 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     ::
 
     * flag: (ndati, wht)
-    * val_md: media giornaliera
+    * val_md: totale ore
     * val_vr: varianza
     * val_mx: valore massimo giornaliero
     * val_mn: valore minimo giornaliero
-    * val_tot: totale ore
+    * val_tot: media giornaliera  # TODO: ASK if val_md and val_tot seems reversed in the db
 
     If `force_flag` is not None, returned flag is `force_flag`.
 
@@ -583,10 +583,10 @@ def compute_bagna(day_records, at_least_perc=0.75, force_flag=None):
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_tot = round(statistics.mean(valid_values), ROUND_PRECISION)
     val_mx = round(max(valid_values), ROUND_PRECISION)
     val_mn = round(min(valid_values), ROUND_PRECISION)
-    val_tot = round(sum(valid_values), ROUND_PRECISION)
+    val_md = round(sum(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:
         val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
     return flag, val_md, val_vr, val_mx, val_mn, val_tot

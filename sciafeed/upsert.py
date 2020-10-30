@@ -212,7 +212,7 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    logger.info('start process for update of PREC flags')
+    logger.debug('start db update of PREC flags')
     tmp_table_name = "updates_preci%s" % round(time.time())
     pre_sql_cmds = [
         'DROP TABLE IF EXISTS %s' % tmp_table_name,
@@ -270,7 +270,7 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    logger.info('start process for update of TEMP flags (%s)' % db_field)
+    logger.debug('start db update of TEMP flags (%s)' % db_field)
     tmp_table_name = "updates_temp%s" % round(time.time())
     pre_sql_cmds = [
         'DROP TABLE IF EXISTS %s' % tmp_table_name,
@@ -298,7 +298,7 @@ def update_temp_flags(conn, records, schema='dailypdbanpacarica', db_field='tmxg
     """ % (schema, db_field, tmp_table_name, db_field)
     result = conn.execute(update_sql)
     num_of_updates = result.rowcount
-    logger.info('update completed: %s flags updated for %s' % (num_of_updates, db_field))
+    logger.info('update completed: %s flags updated' % num_of_updates)
     post_cmd = 'DROP TABLE %s' % tmp_table_name
     conn.execute(post_cmd)
     logger.debug('temp folder removed')
@@ -538,7 +538,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     # PRECI
-    logger.info('querying table %s.ds__preci for flags %r' % (sourceschema, flags))
+    logger.info('querying source table %s.ds__preci for flags %r' % (sourceschema, flags))
     sql_fields = "cod_stazprinc, data_i, (prec24).val_tot, ((prec24).flag).wht"
     prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
@@ -551,11 +551,11 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True,
         no_order=True)
     prec_records = db_utils.force_flags(prec_records, prec_flag_map)
-    logger.info('update flags of table %s.ds__preci' % targetschema)
+    logger.info('update flags of destination table %s.ds__preci' % targetschema)
     update_prec_flags(conn, prec_records, schema=targetschema, logger=logger)
 
     # TMAX
-    logger.info('querying table %s.ds__t200 (TMAX) for flags %r' % (sourceschema, flags))
+    logger.info('querying source table %s.ds__t200 (TMAX) for flags %r' % (sourceschema, flags))
     sql_fields = "cod_stazprinc, data_i, (tmxgg).val_md, ((tmxgg).flag).wht"
     tmax_records = querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
@@ -572,7 +572,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
     update_temp_flags(conn, tmax_records, schema=targetschema, db_field='tmxgg', logger=logger)
 
     # TMIN
-    logger.info('querying table %s.ds__t200 (TMIN) for flags %r' % (sourceschema, flags))
+    logger.info('querying source table %s.ds__t200 (TMIN) for flags %r' % (sourceschema, flags))
     sql_fields = "cod_stazprinc, data_i, (tmngg).val_md, ((tmngg).flag).wht"
     tmin_records = querying.select_temp_records(
         conn, fields=['tmngg'], sql_fields=sql_fields, stations_ids=None, schema=sourceschema,

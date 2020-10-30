@@ -160,7 +160,8 @@ def check1(records, len_threshold=180, flag=-12, val_index=2, logger=None):
     return new_records
 
 
-def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), logger=None):
+def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), filter_funct=None,
+           logger=None):
     """
     Check "controllo valori ripetuti" for the input records.
     Assumes all records are sorted by station, date.
@@ -172,6 +173,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param exclude_values: iterable of values to be excluded from the check for the input records
+    :param filter_funct: if not None, filter function to consider records to use
     :param logger: logging object where to report actions
     :return: new_records
     """
@@ -185,6 +187,8 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records
                       if r[val_index+1] > 0 and r[val_index] not in exclude_values]
+    if filter_funct is not None:
+        records_to_use = [r for r in records_to_use if filter_funct(r)]
     num_invalid_records = 0
 
     for station, station_records in itertools.groupby(records_to_use, group_by_station):
@@ -851,6 +855,42 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
                     station_record[val_indexes[1]+1] = flag
             prev2_record = prev1_record
             prev1_record = station_record
+
+    logger.info("Checked %s records" % len(records_to_use))
+    logger.info("Found %s flags reset to %s" % (num_invalid_flags, flag))
+    logger.info("Check completed")
+    return new_records
+
+
+def check_consistency(records, val_indexes, flag_index, flag=-10, logger=None):
+    """
+    Check consistency between values in indexes `val_indexes`.
+    val_indexes = i1, i2, i3: check that
+        record[i1] <= record[i2] <= record[i3]
+    Flags index is the index of the flag to be reset.
+
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param val_indexes: indexes of the values to be checked for consistency
+    :param flag_index: the index of the flag to be set
+    :param flag: the value of the flag to set for found errors
+    :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :param logger: logging object where to report actions
+    :return: new_records
+    """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    logger.info("starting check (parameters: %s, %s, %s)" % (val_indexes, flag_index, flag))
+
+    new_records = [r[:] for r in records]
+    records_to_use = [
+        r for r in records if r[val_indexes[0]] is not None and
+        r[val_indexes[1]] is not None and r[val_indexes[2]] is not None and r[flag_index] > 0
+    ]
+    num_invalid_flags = 0
+    for r in records_to_use:
+        if not (r[val_indexes[0]] <= r[val_indexes[1]] <= r[val_indexes[2]]):
+            num_invalid_flags += 1
+            r[flag_index] = flag
 
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s flags reset to %s" % (num_invalid_flags, flag))

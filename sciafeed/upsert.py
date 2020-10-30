@@ -202,7 +202,7 @@ def upsert_stations(dburi, stations_path):
 
 def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     """
-    Set the flag to `set_flag` for each record of the `records` iterable for the field prec24
+    Set the flag for each record of the `records` iterable for the field prec24
     of the table dailypdbanpacarica.ds__preci.
     It assumes each record has attributes data_i and cod_staz
 
@@ -246,6 +246,64 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
             FROM %s u
             WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i 
             AND ((t.prec24).flag).wht <> u.flag
+        """ % (schema, tmp_table_name)
+        result = conn.execute(update_sql)
+        num_of_updates = result.rowcount
+        logger.info('update completed: %s flags updated' % num_of_updates)
+    except:
+        logger.error('update not completed: something went wrong')
+    finally:
+        post_cmd = 'DROP TABLE %s' % tmp_table_name
+        conn.execute(post_cmd)
+        logger.debug('temp folder removed')
+    return num_of_updates
+
+
+def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3, logger=None):
+    """
+    Set the flag for each record of the `records` iterable for the field vntmd
+    of the table dailypdbanpacarica.ds__vnt10.
+    It assumes each record has attributes data_i and cod_staz
+
+    :param conn: db connection object
+    :param records: iterable of input records, of kind [cod_staz, data_i, ...]
+    :param schema: database schema to use
+    :param flag_index: index of the flag in the input records
+    :param logger: logging object where to report actions
+    :return number of updates
+    """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    logger.debug('start db update of PREC flags')
+    tmp_table_name = "updates_vnt%s" % round(time.time())
+    pre_sql_cmds = [
+        'DROP TABLE IF EXISTS %s' % tmp_table_name,
+        '''
+    CREATE TABLE IF NOT EXISTS %s (
+        cod_staz integer NOT NULL,
+        data_i timestamp without time zone NOT NULL,
+        flag integer,
+        PRIMARY KEY (cod_staz, data_i)
+        )''' % tmp_table_name,
+    ]
+    for cmd in pre_sql_cmds:
+        conn.execute(cmd)
+    logger.debug('created temp folder')
+    meta = MetaData()
+    table_obj = Table(tmp_table_name, meta, autoload=True, autoload_with=conn.engine)
+    num_of_updates = 0
+    try:
+        data = [{'cod_staz': r[0], 'data_i': r[1], 'flag': r[flag_index]} for r in records]
+        conn.execute(table_obj.insert(), data)
+        logger.debug('filled temp folder')
+        update_sql = """
+            UPDATE %s.ds__vnt10 t SET (
+                vntmxgg.flag.wht,
+                vnt.flag.wht,
+                ) = (u.flag, u.flag)
+            FROM %s u
+            WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i 
+            AND ((t.vntmxgg).flag).wht <> u.flag
         """ % (schema, tmp_table_name)
         result = conn.execute(update_sql)
         num_of_updates = result.rowcount
@@ -567,12 +625,11 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
     update_prec_flags(conn, prec_records, schema=targetschema, logger=logger)
 
     # OTHER TABLES
-    import pdb; pdb.set_trace()
     for table, main_field, sub_field in [
         ('ds__t200', 'tmxgg', 'val_md'),
         ('ds__t200', 'tmngg', 'val_md'),
         ('ds__t200', 'tmdgg', 'val_md'),
-        ('ds__bagna', 'bagna', 'val_tot'),
+        ('ds__bagna', 'bagna', 'val_md'),  # ASK: or val_tot?
         ('ds__elio', 'elio', 'val_md'),
         ('ds__radglob', 'radglob', 'val_md'),
         ('ds__urel', 'ur', 'val_md'),

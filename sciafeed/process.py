@@ -165,7 +165,7 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     prec_records5 = querying.select_prec_records(
         conn, sql_fields=sql5_fields, stations_ids=stations_ids, schema=schema,
         include_flag_values=(5, ), exclude_null=True)
-    prec_flag_map5 = db_utils.create_flag_map(prec_records5, flag_index=3)
+    prec_flag_map5 = db_utils.create_flag_map(prec_records5)
 
     logger.info('* initial query to get records of temperature...')
     sql_fields = "cod_staz, data_i, (tmxgg).val_md, 1 as flag_tmxgg, " \
@@ -177,11 +177,11 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     tmax_records5 = querying.select_temp_records(
         conn, fields=['tmxgg'], sql_fields="cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht",
         stations_ids=stations_ids, schema=schema, include_flag_values=(5, ), exclude_null=True)
-    tmax_flag_map5 = db_utils.create_flag_map(tmax_records5, flag_index=3)
+    tmax_flag_map5 = db_utils.create_flag_map(tmax_records5)
     tmin_records5 = querying.select_temp_records(
         conn, fields=['tmngg'], sql_fields="cod_staz, data_i, (tmngg).val_md, ((tmngg).flag).wht",
         stations_ids=stations_ids, schema=schema, include_flag_values=(5, ), exclude_null=True)
-    tmin_flag_map5 = db_utils.create_flag_map(tmin_records5, flag_index=3)
+    tmin_flag_map5 = db_utils.create_flag_map(tmin_records5)
 
     logger.info("== STARTING CHECK CHAIN ==")
     logger.info("* 'controllo valori ripetuti = 0' for variable PREC")
@@ -292,10 +292,141 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     temp_records = db_utils.force_flags(temp_records, tmax_flag_map5)
     temp_records = db_utils.force_flags(temp_records, tmin_flag_map5, flag_index=5)
 
-    logger.info('* final set of flags records on database...')
+    logger.info('* final set of flags on database for PREC and TEMP...')
     upsert.update_prec_flags(conn, prec_records, schema=schema)
     upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmxgg')
     upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmngg',
                         flag_index=5)
+
+    # some checks of kind "check7" for other indicators
+    pmedia_series = []
+    vntmd_series = []
+    vntmxgg_ff_series = []
+    vntmxgg_dd_series = []
+    field_flag_maps = dict()
+    for table, main_field, sub_field, min_threshold, max_threshold in [
+        ('ds__bagna', 'bagna', 'val_md', -1, 25),
+        ('ds__elio', 'elio', 'val_md', -1, 19),
+        ('ds__radglob', 'radglob', 'val_md', -1, 601),
+        ('ds__t200', 'tmdgg', 'val_md', -36, 46),
+        ('ds__press', 'press', 'val_md', 959, 1061),
+        ('ds__press', 'press', 'val_mx', 959, 1061),
+        ('ds__press', 'press', 'val_mn', 959, 1061),
+        ('ds__urel', 'ur', 'val_md', -1, 101),
+        ('ds__urel', 'ur', 'val_mx', -1, 101),
+        ('ds__urel', 'ur', 'val_mn', -1, 101),
+        ('ds__vnt10', 'vntmd', 'ff', -1, 103),
+        ('ds__vnt10', 'vntmxgg', 'ff', -1, 103),
+        ('ds__vnt10', 'vntmxgg', 'dd', -1, 361),
+    ]:
+        logger.info('* initial query to get records of %s...' % table)
+        sql_fields = "cod_staz, data_i, (%s).%s, 1 as flag" % (main_field, sub_field)
+        where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
+        table_records = querying.select_records(
+            conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
+            schema=schema, exclude_flag_interval=(-9, 0), where_sql=where_sql)
+        # saved some series to save time after
+        if (table, main_field, sub_field) == ('ds__press', 'press', 'val_md'):
+            pmedia_series = list(table_records)
+        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmd', 'ff'):
+            vntmd_series = list(table_records)
+        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmxgg', 'ff'):
+            vntmxgg_ff_series = list(table_records)
+        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmxgg', 'ff'):
+            vntmxgg_dd_series = list(table_records)
+        if main_field not in field_flag_maps:
+            sql5_fields = "cod_staz, data_i, (%s).%s, ((%s).flag).wht" \
+                          % (main_field, sub_field, main_field)
+            table_records5 = querying.select_records(
+                conn, table, fields=[main_field], sql_fields=sql5_fields,
+                stations_ids=stations_ids,  schema=schema, include_flag_values=(5, ),
+                where_sql=where_sql)
+            table_flag_map5 = db_utils.create_flag_map(table_records5)
+            field_flag_maps[main_field] = table_flag_map5
+
+        logger.info("* 'controllo world excedence' for %s" % main_field)
+        table_records = checks.check7(
+            table_records, min_threshold=-1, max_threshold=25, logger=logger)
+        table_records = db_utils.force_flags(table_records, field_flag_maps[main_field])
+        logger.info('* final set of flags on database for %s...' % table)
+        if main_field == 'vntmd':
+            upsert.update_vntmd_flags(conn, table_records, schema=schema)
+        else:
+            upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+
+    # some additional checks for series pressures: valori ripetuti + consistence
+    logger.info("* initial query to get records for 'valori ripetuti' check PRESS...")
+    pmedia_series = checks.check2(
+        pmedia_series, len_threshold=10, exclude_values=(None, ), logger=logger)
+    pmedia_series = db_utils.force_flags(pmedia_series, field_flag_maps['press'])
+    logger.info('* final set of flags on database for PRESS valori ripetuti')
+    upsert.update_flags(conn, pmedia_series, 'ds__press', schema=schema, db_field='press')
+    logger.info('* initial query to get records of %s for consistence check PRESS...')
+    sql_fields = "cod_staz, data_i,(press).val_mn,(press).val_md,(press).val_mx,((press).flag).wht"
+    press_records = querying.select_records(
+        conn, 'ds__press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_flag_interval=(-9, 0))
+    logger.info("* 'controllo consistenza PRESS'")
+    press_records = checks.check_consistency(press_records, (2, 3, 4), 5, flag=-10, logger=logger)
+    press_records = db_utils.force_flags(press_records, field_flag_maps['press'])
+    logger.info('* final set of flags on database for PRESS consistence...')
+    upsert.update_flags(
+        conn, press_records, 'ds__press', schema=schema, db_field='press', flag_index=5)
+
+    # some additional checks for series umidity: consistence
+    logger.info('* initial query to get records of %s for consistence check UR...')
+    sql_fields = "cod_staz, data_i,(ur).val_mn,(ur).val_md,(ur).val_mx,((ur).flag).wht"
+    ur_records = querying.select_records(
+        conn, 'ds__urel', fields=['ur'], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_flag_interval=(-9, 0))
+    logger.info("* 'controllo consistenza UR'")
+    ur_records = checks.check_consistency(ur_records, (2, 3, 4), 5, flag=-10, logger=logger)
+    ur_records = db_utils.force_flags(ur_records, field_flag_maps['ur'])
+    logger.info('* final set of flags on database for UR consistence...')
+    upsert.update_flags(conn, ur_records, 'ds__urel', schema=schema, db_field='ur', flag_index=5)
+
+    # some additional checks for series wind: valori ripetuti + consistence
+    logger.info("* check 'valori ripetuti' for FFmedia...")
+    filter_funct = lambda r: r[2] > 2
+    vntmd_series = checks.check2(
+        vntmd_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger)
+    vntmd_series = db_utils.force_flags(vntmd_series, field_flag_maps['vntmd'])
+    logger.info('* final set of flags on database for FFmedia valori ripetuti')
+    upsert.update_vntmd_flags(conn, vntmd_series, schema=schema)
+
+    logger.info("* check 'valori ripetuti' for FFmax...")
+    filter_funct = lambda r: r[2] > 2
+    vntmxgg_ff_series = checks.check2(
+        vntmxgg_ff_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger)
+    vntmxgg_ff_series = db_utils.force_flags(vntmxgg_ff_series, field_flag_maps['vntmxgg'])
+    logger.info('* final set of flags on database for FFmax valori ripetuti')
+    upsert.update_flags(conn, vntmxgg_ff_series, table="ds__vnt10", schema=schema,
+                        db_field='vntmxgg')
+
+    logger.info("* check 'valori ripetuti' for DD...")
+    filter_funct = lambda r: r[2] > 0.5
+    vntmxgg_dd_series = checks.check2(
+        vntmxgg_dd_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger)
+    vntmxgg_dd_series = db_utils.force_flags(vntmxgg_dd_series, field_flag_maps['vntmxgg'])
+    logger.info('* final set of flags on database for FFmax valori ripetuti')
+    upsert.update_flags(conn, vntmxgg_dd_series, table='ds__vnt10', schema=schema,
+                        db_field='vntmxgg')
+
+    logger.info('* initial query to get records of %s for consistence check FF...')
+    sql_fields = "cod_staz, data_i,(vntmxgg).ff,((vntmxgg).flag).wht,(vntmd).ff,((vntmd).flag).wht"
+    wind_records = querying.select_records(
+        conn, 'ds__vnt10', fields=['vntmxgg', 'vntmd'], sql_fields=sql_fields,
+        stations_ids=stations_ids, schema=schema, exclude_flag_interval=(-9, 0))
+    logger.info("* 'controllo consistenza WIND'")
+    wind_records = checks.check12(wind_records, min_diff=0, logger=logger)
+    wind_records = db_utils.force_flags(wind_records, field_flag_maps['vntmd'], flag_index=5)
+    wind_records = db_utils.force_flags(wind_records, field_flag_maps['vntmxgg'])
+    logger.info('* final set of flags on database for WIND consistence...')
+    upsert.update_vntmd_flags(conn, wind_records, schema=schema, flag_index=5, logger=logger)
+    upsert.update_flags(
+        conn, wind_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=3)
 
     logger.info('== End process ==')

@@ -253,7 +253,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
 
     :param conn: db connection object
     :param table: table name where to select
-    :param fields: list of field names, i.e. 'tmxgg' or 'tmngg', where to apply filters
+    :param fields: list of field names, i.e. 'tmxgg' or 'tmngg', where to apply filters on flags
     :param sql_fields: sql string of field selection
     :param stations_ids: list of station ids (if None: no filter by station)
     :param schema: database schema to consider

@@ -151,8 +151,9 @@ def check1(records, len_threshold=180, flag=-12, val_index=2, logger=None):
             value_records = list(value_records)
             if value == 0 and len(value_records) >= len_threshold:
                 for v in value_records:
-                    v[val_index+1] = flag
-                    num_invalid_records += 1
+                    if v[val_index+1] != 5:
+                        v[val_index+1] = flag
+                        num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
@@ -196,8 +197,9 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
             value_records = list(value_records)
             if value not in exclude_values and len(value_records) >= len_threshold:
                 for v in value_records:
-                    v[val_index+1] = flag
-                    num_invalid_records += 1
+                    if v[val_index+1] != 5:
+                        v[val_index+1] = flag
+                        num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
@@ -226,7 +228,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
     invalid_records = []
-
+    num_invalid_records = 0
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
 
@@ -252,9 +254,10 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
                     invalid_records += year_records_dict[month]
 
     for invalid_record in invalid_records:
-        invalid_record[val_index+1] = flag
+        if invalid_record[val_index+1] != 5:
+            invalid_record[val_index+1] = flag
+            num_invalid_records += 1
 
-    num_invalid_records = len(invalid_records)
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
     logger.info("Check completed")
@@ -284,6 +287,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
     invalid_records = []
+    num_invalid_records = 0
 
     def group_by_year(record):
         return record[1].year
@@ -313,8 +317,10 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
                     invalid_records += months_records_dict[month][year]
 
     for invalid_record in invalid_records:
-        invalid_record[val_index+1] = flag
-    num_invalid_records = len(invalid_records)
+        if invalid_record[val_index+1] != 5:
+            invalid_record[val_index+1] = flag
+            num_invalid_records += 1
+
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
     logger.info("Check completed")
@@ -351,12 +357,15 @@ def check5(records, len_threshold=10, flag=-19, logger=None):
                 value_records = list(value_records)
                 if len(value_records) >= len_threshold:
                     for v in value_records:
-                        v[3] = flag
-                        v[5] = flag
-                        num_invalid_records += 1
+                        if v[3] != 5:
+                            v[3] = flag
+                            num_invalid_records += 1
+                        if v[5] != 5:
+                            v[5] = flag
+                            num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
-    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Found %s flags reset to %s" % (num_invalid_records, flag))
     logger.info("Check completed")
     return new_records
 
@@ -383,11 +392,15 @@ def check6(records, flag=-20, logger=None):
     num_invalid_records = 0
     for record in records_to_use:
         if record[2] == record[4] == 0:
-            record[3] = record[5] = flag
-            num_invalid_records += 1
+            if record[3] != 5:
+                record[3] = flag
+                num_invalid_records += 1
+            if record[5] != 5:
+                record[5] = flag
+                num_invalid_records += 1
 
     logger.info("Checked %s records" % len(new_records))
-    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Found %s flags reset to %s" % (num_invalid_records, flag))
     logger.info("Check completed")
     return new_records
 
@@ -429,8 +442,9 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
 
     for record in records_to_use:
         if exclude_condition(record):
-            record[val_index+1] = flag
-            num_invalid_records += 1
+            if record[val_index+1] != 5:
+                record[val_index+1] = flag
+                num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
     logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
@@ -541,10 +555,10 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
             threshold_sup = invalid_values_flag_sup.get(station_record[1].month, math.inf)
             threshold_inf = invalid_values_flag_inf.get(station_record[1].month, -math.inf)
             value = val_getter(station_record)
-            if value >= threshold_sup:
+            if value >= threshold_sup and station_record[val_index+1] != 5:
                 station_record[val_index+1] = flag_sup
                 num_invalid_records_sup += 1
-            elif value <= threshold_inf:
+            elif value <= threshold_inf and station_record[val_index+1] != 5:
                 station_record[val_index+1] = flag_inf
                 num_invalid_records_inf += 1
 
@@ -608,7 +622,8 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
                 dev_std_limit = np.std(sample_values, ddof=1) * num_dev_std
                 check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:
-                    if abs(check_record[val_index] - average) > dev_std_limit:
+                    if abs(check_record[val_index] - average) > dev_std_limit \
+                            and check_record[val_index+1] != 5:
                         check_record[val_index+1] = flag
                         num_invalid_records += 1
             check_date += timedelta(1)
@@ -693,7 +708,8 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
                 percentile_limit = np.percentile(sample_values, percentile) * times_perc
                 check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:
-                    if check_record[val_index] > percentile_limit:
+                    if check_record[val_index] > percentile_limit \
+                            and check_record[val_index+1] != 5:
                         check_record[val_index+1] = flag
                         num_invalid_records += 1
             check_date += timedelta(1)
@@ -742,7 +758,7 @@ def check11(records, max_diff=18, flag=-27, val_index=2, logger=None):
             prev2_rec_day, prev2_rec_value = prev2_record[1], prev2_record[val_index]
             if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
                 if abs(prev1_rec_value - prev2_rec_value) > max_diff and \
-                        abs(prev1_rec_value - value) > max_diff:
+                        abs(prev1_rec_value - value) > max_diff and prev1_record[val_index+1] != 5:
                     prev1_record[val_index+1] = flag
                     num_invalid_records += 1
             prev2_record = prev1_record
@@ -781,11 +797,15 @@ def check12(records, min_diff=-5, flag=-29, val_indexes=(2, 4), logger=None):
 
     for result in records_to_use:
         if result[val_indexes[0]] - result[val_indexes[1]] < min_diff:
-            num_invalid_records += 1
-            result[val_indexes[0]+1] = result[val_indexes[1]+1] = flag
+            if result[val_indexes[0]+1] != 5:
+                result[val_indexes[0]+1] = flag
+                num_invalid_records += 1
+            if result[val_indexes[1]+1] != 5:
+                result[val_indexes[1]+1] = flag
+                num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
-    logger.info("Found %s records with flags reset to %s" % (num_invalid_records, flag))
+    logger.info("Found %s flags reset to %s" % (num_invalid_records, flag))
     logger.info("Check completed")
     return new_records
 
@@ -849,10 +869,18 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
             if prev1_rec_day == day - timedelta(1) and prev2_rec_day == day - timedelta(2):
                 if operator2(prev1_rec_val1,
                              operator1(prev2_rec_val2, prev1_rec_val2, val2) + jump):
-                    num_invalid_flags += 4
-                    prev1_record[val_indexes[0]+1] = prev1_record[val_indexes[1]+1] = flag
-                    prev2_record[val_indexes[1]+1] = flag
-                    station_record[val_indexes[1]+1] = flag
+                    if prev1_record[val_indexes[0]+1] != 5:
+                        prev1_record[val_indexes[0]+1] = flag
+                        num_invalid_flags += 1
+                    if prev1_record[val_indexes[1]+1] != 5:
+                        prev1_record[val_indexes[1]+1] = flag
+                        num_invalid_flags += 1
+                    if prev2_record[val_indexes[1]+1] != 5:
+                        prev2_record[val_indexes[1]+1] = flag
+                        num_invalid_flags += 1
+                    if station_record[val_indexes[1]+1] != 5:
+                        station_record[val_indexes[1]+1] = flag
+                        num_invalid_flags += 1
             prev2_record = prev1_record
             prev1_record = station_record
 
@@ -888,7 +916,8 @@ def check_consistency(records, val_indexes, flag_index, flag=-10, logger=None):
     ]
     num_invalid_flags = 0
     for r in records_to_use:
-        if not (r[val_indexes[0]] <= r[val_indexes[1]] <= r[val_indexes[2]]):
+        if not (r[val_indexes[0]] <= r[val_indexes[1]] <= r[val_indexes[2]]) \
+                and r[flag_index] != 5:
             num_invalid_flags += 1
             r[flag_index] = flag
 

@@ -656,6 +656,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
             conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=None,
             schema=targetschema, where_sql=where_sql, no_order=True)
         table_records = db_utils.force_flags(table_records, table_flag_map)
-        logger.info('update flags of table %s.%s (field %s.%s)' % (targetschema, table, sub_field))
+        logger.info('update flags of table %s.%s (field %s.%s)'
+                    % (targetschema, table, main_field, sub_field))
         update_flags(conn, table_records, table, schema=targetschema, db_field=main_field,
                      logger=logger)

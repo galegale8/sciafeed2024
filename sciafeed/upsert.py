@@ -439,6 +439,7 @@ def create_insert(table_name, schema, fields, data):
 
 
 def create_upsert(table_name, schema, fields, data, policy):
+    # NOTE: fields not included in data[i] keys will be set to null for upsert policy
     if not data or not fields:
         return
     insert_sql = create_insert(table_name, schema, fields, data)
@@ -469,7 +470,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
     Insert (or update if not exists) items into the database.
 
     :param conn: db connection object
-    :param items: iterable of records of a db table. Each record is a dictionary
+    :param items: list of dictionaries to be upserted. They must be the same for keys
     :param policy: 'onlyinsert' or 'upsert'
     :param schema: database schema to use
     :param table_name: name of the table
@@ -486,7 +487,8 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
     group_by_station = lambda x: x['cod_staz']
     group_by_date = lambda x: x['data_i']
     upserted = 0
-    cols = db_utils.get_table_columns(table_name, schema)
+    # cols = db_utils.get_table_columns(table_name, schema)
+    cols = list(items[0].keys())
     fields = expand_fields(cols)
 
     for station, station_records in itertools.groupby(items, group_by_station):
@@ -513,7 +515,8 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
             data.append(record)
             upserted += 1
         sql = create_upsert(table_name, schema, fields, data, policy)
-        conn.execute(sql)
+        if sql:
+            conn.execute(sql)
     return upserted
 
 
@@ -568,6 +571,9 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
         ('ds__urel', 'ur.val_md'),
         ('ds__radglob', 'radglob.val_md'),
         ('ds__vnt10', 'vntmd.ff'),
+        ('ds__delta_idro', 'deltaidro.val_md'),
+        ('ds__etp', 'etp.val_md'),
+        ('ds__grgg', 'grgg.tot00'),
     ]
     if only_tables is not None:
         tables = [t for t in tables if t[0] in only_tables]

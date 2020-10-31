@@ -365,3 +365,70 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
         conn, wind_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=3)
 
     logger.info('== End process ==')
+
+
+def compute_daily_indicators2(conn, schema, logger):
+    """
+    Compute secondary indicators.
+
+    :param conn: db connection object
+    :param schema: db schema to consider
+    :param logger: logger object for reporting
+    :return:
+    """
+    logger.info('* querying ds__t200 for compute temperature indicators...')
+    sql = """
+    SELECT cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md, (tmdgg).val_md, lat
+    FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz
+    WHERE (tmxgg).val_md IS NOT NULL AND ((tmxgg).flag).wht > 0 AND
+    (tmngg).val_md IS NOT NULL AND ((tmngg).flag).wht > 0 """ % schema
+    temp_records = map(list, conn.execute(sql))
+
+    logger.info('* computing temperature indicators...')
+    temp_items = []
+    grgg_items = []
+    etp_items = []
+    for record in temp_records:
+        # data_i_str = record[1].strftime('%Y-%m-%d 00:00:00')
+        tmax, tmin, tmedia, lat = record[2:6]
+        jd = int(record[1].strftime('%j'))
+        deltagg = tmax - tmin
+        tmdgg1 = deltagg / 2
+        grgg = compute.compute_grgg(tmedia)
+        etp = compute.compute_etp(deltagg, tmax, tmin, lat, jd)
+        temp_item = {'data_i': record[1], 'cod_staz': record[0], 'tmdgg1': tmdgg1,
+                     'deltagg': deltagg}
+        temp_items.append(temp_item)
+        grgg_item = {'data_i': record[1], 'cod_staz': record[0], 'grgg': grgg}
+        grgg_items.append(grgg_item)
+        etp_item = {'data_i': record[1], 'cod_staz': record[0], 'etp': etp}
+        etp_items.append(etp_item)
+    for table_name, fields, data in [
+        ('ds__t200', ['data_i', 'cod_staz', 'tmdgg1', 'deltagg'], temp_items),
+        ('ds__etp', ['data_i', 'cod_staz', 'etp'], etp_items),
+        ('ds__grgg', ['data_i', 'cod_staz', 'grgg'], grgg_items),
+    ]:
+        sql = upsert.create_upsert(table_name, schema, fields, data, 'upsert')
+        if sql:
+            logger.info('updating temperature indicators on table %s.%s' % (schema, table_name))
+            conn.execute(sql)
+    logger.info('* computing bilancio idrico...')
+    sql = """
+    SELECT cod_staz, data_i, (prec24).val_tot, (etp).val_md
+    FROM %s.ds__etp a JOIN %s.ds__preci b USING (cod_staz,data_i) 
+    WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0""" % (schema, schema)
+    idro_records = map(list, conn.execute(sql))
+    idro_items = []
+    for idro_record in idro_records:
+        prec24, etp = idro_record[2:4]
+        deltaidro = compute.compute_deltaidro(prec24, etp)
+        idro_item = {'data_i': idro_record[1], 'cod_staz': idro_record[0], 'deltaidro': deltaidro}
+        idro_items.append(idro_item)
+    for table_name, fields, data in [
+        ('ds__delta_idro', ['data_i', 'cod_staz', 'deltaidro'], idro_items),
+    ]:
+        sql = upsert.create_upsert(table_name, schema, fields, data, 'upsert')
+        if sql:
+            logger.info('updating bilancio idrico on table %s.%s' % (schema, table_name))
+            conn.execute(sql)
+

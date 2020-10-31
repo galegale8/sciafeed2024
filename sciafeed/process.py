@@ -11,6 +11,7 @@ from sciafeed import LOG_NAME
 from sciafeed import checks
 from sciafeed import compute
 from sciafeed import db_utils
+from sciafeed import dma
 from sciafeed import export
 from sciafeed import parsing
 from sciafeed import querying
@@ -376,6 +377,8 @@ def compute_daily_indicators2(conn, schema, logger):
     :param logger: logger object for reporting
     :return:
     """
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     logger.info('* querying ds__t200 for compute temperature indicators...')
     sql = """
     SELECT cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md, (tmdgg).val_md, lat
@@ -431,3 +434,23 @@ def compute_daily_indicators2(conn, schema, logger):
         if sql:
             logger.info('updating bilancio idrico on table %s.%s' % (schema, table_name))
             conn.execute(sql)
+
+
+def compute_dma(conn, startschema, targetschema, logger):
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    # NOTE: for more complex tables no problem, cause 'upsert' updates only the selected fields
+    table = 'ds__bagna'
+    fields_functions = {'bagna': dma.compute_bagna}
+
+    logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
+    # (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, 'bagnatura', (bagna).val_md, ((bagna).flag).wht"
+    table_records = querying.select_records(
+        conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
+    data = dma.compute_dma_records(table_records, fields_functions)
+    sql = upsert.create_upsert(
+        table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'bagna'], data, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, table))
+        conn.execute(sql)

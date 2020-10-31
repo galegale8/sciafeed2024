@@ -326,6 +326,7 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
                 % (startschema, targetschema))
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
+    # TODO: truncate targetschema tables?
     upsert.load_unique_data(conn, startschema, targetschema, logger)
     logger.info('process concluded')
 
@@ -345,4 +346,26 @@ def compute_daily_indicators2(dburi, report_path, schema):
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
     process.compute_daily_indicators2(conn, schema, logger)
+    logger.info('process concluded')
+
+
+@click.command()
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+@click.option('--startschema', '-s', default='dailypdbanpaclima',
+              help="""database schema to use for data input. Default is 'dailypdbanpaclima'""")
+@click.option('--targetschema', '-t', default='dailypdbanpaclima',
+              help="""database schema to use. Default is 'dailypdbanpaclima'""")
+def compute_dma(dburi, report_path, startschema, targetschema):
+    """Utility for update DMA indicators"""
+    logger = utils.setup_log(report_path)
+    logger.info('starting process of update DMA indicators from schema %s to schema %s'
+                % (startschema, targetschema))
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    # TODO: ASK: truncate data from targetschema tables?
+    process.compute_dma(conn, startschema, targetschema, logger)
     logger.info('process concluded')

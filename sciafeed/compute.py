@@ -8,6 +8,7 @@ records.
 """
 from datetime import datetime, timedelta
 import itertools
+from math import pi, acos, cos, sin, tan
 import operator
 import statistics
 
@@ -1026,6 +1027,71 @@ def compute_day_indicators(measures):
                 ff_day_records, dd_day_records)
             ret_value['ds__vnt10']['vnt'] = compute_vnt(ff_day_records, dd_day_records)
     return ret_value
+
+
+def compute_grgg(tmedia, thresholds=(0, 5, 10, 15, 21)):
+    """
+    Compute 'gradi giorno'
+
+    :param tmedia: average daily temperature
+    :param thresholds: thresholds to compute grgg components
+    :return: fields of grgg (gradi giorno)
+    """
+    if not tmedia:
+        return None
+    flag = (None, 1)
+    tot00 = max(0, tmedia - thresholds[0])
+    tot05 = max(0, tmedia - thresholds[1])
+    tot10 = max(0, tmedia - thresholds[2])
+    tot15 = max(0, tmedia - thresholds[3])
+    tot21 = max(0, tmedia - thresholds[4])
+    return flag, tot00, tot05, tot10, tot15, tot21
+
+
+def compute_etp(tmedia, tmax, tmin, lat, jd):
+    """
+    Compute "Evapotraspirazione potenziale giornaliera"
+
+    :param tmedia: average daily temperature
+    :param tmax: max daily temperature
+    :param tmin: min daily temperature
+    :param lat: latitude
+    :param jd: julian day
+    :return: fields of ds__etp.etp
+    """
+    if not tmedia:
+        return None
+    flag = (None, 1)
+    delta_t = tmax - tmin
+    g_sc = 0.082
+    lat_rad = lat * pi / 180
+    decl_sol = 0.409 * sin(2*pi*jd/365 - 1.39)
+    fi_s = acos(-tan(lat_rad)*tan(decl_sol))
+    dr = 1 + 0.033 * cos(2*pi*jd/365)
+    ra = 1440 / pi * (g_sc*dr) * (
+            fi_s*sin(lat_rad)*sin(decl_sol) + cos(lat_rad)*cos(decl_sol)*sin(fi_s))
+    etp = round(0.0023*0.408*ra*(tmedia+17.8)*delta_t**0.5, ROUND_PRECISION)
+    val_md = etp
+    val_vr = None
+    val_mx = None
+    val_mn = None
+    return flag, val_md, val_vr, val_mx, val_mn
+
+
+def compute_deltaidro(prec24, etp):
+    """
+    Compute "bilancio idrico"
+
+    :param prec24: daily precipitation
+    :param etp: evapotraspirazione potenziale giornaliera
+    :return: bilancio idrico
+    """
+    flag = (None, 1)
+    val_md = round(prec24 - etp, ROUND_PRECISION)
+    val_vr = None
+    val_mx = None
+    val_mn = None
+    return flag, val_md, val_vr, val_mx, val_mn
 
 
 def compute_and_store(data, writers, table_map):

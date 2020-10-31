@@ -431,4 +431,3 @@ def compute_daily_indicators2(conn, schema, logger):
         if sql:
             logger.info('updating bilancio idrico on table %s.%s' % (schema, table_name))
             conn.execute(sql)
-

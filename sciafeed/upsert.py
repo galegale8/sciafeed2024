@@ -464,9 +464,9 @@ def create_upsert(table_name, schema, fields, data, policy):
     return insert_sql
 
 
-def upsert_items(conn, items, policy, schema, table_name, logger=None):
+def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_staz=True):
     """
-    Insert (or update if not exists) items into the database
+    Insert (or update if not exists) items into the database.
 
     :param conn: db connection object
     :param items: iterable of records of a db table. Each record is a dictionary
@@ -474,6 +474,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
     :param schema: database schema to use
     :param table_name: name of the table
     :param logger: logging object where to report actions
+    :param find_cod_staz: if True, assumes cod_staz in items is ('cod_utente--cod_gruppo')
     :return number of updates
     """
     if logger is None:
@@ -490,14 +491,16 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None):
 
     for station, station_records in itertools.groupby(items, group_by_station):
         data = []
-        cod_utente, cod_rete = station.split('--', 2)
-        stat_obj = querying.get_db_station(
-            conn, anag_table, cod_rete=cod_rete, cod_utente=cod_utente)
-        if not stat_obj:
-            logger.error("station cod_rete=%s, cod_utente=%s not found. Records ignored."
-                         % (cod_rete, cod_utente))
-            continue
-        cod_staz = stat_obj.id_staz
+        cod_staz = station
+        if find_cod_staz:
+            cod_utente, cod_rete = station.split('--', 2)
+            stat_obj = querying.get_db_station(
+                conn, anag_table, cod_rete=cod_rete, cod_utente=cod_utente)
+            if not stat_obj:
+                logger.error("station cod_rete=%s, cod_utente=%s not found. Records ignored."
+                             % (cod_rete, cod_utente))
+                continue
+            cod_staz = stat_obj.id_staz
         for day, day_records in itertools.groupby(station_records, group_by_date):
             # day_obj = datetime.strptime(day, '%Y-%m-%d')
             record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
@@ -605,6 +608,16 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
 
 def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
                targetschema='dailypdbanpacarica', logger=None):
+    """
+    Transfert list of `flags` from the records of the db schema `sourceschema` to the
+    corresponding reports of the db schema `targetchema`
+
+    :param conn: db connection object
+    :param flags: list of flags to query and set
+    :param sourceschema: db schema where to find input data tables
+    :param targetschema: db schema where to put output records
+    :param logger: logger object for reporting
+    """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     # PRECI
@@ -612,7 +625,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
     sql_fields = "cod_stazprinc, data_i, (prec24).val_tot, ((prec24).flag).wht"
     prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=None, schema=sourceschema,
-        include_flag_values=(-9, 5), exclude_null=True, no_order=True)
+        include_flag_values=flags, exclude_null=True, no_order=True)
     prec_flag_map = db_utils.create_flag_map(prec_records)
 
     logger.info('querying table %s.ds__preci to be updated' % targetschema)
@@ -646,7 +659,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
         table_records = querying.select_records(
             conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=None,
-            schema=sourceschema, include_flag_values=(-9, 5), where_sql=where_sql, no_order=True)
+            schema=sourceschema, include_flag_values=flags, where_sql=where_sql, no_order=True)
         table_flag_map = db_utils.create_flag_map(table_records)
 
         logger.info('querying table %s.%s to be updated' % (targetschema, table))

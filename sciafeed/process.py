@@ -439,18 +439,46 @@ def compute_daily_indicators2(conn, schema, logger):
 def compute_dma(conn, startschema, targetschema, logger):
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    # NOTE: for more complex tables no problem, cause 'upsert' updates only the selected fields
-    table = 'ds__bagna'
-    fields_functions = {'bagna': dma.compute_bagna}
 
-    logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
-    # (metadata, datetime object, par_code, par_value, flag)
-    sql_fields = "cod_staz, data_i, 'bagnatura', (bagna).val_md, ((bagna).flag).wht"
-    table_records = querying.select_records(
-        conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
-    data = dma.compute_dma_records(table_records, fields_functions)
-    sql = upsert.create_upsert(
-        table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'bagna'], data, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, table))
-        conn.execute(sql)
+    # tables with 1 value to be aggregated for each record
+    for table, field, subfield, funct in [
+        # table to query, field to consider, subfield where to get the values, dict of functions
+        ('ds__bagna', 'bagna', 'val_md', dma.compute_bagna),
+        ('ds__delta_idro', 'deltaidro', 'val_md', dma.compute_deltaidro),
+        ('ds__elio', 'elio', 'val_md', dma.compute_elio),
+        ('ds__etp', 'etp', 'val_md', dma.compute_etp),
+        ('ds__radglob', 'radglob', 'val_md', dma.compute_radglob),
+    ]:
+        logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
+        # fields are: (metadata, datetime object, par_code, par_value, flag)
+        sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                     % (field, field, subfield, field)
+        table_records = querying.select_records(
+            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
+        data = dma.compute_dma_records(table_records, field, funct)
+        sql = upsert.create_upsert(
+            table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', field], data, 'upsert')
+        if sql:
+            logger.info('updating DMA table %s.%s' % (targetschema, table))
+            conn.execute(sql)
+
+    # tables with more values (of same type) to be aggregated for each record
+    for table, field, subfields, funct in [
+        # table to query, field to consider, list of subfields, dict of functions
+        ('ds__grgg', 'grgg', ['tot00', 'tot05', 'tot10', 'tot15', 'tot21'], dma.compute_grgg),
+        ('ds__press', 'press', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_press),
+        ('ds__urel', 'ur', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_ur),
+        ('ds__vnt10', 'vntmxgg', ['ff', 'dd'], dma.compute_vntmxgg),
+    ]:
+        logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
+        # fields are: (metadata, datetime object, par_code, par_value, flag)
+        array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
+        sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)
+        table_records = querying.select_records(
+            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
+        data = dma.compute_dma_records(table_records, field, funct)
+        sql = upsert.create_upsert(
+            table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', field], data, 'upsert')
+        if sql:
+            logger.info('updating DMA table %s.%s' % (targetschema, table))
+            conn.execute(sql)

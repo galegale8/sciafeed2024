@@ -60,6 +60,7 @@ setup(
             'insert_data = sciafeed.entry_points:insert_data',
             'load_unique_data = sciafeed.entry_points:load_unique_data',
             'compute_daily_indicators2 = sciafeed.entry_points:compute_daily_indicators2',
+            'compute_dma = sciafeed.entry_points:compute_dma',
         ],
     },
 )

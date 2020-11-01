@@ -1057,7 +1057,7 @@ def compute_etp(tmedia, tmax, tmin, lat, jd):
     :param tmin: min daily temperature
     :param lat: latitude
     :param jd: julian day
-    :return: fields of ds__etp.etp
+    :return: flag, value, None, None, None
     """
     if not tmedia:
         return None

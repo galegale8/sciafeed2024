@@ -4,6 +4,7 @@ from datetime import datetime
 import itertools
 
 import operator
+import numpy as np
 import statistics
 
 
@@ -241,7 +242,7 @@ def compute_ur(records, num_expected, at_least_perc=0.75):
 
 def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     """
-    Compute "intensità e direzione massima giornaliera del vento".
+    Compute "intensità e direzione massima del vento" for different DMA aggregations.
     It assumes record[3] = (ff, dd) for each record.
 
     :param records: list of `data` objects
@@ -250,8 +251,8 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     :return: (flag, ff, dd)
     """
     valid_records = [r for r in records if r[4] and r[3] is not None and len(r[3]) == 2]
-    valid_dd = [r for r in valid_records if r[3][0] is not None]
-    valid_ff = [r for r in valid_records if r[3][1] is not None]
+    valid_ff = [r for r in valid_records if r[3][0] is not None]
+    valid_dd = [r for r in valid_records if r[3][1] is not None]
     if not valid_records:
         return None
     ff = None
@@ -262,6 +263,40 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     if valid_dd:
         dd = round(max(valid_dd), ROUND_PRECISION)
     return flag, ff, dd
+
+
+def compute_vntmd(records, num_expected, at_least_perc=0.75):
+    """
+    Compute "velocità media del vento" for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return: (flag, ff)
+    """
+    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    if not valid_values:
+        return None
+    flag = compute_flag(records, at_least_perc, num_expected)
+    ff = round(statistics.mean(valid_values), ROUND_PRECISION)
+    return flag, ff
+
+
+def compute_vnt(records, num_expected, at_least_perc=0.75):
+    """
+    Compute "frequenza di intensità e direzione del vento" for different DMA aggregations.
+    It assumes record[3] = list of subfields frq_* for each record.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return: (flag, frq_calme, frq_s(i)c(j))
+    """
+    flag = compute_flag(records, at_least_perc, num_expected)
+    valid_records = [r for r in records if r[4] and r[3]]
+    valid_values = [r[3] for r in valid_records]
+    ret_subvalues = [flag] + list(np.sum(valid_values, axis=0))  # i.e. sum of vectors
+    return ret_subvalues
 
 
 def compute_dma_records(table_records, field, field_funct):

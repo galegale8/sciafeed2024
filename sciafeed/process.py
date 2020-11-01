@@ -442,14 +442,15 @@ def compute_dma(conn, startschema, targetschema, logger):
 
     # tables with 1 value to be aggregated for each record
     for table, field, subfield, funct in [
-        # table to query, field to consider, subfield where to get the values, dict of functions
+        # table to query, field to consider, subfield where to get the values, aggregate function
         ('ds__bagna', 'bagna', 'val_md', dma.compute_bagna),
         ('ds__delta_idro', 'deltaidro', 'val_md', dma.compute_deltaidro),
         ('ds__elio', 'elio', 'val_md', dma.compute_elio),
         ('ds__etp', 'etp', 'val_md', dma.compute_etp),
         ('ds__radglob', 'radglob', 'val_md', dma.compute_radglob),
+        ('ds__vnt10', 'vntmd', 'ff', dma.compute_vntmd),
     ]:
-        logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
+        logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
         # fields are: (metadata, datetime object, par_code, par_value, flag)
         sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                      % (field, field, subfield, field)
@@ -463,14 +464,17 @@ def compute_dma(conn, startschema, targetschema, logger):
             conn.execute(sql)
 
     # tables with more values (of same type) to be aggregated for each record
+    wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
     for table, field, subfields, funct in [
-        # table to query, field to consider, list of subfields, dict of functions
+        # table to query, field to consider, list of subfields, aggregate function
         ('ds__grgg', 'grgg', ['tot00', 'tot05', 'tot10', 'tot15', 'tot21'], dma.compute_grgg),
         ('ds__press', 'press', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_press),
         ('ds__urel', 'ur', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_ur),
         ('ds__vnt10', 'vntmxgg', ['ff', 'dd'], dma.compute_vntmxgg),
+        ('ds__vnt10', 'vntmd', ['ff', 'dd'], dma.compute_vntmxgg),
+        ('ds__vnt10', 'vnt', wind_subfields, dma.compute_vnt),
     ]:
-        logger.info('selecting values from table %s.%s to be aggregated' % (startschema, table))
+        logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
         # fields are: (metadata, datetime object, par_code, par_value, flag)
         array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
         sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)

@@ -449,9 +449,10 @@ def compute_dma(conn, startschema, targetschema, logger):
         ('ds__etp', 'etp', 'val_md', dma.compute_etp),
         ('ds__radglob', 'radglob', 'val_md', dma.compute_radglob),
         ('ds__vnt10', 'vntmd', 'ff', dma.compute_vntmd),
+        ('ds__preci', 'prec01', 'val_mx', dma.compute_prec01_06_12),
     ]:
         logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
-        # fields are: (metadata, datetime object, par_code, par_value, flag)
+        # records are: (metadata, datetime object, par_code, par_value, flag)
         sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                      % (field, field, subfield, field)
         table_records = querying.select_records(
@@ -475,7 +476,7 @@ def compute_dma(conn, startschema, targetschema, logger):
         ('ds__vnt10', 'vnt', wind_subfields, dma.compute_vnt),
     ]:
         logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
-        # fields are: (metadata, datetime object, par_code, par_value, flag)
+        # records are: (metadata, datetime object, par_code, par_value, flag)
         array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
         sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)
         table_records = querying.select_records(
@@ -486,3 +487,58 @@ def compute_dma(conn, startschema, targetschema, logger):
         if sql:
             logger.info('updating DMA table %s.%s' % (targetschema, table))
             conn.execute(sql)
+
+    # specific cases follows
+    # PRECIPITATION prec24
+    logger.info('selecting values of table %s.ds__preci to group (prec_24)' % startschema)
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '', (prec24).val_tot, ((prec24).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    map_funct = {
+        'prec24': dma.compute_prec24,
+        'cl_prec24': dma.compute_cl_prec24,
+    }
+    data = dma.compute_dma_records(table_records, map_funct=map_funct)
+    sql = upsert.create_upsert(
+        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec24', 'cl_prec24'],
+        data, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
+        conn.execute(sql)
+
+    # PRECIPITATION prec12
+    logger.info('selecting values of table %s.ds__preci to group (prec_12)' % startschema)
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '', (prec12).val_tot, ((prec12).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    map_funct = {
+        'prec12': dma.compute_prec01_06_12,
+        'cl_prec12': dma.compute_cl_prec_06_12,
+    }
+    data = dma.compute_dma_records(table_records, map_funct=map_funct)
+    sql = upsert.create_upsert(
+        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec12', 'cl_prec12'],
+        data, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
+        conn.execute(sql)
+
+    # PRECIPITATION prec06
+    logger.info('selecting values of table %s.ds__preci to group (prec_12)' % startschema)
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '', (prec06).val_tot, ((prec06).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    map_funct = {
+        'prec06': dma.compute_prec01_06_12,
+        'cl_prec06': dma.compute_cl_prec_06_12,
+    }
+    data = dma.compute_dma_records(table_records, map_funct=map_funct)
+    sql = upsert.create_upsert(
+        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec06', 'cl_prec06'],
+        data, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
+        conn.execute(sql)

@@ -28,7 +28,7 @@ def compute_flag(records, at_least_perc, num_expected=10):
     """
     if not records:
         return 0, 0
-    ndati = len([r for r in records if r[4] and r[3] is not None])
+    ndati = len([r for r in records if r[4] > 0 and r[3] is not None])
     wht = 0
     if ndati / num_expected >= at_least_perc:
         wht = 1
@@ -44,7 +44,7 @@ def compute_bagna(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: (flag, val_md, val_vr, val_mx, val_mn, val_tot)
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
         return None
@@ -67,7 +67,7 @@ def compute_deltaidro(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
         return None
@@ -89,7 +89,7 @@ def compute_elio(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, val_mx)
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     val_vr = None
     val_mx = None
     if not valid_values:
@@ -110,7 +110,7 @@ def compute_etp(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
         return None
@@ -132,7 +132,7 @@ def compute_radglob(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
         return None
@@ -155,7 +155,7 @@ def compute_grgg(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, tot00, tot05, tot10, tot15, tot21
     """
-    valid_records = [r for r in records if r[4]]
+    valid_records = [r for r in records if r[4] > 0]
     valid_values_00 = [r[3] for r in valid_records if r[3][0] is not None]
     valid_values_05 = [r[3] for r in valid_records if r[3][1] is not None]
     valid_values_10 = [r[3] for r in valid_records if r[3][2] is not None]
@@ -184,7 +184,7 @@ def compute_press(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
-    valid_records = [r for r in records if r[4]]
+    valid_records = [r for r in records if r[4] > 0]
     pmedia_values = [r[3] for r in valid_records if r[3][0] is not None]
     pmax_values = [r[3] for r in valid_records if r[3][1] is not None]
     pmin_values = [r[3] for r in valid_records if r[3][2] is not None]
@@ -218,7 +218,7 @@ def compute_ur(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, flag1, val_mx, val_mn)
     """
-    valid_records = [r for r in records if r[4]]
+    valid_records = [r for r in records if r[4] > 0]
     urmedia_values = [r[3] for r in valid_records if r[3][0] is not None]
     urmax_values = [r[3] for r in valid_records if r[3][2] is not None]
     urmin_values = [r[3] for r in valid_records if r[3][3] is not None]
@@ -250,7 +250,7 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff, dd)
     """
-    valid_records = [r for r in records if r[4] and r[3] is not None and len(r[3]) == 2]
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None and len(r[3]) == 2]
     valid_ff = [r for r in valid_records if r[3][0] is not None]
     valid_dd = [r for r in valid_records if r[3][1] is not None]
     if not valid_records:
@@ -274,7 +274,7 @@ def compute_vntmd(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff)
     """
-    valid_values = [r[3] for r in records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
     if not valid_values:
         return None
     flag = compute_flag(records, at_least_perc, num_expected)
@@ -293,16 +293,99 @@ def compute_vnt(records, num_expected, at_least_perc=0.75):
     :return: (flag, frq_calme, frq_s(i)c(j))
     """
     flag = compute_flag(records, at_least_perc, num_expected)
-    valid_records = [r for r in records if r[4] and r[3]]
+    valid_records = [r for r in records if r[4] > 0 and r[3]]
     valid_values = [r[3] for r in valid_records]
     ret_subvalues = [flag] + list(np.sum(valid_values, axis=0))  # i.e. sum of vectors
     return ret_subvalues
 
 
-def compute_dma_records(table_records, field, field_funct):
+def compute_prec24(records, num_expected, at_least_perc=0.9):
+    """
+    Compute "precipitazione cumulata"  for different DMA aggregations.
+    It assumes record[3] = prec24.val_tot for each input record.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return: (flag, val_tot, val_mx, data_mx)
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in valid_records]
+    if not valid_values:
+        return None
+    flag = compute_flag(records, at_least_perc, num_expected)
+    val_tot = round(sum(valid_values), ROUND_PRECISION)
+    max_record = max(valid_records, key=operator.itemgetter(3))
+    data_mx = max_record[1].strftime('%Y-%m-%d 00:00:00')
+    val_mx = round(max_record[3], ROUND_PRECISION)
+    return flag, val_tot, val_mx, data_mx
+
+
+def compute_cl_prec24(records, *args, **kwargs):
+    """
+    It returns the tuple (dry, wet_01, wet_02, wet_03, wet_04, wet_05) where:
+    ::
+
+    * dry: num of input records with PREC <= 1
+    * wet_01: num of records with PREC in ]1, 5]
+    * wet_02: num of records with PREC in ]5, 10]
+    * wet_03: num of records with PREC in ]10, 20]
+    * wet_04: num of records with PREC in ]20, 50]
+    * wet_05: num of records with PREC > 50
+
+    :param records: input records of PREC
+    :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    dry = len([d for d in valid_records if d[3] <= 1])
+    wet_01 = len([d for d in valid_records if 1 < d[3] <= 5])
+    wet_02 = len([d for d in valid_records if 5 < d[3] <= 10])
+    wet_03 = len([d for d in valid_records if 10 < d[3] <= 20])
+    wet_04 = len([d for d in valid_records if 20 < d[3] <= 50])
+    wet_05 = len([d for d in valid_records if d[3] > 50])
+    return dry, wet_01, wet_02, wet_03, wet_04, wet_05
+
+
+def compute_prec01_06_12(records, num_expected, at_least_perc=0.9):
+    """
+    Compute "precipitazione cumulata su 1, 6 o 12 ore" for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return: (flag, val_mx, data_mx)
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in valid_records]
+    if not valid_values:
+        return None
+    flag = compute_flag(records, at_least_perc, num_expected)
+    max_record = max(valid_records, key=operator.itemgetter(3))
+    data_mx = max_record[1].strftime('%Y-%m-%d 00:00:00')
+    val_mx = round(max_record[3], ROUND_PRECISION)
+    return flag, val_mx, data_mx
+
+
+def compute_cl_prec_06_12(records, *args, **kwargs):
+    """
+    Compute "distribuzione precipitazione cumulata su 6 o 12 ore" for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3]]
+    valid_values = [r[3] for r in valid_records]
+    ret_subvalues = list(np.sum(valid_values, axis=0))  # i.e. sum of vectors
+    return ret_subvalues
+
+
+def compute_dma_records(table_records, field=None, field_funct=None, map_funct=None):
     group_by_station = operator.itemgetter(0)
     group_by_year = lambda r: r[1].year
     group_by_month = lambda r: r[1].month
+
+    if map_funct is None:
+        map_funct = {field: field_funct}
 
     def group_by_decade(r):
         if r[1].day <= 10:
@@ -320,14 +403,16 @@ def compute_dma_records(table_records, field, field_funct):
             data_i = datetime(year, 12, 31)
             year_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3}
             days_in_year = calendar.isleap(year) and 366 or 365
-            year_item[field] = field_funct(year_records, days_in_year)
+            for field, field_funct in map_funct.items():
+                year_item[field] = field_funct(year_records, days_in_year)
             year_items.append(year_item)
             for month, month_records in itertools.groupby(year_records, group_by_month):
                 month_records = list(month_records)
                 days_in_month = calendar.monthrange(year, month)[1]
                 data_i = datetime(year, month, days_in_month)
-                month_item = {'data_i': data_i, 'cod_staz': station,  'cod_aggr': 2,
-                              field: field_funct(month_records, days_in_month)}
+                month_item = {'data_i': data_i, 'cod_staz': station,  'cod_aggr': 2}
+                for field, field_funct in map_funct.items():
+                    month_item[field] = field_funct(month_records, days_in_month)
                 month_items.append(month_item)
                 for decade, dec_records in itertools.groupby(month_records, group_by_decade):
                     dec_records = list(dec_records)
@@ -337,8 +422,9 @@ def compute_dma_records(table_records, field, field_funct):
                     else:  # decade == 1 or 2:
                         data_i = datetime(year, month, decade*10)
                         days_in_decade = 10
-                    decade_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 1,
-                                   'field': field_funct(dec_records, days_in_decade)}
+                    decade_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 1}
+                    for field, field_funct in map_funct.items():
+                        decade_item[field] = field_funct(dec_records, days_in_decade)
                     decade_items.append(decade_item)
     data = year_items + month_items + decade_items
     return data

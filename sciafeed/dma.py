@@ -578,6 +578,64 @@ def compute_ifu1(records, num_expected, at_least_perc=0.75):
     return flag, num_01, num_02, num_03
 
 
+def compute_prs_prec(records, num_expected, at_least_perc=0.9):
+    """
+    Compute 'Persistenza di siccità' and 'Persistenza di precipitazione'
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return: (flag, num_01, num_02, num_03)
+    :return:
+    """
+    flag = compute_flag(records, at_least_perc, num_expected)
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    ndry_01, datadry_01, ndry_02, datadry_02, ndry_03, datadry_03 = [None] * 6
+    nwet_01, totwet_01, datawet_01, nwet_02, totwet_02, datawet_02, \
+        nwet_03, totwet_03, datawet_03 = [None] * 9
+
+    def group_by_low_prec(r):
+        return r[3] <= 1
+
+    dry_sequences = []
+    wet_sequences = []
+
+    for is_low, rec_sequence in itertools.groupby(valid_records, group_by_low_prec):
+        rec_sequence = list(rec_sequence)
+        if is_low:
+            dry_sequences.append(rec_sequence)
+        else:
+            wet_sequences.append(rec_sequence)
+    dry_sequences.sort(key=lambda r: len(r), reverse=True)
+    wet_sequences.sort(key=lambda r: len(r), reverse=True)
+    if len(dry_sequences) > 1:
+        ndry_01 = len(dry_sequences[0])
+        datadry_01 = dry_sequences[0][1]
+    if len(dry_sequences) > 2:
+        ndry_02 = len(dry_sequences[1])
+        datadry_02 = dry_sequences[1][1]
+    if len(dry_sequences) > 3:
+        ndry_03 = len(dry_sequences[2])
+        datadry_03 = dry_sequences[2][1]
+
+    if len(wet_sequences) > 1:
+        nwet_01 = len(wet_sequences[0])
+        totwet_01 = sum([r[3] for r in wet_sequences[0]])
+        datawet_01 = wet_sequences[0][1]
+    if len(wet_sequences) > 2:
+        nwet_02 = len(wet_sequences[1])
+        totwet_02 = sum([r[3] for r in wet_sequences[1]])
+        datawet_02 = wet_sequences[1][1]
+    if len(wet_sequences) > 3:
+        nwet_03 = len(wet_sequences[2])
+        totwet_03 = sum([r[3] for r in wet_sequences[2]])
+        datawet_03 = wet_sequences[2][1]
+    ret_value = [flag, ndry_01, datadry_01, ndry_02, datadry_02, ndry_03, datadry_03,
+                 nwet_01, totwet_01, datawet_01, nwet_02, totwet_02, datawet_02,
+                 nwet_03, totwet_03, datawet_03] + [None] * 9
+    return ret_value
+
+
 def compute_dma_records(table_records, field=None, field_funct=None, map_funct=None):
     """
     It return records of kind [{'data_i': ..., 'cod_staz': ...,  'cod_aggr': ...}, ...]
@@ -643,4 +701,34 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                         decade_item[field] = field_funct(dec_records, days_in_decade)
                     decade_items.append(decade_item)
     data = year_items + month_items + decade_items
+    return data
+
+
+def compute_year_records(table_records, field=None, field_funct=None, map_funct=None):
+    """
+    The same of compute_dma_records but only grouping by year.
+
+    :param table_records: input records
+    :param field: additional key to be set for output records
+    :param field_funct: function to be run to compute the value of key `field` for output records
+    :param map_funct: dictionary of fields and corresponding field_functions to be run
+    :return: list of records of kind {'data_i': ...,'cod_staz': ..., 'cod_aggr': ...,`field`: ...}
+    """
+    group_by_station = operator.itemgetter(0)
+    group_by_year = lambda r: r[1].year
+
+    if map_funct is None:
+        map_funct = {field: field_funct}
+
+    year_items = []
+    for station, station_records in itertools.groupby(table_records, group_by_station):
+        for year, year_records in itertools.groupby(station_records, group_by_year):
+            year_records = list(year_records)
+            data_i = datetime(year, 12, 31)
+            year_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3}
+            days_in_year = calendar.isleap(year) and 366 or 365
+            for field, field_funct in map_funct.items():
+                year_item[field] = field_funct(year_records, days_in_year)
+            year_items.append(year_item)
+    data = year_items
     return data

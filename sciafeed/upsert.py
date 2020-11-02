@@ -100,7 +100,7 @@ field2class_map = {
 class2subfields_map = {
     'pers_prec_obj': [
         'flag.ndati', 'flag.wht',
-        'ndry_01', 'datadry_02', 'ndry_02', 'datadry_02', 'ndry_03', 'datadry_03',
+        'ndry_01', 'datadry_01', 'ndry_02', 'datadry_02', 'ndry_03', 'datadry_03',
         'nwet_01', 'totwet_01', 'datawet_01', 'nwet_02', 'totwet_02', 'datawet_02',
         'nwet_03', 'totwet_03', 'datawet_03',
         'nsnow_01', 'totsnow_01', 'datasnow_01', 'nsnow_02', 'totsnow_02', 'datasnow_02',

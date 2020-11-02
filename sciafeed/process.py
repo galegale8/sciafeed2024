@@ -495,6 +495,7 @@ def compute_dma(conn, startschema, targetschema, logger):
     sql_fields = "cod_staz, data_i, '', (prec24).val_tot, ((prec24).flag).wht"
     table_records = querying.select_records(
         conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    table_records = list(table_records)
     map_funct = {
         'prec24': dma.compute_prec24,
         'cl_prec24': dma.compute_cl_prec24,
@@ -505,6 +506,15 @@ def compute_dma(conn, startschema, targetschema, logger):
         data, 'upsert')
     if sql:
         logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
+        conn.execute(sql)
+    # PERSISTENZA PRECIPITAZIONE
+    logger.info('selecting values of table %s.ds__preci to group PRS_PREC' % startschema)
+    data2 = dma.compute_year_records(table_records, 'prs_prec', dma.compute_prs_prec)
+    sql = upsert.create_upsert(
+        'ds__prs_prec', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prs_prec'],
+        data2, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
         conn.execute(sql)
 
     # PRECIPITATION prec12
@@ -552,7 +562,6 @@ def compute_dma(conn, startschema, targetschema, logger):
     WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
     ORDER BY cod_staz, data_i""" % startschema
     table_records = conn.execute(sql)
-    data = dma.compute_dma_records(table_records, 'ifs', dma.compute_ifs)
     map_funct = {
         'ifs': dma.compute_ifs,
         'ifu': dma.compute_ifu,
@@ -561,6 +570,7 @@ def compute_dma(conn, startschema, targetschema, logger):
         'sharl': dma.compute_sharl,
         'ifu1': dma.compute_ifu1,
     }
+    data = dma.compute_dma_records(table_records, map_funct=map_funct)
     fields = ['data_i', 'cod_staz', 'cod_aggr'] + list(map_funct.keys())
     sql = upsert.create_upsert(table, targetschema, fields, data, 'upsert')
     if sql:

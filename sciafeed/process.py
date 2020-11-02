@@ -526,7 +526,7 @@ def compute_dma(conn, startschema, targetschema, logger):
         conn.execute(sql)
 
     # PRECIPITATION prec06
-    logger.info('selecting values of table %s.ds__preci to group (prec_12)' % startschema)
+    logger.info('selecting values of table %s.ds__preci to group (prec_06)' % startschema)
     # records are: (metadata, datetime object, par_code, par_value, flag)
     sql_fields = "cod_staz, data_i, '', (prec06).val_tot, ((prec06).flag).wht"
     table_records = querying.select_records(
@@ -541,4 +541,28 @@ def compute_dma(conn, startschema, targetschema, logger):
         data, 'upsert')
     if sql:
         logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
+        conn.execute(sql)
+
+    # BIOCLIMATOLOGIA
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql = """
+    SELECT cod_staz, data_i, '', ARRAY[(tmdgg1).val_md, (ur).val_md], 
+            ((tmdgg1).flag).wht>0 AND ((ur).flag).wht>0 
+    FROM %s.ds__t200 JOIN dailypdbanpaclima.ds__urel USING (cod_staz, data_i)
+    WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
+    ORDER BY cod_staz, data_i""" % startschema
+    table_records = conn.execute(sql)
+    data = dma.compute_dma_records(table_records, 'ifs', dma.compute_ifs)
+    map_funct = {
+        'ifs': dma.compute_ifs,
+        'ifu': dma.compute_ifu,
+        'ics': dma.compute_ics,
+        'icu': dma.compute_icu,
+        'sharl': dma.compute_sharl,
+        'ifu1': dma.compute_ifu1,
+    }
+    fields = ['data_i', 'cod_staz', 'cod_aggr'] + list(map_funct.keys())
+    sql = upsert.create_upsert(table, targetschema, fields, data, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, table))
         conn.execute(sql)

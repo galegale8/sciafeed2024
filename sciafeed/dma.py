@@ -675,7 +675,8 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
         for year, year_records in itertools.groupby(station_records, group_by_year):
             year_records = list(year_records)
             data_i = datetime(year, 12, 31)
-            year_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3}
+            year_item = {
+                'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3, 'provenienza': 'daily'}
             days_in_year = calendar.isleap(year) and 366 or 365
             for field, field_funct in map_funct.items():
                 year_item[field] = field_funct(year_records, days_in_year)
@@ -684,7 +685,8 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                 month_records = list(month_records)
                 days_in_month = calendar.monthrange(year, month)[1]
                 data_i = datetime(year, month, days_in_month)
-                month_item = {'data_i': data_i, 'cod_staz': station,  'cod_aggr': 2}
+                month_item = {
+                    'data_i': data_i, 'cod_staz': station,  'cod_aggr': 2, 'provenienza': 'daily'}
                 for field, field_funct in map_funct.items():
                     month_item[field] = field_funct(month_records, days_in_month)
                 month_items.append(month_item)
@@ -696,7 +698,8 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                     else:  # decade == 1 or 2:
                         data_i = datetime(year, month, decade*10)
                         days_in_decade = 10
-                    decade_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 1}
+                    decade_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 1,
+                                   'provenienza': 'daily'}
                     for field, field_funct in map_funct.items():
                         decade_item[field] = field_funct(dec_records, days_in_decade)
                     decade_items.append(decade_item)
@@ -725,7 +728,8 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
         for year, year_records in itertools.groupby(station_records, group_by_year):
             year_records = list(year_records)
             data_i = datetime(year, 12, 31)
-            year_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3}
+            year_item = {
+                'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3, 'provenienza': 'daily'}
             days_in_year = calendar.isleap(year) and 366 or 365
             for field, field_funct in map_funct.items():
                 year_item[field] = field_funct(year_records, days_in_year)

@@ -2,6 +2,7 @@
 This module contains functions and utilities that involve more components of sciafeed.
 """
 
+import functools
 import logging
 import operator
 from os import listdir
@@ -436,143 +437,39 @@ def compute_daily_indicators2(conn, schema, logger):
             conn.execute(sql)
 
 
-def compute_dma(conn, startschema, targetschema, logger):
+def process_dma(conn, startschema, targetschema, policy, logger):
+
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
 
-    # tables with 1 value to be aggregated for each record
-    for table, field, subfield, funct in [
-        # table to query, field to consider, subfield where to get the values, aggregate function
-        ('ds__bagna', 'bagna', 'val_md', dma.compute_bagna),
-        ('ds__delta_idro', 'deltaidro', 'val_md', dma.compute_deltaidro),
-        ('ds__elio', 'elio', 'val_md', dma.compute_elio),
-        ('ds__etp', 'etp', 'val_md', dma.compute_etp),
-        ('ds__radglob', 'radglob', 'val_md', dma.compute_radglob),
-        ('ds__vnt10', 'vntmd', 'ff', dma.compute_vntmd),
-        ('ds__preci', 'prec01', 'val_mx', dma.compute_prec01_06_12),
-    ]:
-        logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
-        # records are: (metadata, datetime object, par_code, par_value, flag)
-        sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
-                     % (field, field, subfield, field)
-        table_records = querying.select_records(
-            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
-        data = dma.compute_dma_records(table_records, field, funct)
-        sql = upsert.create_upsert(
-            table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', field], data, 'upsert')
-        if sql:
-            logger.info('updating DMA table %s.%s' % (targetschema, table))
-            conn.execute(sql)
+    dma.process_dma_bagnatura(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_eliofania(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_radiazione_globale(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_pressione(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_precipitazione(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_vento(conn, startschema, targetschema, policy, logger)
 
-    # tables with more values (of same type) to be aggregated for each record
-    wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
-    for table, field, subfields, funct in [
-        # table to query, field to consider, list of subfields, aggregate function
-        ('ds__grgg', 'grgg', ['tot00', 'tot05', 'tot10', 'tot15', 'tot21'], dma.compute_grgg),
-        ('ds__press', 'press', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_press),
-        ('ds__urel', 'ur', ['val_md', 'val_vr', 'val_mx', 'val_mn'], dma.compute_ur),
-        ('ds__vnt10', 'vntmxgg', ['ff', 'dd'], dma.compute_vntmxgg),
-        ('ds__vnt10', 'vntmd', ['ff', 'dd'], dma.compute_vntmxgg),
-        ('ds__vnt10', 'vnt', wind_subfields, dma.compute_vnt),
-    ]:
-        logger.info('selecting values of table %s.%s to group (%s)' % (startschema, table, field))
-        # records are: (metadata, datetime object, par_code, par_value, flag)
-        array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
-        sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)
-        table_records = querying.select_records(
-            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
-        data = dma.compute_dma_records(table_records, field, funct)
-        sql = upsert.create_upsert(
-            table, targetschema, ['data_i', 'cod_staz', 'cod_aggr', field], data, 'upsert')
-        if sql:
-            logger.info('updating DMA table %s.%s' % (targetschema, table))
-            conn.execute(sql)
-
-    # specific cases follows
-    # PRECIPITATION prec24
-    logger.info('selecting values of table %s.ds__preci to group (prec_24)' % startschema)
-    # records are: (metadata, datetime object, par_code, par_value, flag)
-    sql_fields = "cod_staz, data_i, '', (prec24).val_tot, ((prec24).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
-    table_records = list(table_records)
-    map_funct = {
-        'prec24': dma.compute_prec24,
-        'cl_prec24': dma.compute_cl_prec24,
-    }
-    data = dma.compute_dma_records(table_records, map_funct=map_funct)
-    sql = upsert.create_upsert(
-        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec24', 'cl_prec24'],
-        data, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
-        conn.execute(sql)
-    # PERSISTENZA PRECIPITAZIONE
-    logger.info('selecting values of table %s.ds__preci to group PRS_PREC' % startschema)
-    data2 = dma.compute_year_records(table_records, 'prs_prec', dma.compute_prs_prec)
-    sql = upsert.create_upsert(
-        'ds__prs_prec', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prs_prec'],
-        data2, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
-        conn.execute(sql)
-
-    # PRECIPITATION prec12
-    logger.info('selecting values of table %s.ds__preci to group (prec_12)' % startschema)
-    # records are: (metadata, datetime object, par_code, par_value, flag)
-    sql_fields = "cod_staz, data_i, '', (prec12).val_tot, ((prec12).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
-    map_funct = {
-        'prec12': dma.compute_prec01_06_12,
-        'cl_prec12': dma.compute_cl_prec_06_12,
-    }
-    data = dma.compute_dma_records(table_records, map_funct=map_funct)
-    sql = upsert.create_upsert(
-        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec12', 'cl_prec12'],
-        data, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
-        conn.execute(sql)
-
-    # PRECIPITATION prec06
-    logger.info('selecting values of table %s.ds__preci to group (prec_06)' % startschema)
-    # records are: (metadata, datetime object, par_code, par_value, flag)
-    sql_fields = "cod_staz, data_i, '', (prec06).val_tot, ((prec06).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
-    map_funct = {
-        'prec06': dma.compute_prec01_06_12,
-        'cl_prec06': dma.compute_cl_prec_06_12,
-    }
-    data = dma.compute_dma_records(table_records, map_funct=map_funct)
-    sql = upsert.create_upsert(
-        'ds__preci', targetschema, ['data_i', 'cod_staz', 'cod_aggr', 'prec06', 'cl_prec06'],
-        data, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__preci'))
-        conn.execute(sql)
-
-    # BIOCLIMATOLOGIA
-    # records are: (metadata, datetime object, par_code, par_value, flag)
-    sql = """
-    SELECT cod_staz, data_i, '', ARRAY[(tmdgg1).val_md, (ur).val_md], 
-            ((tmdgg1).flag).wht>0 AND ((ur).flag).wht>0 
-    FROM %s.ds__t200 JOIN dailypdbanpaclima.ds__urel USING (cod_staz, data_i)
-    WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
-    ORDER BY cod_staz, data_i""" % startschema
-    table_records = conn.execute(sql)
-    map_funct = {
-        'ifs': dma.compute_ifs,
-        'ifu': dma.compute_ifu,
-        'ics': dma.compute_ics,
-        'icu': dma.compute_icu,
-        'sharl': dma.compute_sharl,
-        'ifu1': dma.compute_ifu1,
-    }
-    data = dma.compute_dma_records(table_records, map_funct=map_funct)
-    fields = ['data_i', 'cod_staz', 'cod_aggr'] + list(map_funct.keys())
-    sql = upsert.create_upsert(table, targetschema, fields, data, 'upsert')
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, table))
-        conn.execute(sql)
+    # # PERSISTENZA TEMPERATURA
+    # logger.info('selecting values of table %s.%s to compute PERSISTENZA TEMPERATURA'
+    #             % (startschema, 'ds__t200'))
+    #
+    # sql_fields = "cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht" \
+    #     "(tmngg).val_md, ((tmngg).flag).wht"
+    # table_records = querying.select_records(
+    #     conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
+    # # records are: (metadata, datetime object, par_code, par_value, flag)
+    # tmax_records = [[r[0], r[1], 'tmax', r[2], r[3]] for r in table_records]
+    # tmin_records = [[r[0], r[1], 'tmin', r[4], r[5]] for r in table_records]
+    # data_max = dma.compute_dma_records(tmax_records, 'prs_t200mx', dma.compute_prs_t200mx)
+    # data_min = dma.compute_dma_records(tmin_records, 'prs_t200mx', dma.compute_prs_t200mn)
+    # sql = upsert.create_upsert(
+    #     'ds__prs_t200', targetschema,
+    #     ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx'], data, 'upsert')
+    # if sql:
+    #     logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
+    #     conn.execute(sql)

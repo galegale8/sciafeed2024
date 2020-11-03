@@ -1,15 +1,32 @@
 
 import calendar
 from datetime import datetime
+import functools
 import itertools
 
 import operator
 import numpy as np
 import statistics
 
+from sciafeed import querying
 from sciafeed import spring
+from sciafeed import upsert
 
 ROUND_PRECISION = 1
+
+
+def merge_data_items(records1, records2, pkeys=('data_i', 'cod_staz', 'cod_aggr')):
+    dict1 = dict()
+    for record1 in records1:
+        key = tuple([record1[p] for p in pkeys])
+        dict1[key] = record1
+    for record2 in records2:
+        key = tuple([record2[p] for p in pkeys])
+        if key in dict1:
+            dict1[key].update(record2)
+        else:
+            dict1[key] = record2
+    return list(dict1.values())
 
 
 def compute_flag(records, at_least_perc, num_expected=10):
@@ -736,3 +753,279 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
             year_items.append(year_item)
     data = year_items
     return data
+
+
+def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA bagnatura fogliare')
+    logger.info('select for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('bagna', 'bagna', 'val_md', 'bagna')
+    table_records = querying.select_records(
+        conn, 'ds__bagna', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'bagna', compute_bagna)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__bagna', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA bagnatura fogliare')
+
+
+def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA bilancio idrico')
+    logger.info('select for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('deltaidro', 'deltaidro', 'val_md', 'deltaidro')
+    table_records = querying.select_records(
+        conn, 'ds__delta_idro', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__delta_idro', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA bilancio idrico')
+
+
+def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA eliofania')
+    logger.info('select for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('elio', 'elio', 'val_md', 'elio')
+    table_records = querying.select_records(
+        conn, 'ds__elio', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__elio', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA eliofania')
+
+
+def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA radiazione globale')
+    logger.info('select for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('radglob', 'radglob', 'val_md', 'radglob')
+    table_records = querying.select_records(
+        conn, 'ds__radglob', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'deltaidro', compute_radglob)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__radglob', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA radiazione globale')
+
+
+def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA evapotraspirazione')
+    logger.info('select for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('etp', 'etp', 'val_md', 'etp')
+    table_records = querying.select_records(
+        conn, 'ds__etp', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'deltaidro', compute_etp)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__etp', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA evapotraspirazione')
+
+
+def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA gradi giorno')
+    logger.info('selecting for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    subfields = ['tot00', 'tot05', 'tot10', 'tot15', 'tot21']
+    array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('grgg', s) for s in subfields]) + ']'
+    sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('grgg', array_field, 'grgg')
+    table_records = querying.select_records(
+        conn, 'ds__grgg', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'grgg', compute_grgg)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__grgg', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA gradi giorno')
+
+
+def process_dma_pressione(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA pressione atmosferica')
+    logger.info('selecting for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    subfields = ['val_md', 'val_vr', 'val_mx', 'val_mn']
+    array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('press', s) for s in subfields]) + ']'
+    sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('press', array_field, 'press')
+    table_records = querying.select_records(
+        conn, 'ds__press', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'press', compute_press)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__press', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA pressione atmosferica')
+
+
+def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA umidità relativa')
+    logger.info('selecting for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    subfields = ['val_md', 'val_vr', 'val_mx', 'val_mn']
+    array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('press', s) for s in subfields]) + ']'
+    sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('ur', array_field, 'ur')
+    table_records = querying.select_records(
+        conn, 'ds__urel', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, 'press', compute_ur)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur']
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__urel', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA umidità relativa')
+
+
+def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA bioclimatologia')
+    logger.info('selecting for input records...')
+    # records are: (metadata, datetime object, par_code, par_value, flag)
+    sql = """
+    SELECT cod_staz, data_i, '', ARRAY[(tmdgg1).val_md, (ur).val_md], 
+            ((tmdgg1).flag).wht>0 AND ((ur).flag).wht>0 
+    FROM %s.ds__t200 JOIN %s.ds__urel USING (cod_staz, data_i)
+    WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
+    ORDER BY cod_staz, data_i""" % (startschema, startschema)
+    table_records = conn.execute(sql)
+    map_funct = {
+        'ifs': compute_ifs,
+        'ifu': compute_ifu,
+        'ics': compute_ics,
+        'icu': compute_icu,
+        'sharl': compute_sharl,
+        'ifu1': compute_ifu1,
+    }
+    logger.info('computing aggregations...')
+    data = compute_dma_records(table_records, map_funct=map_funct)
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza'] + list(map_funct.keys())
+    logger.info('update records....')
+    sql = upsert.create_upsert('ds__bioclima', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA bioclimatologia')
+
+
+def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA precipitazione')
+    logger.info('selecting for input records (prec01) ...')
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('prec01', 'prec01', 'val_mx', 'prec01')
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations for prec01...')
+    data_prec01 = compute_dma_records(table_records, 'prec01', compute_prec01_06_12)
+
+    logger.info('selecting for input records (prec24) ...')
+    sql_fields = "cod_staz, data_i, 'prec24', (prec24).val_tot, ((prec24).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    table_records = list(table_records)
+    map_funct = {
+        'prec24': compute_prec24,
+        'cl_prec24': compute_cl_prec24,
+    }
+    logger.info('computing aggregations for prec24...')
+    data_prec24 = compute_dma_records(table_records, map_funct=map_funct)
+
+    logger.info('computing aggregations for persistenza precipitazione')
+    data_prs_prec = compute_year_records(table_records, 'prs_prec', compute_prs_prec)
+
+    logger.info('selecting for input records (prec12) ...')
+    sql_fields = "cod_staz, data_i, '', (prec12).val_tot, ((prec12).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    map_funct = {
+        'prec12': compute_prec01_06_12,
+        'cl_prec12': compute_cl_prec_06_12,
+    }
+    logger.info('computing aggregations for prec24...')
+    data_prec12 = compute_dma_records(table_records, map_funct=map_funct)
+
+    logger.info('selecting for input records (prec06) ...')
+    sql_fields = "cod_staz, data_i, '', (prec06).val_tot, ((prec06).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    map_funct = {
+        'prec06': compute_prec01_06_12,
+        'cl_prec06': compute_cl_prec_06_12,
+    }
+    data_prec06 = compute_dma_records(table_records, map_funct=map_funct)
+
+    logger.info('update records for persistenza precipitazione...')
+    sql = upsert.create_upsert(
+        'ds__prs_prec', targetschema,
+        ['data_i', 'cod_staz', 'cod_aggr', 'prs_prec', 'provenienza'], data_prs_prec, policy)
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
+        conn.execute(sql)
+
+    logger.info('merging records before update of table ds__prec...')
+    data = functools.reduce(merge_data_items, [data_prec01, data_prec24, data_prec12, data_prec06])
+    logger.info('update records for table ds__prec...')
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prec01', 'prec24', 'cl_prec24',
+              'prec12', 'cl_prec12', 'prec06', 'cl_prec06']
+    sql = upsert.create_upsert('ds__preci', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+
+    logger.info('end process DMA precipitazione')
+
+
+def process_dma_vento(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA vento')
+    logger.info('selecting for input records (vntmd)...')
+    data_items = dict()
+    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
+                 % ('vntmd', 'vntmd', 'ff', 'vntmd')
+    table_records = querying.select_records(
+        conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
+    logger.info('computing aggregations...')
+    data_items['vntmd1'] = compute_dma_records(table_records, 'vntmd', compute_vntmd)
+
+    wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
+    for table, field, subfields, funct in [
+        # table to query, field to consider, list of subfields, aggregate function
+        ('ds__vnt10', 'vntmxgg', ['ff', 'dd'], compute_vntmxgg),
+        ('ds__vnt10', 'vntmd', ['ff', 'dd'], compute_vntmxgg),  # FIXME: already computed above?
+        ('ds__vnt10', 'vnt', wind_subfields, compute_vnt),
+    ]:
+        logger.info('selecting for input records (%s)...' % field)
+        array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
+        sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)
+        table_records = querying.select_records(
+            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
+        data_items[field] = compute_dma_records(table_records, field, funct)
+
+    logger.info('merging records before update of table ds__prec...')
+    data = functools.reduce(merge_data_items, data_items.values())
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt']
+    sql = upsert.create_upsert(table, targetschema, fields, data, policy)
+    if sql:
+        logger.info('updating DMA table %s.%s' % (targetschema, table))
+        conn.execute(sql)

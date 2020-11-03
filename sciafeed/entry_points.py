@@ -359,13 +359,14 @@ def compute_daily_indicators2(dburi, report_path, schema):
               help="""database schema to use for data input. Default is 'dailypdbanpaclima'""")
 @click.option('--targetschema', '-t', default='dailypdbanpaclima',
               help="""database schema to use. Default is 'dailypdbanpaclima'""")
-def compute_dma(dburi, report_path, startschema, targetschema):
+@click.option('--policy', '-p', type=click.Choice(['onlyinsert', 'upsert']), default='upsert',
+              help="policy to apply in the insert")
+def process_dma(dburi, report_path, startschema, targetschema, policy):
     """Utility for update DMA indicators"""
     logger = utils.setup_log(report_path)
     logger.info('starting process of update DMA indicators from schema %s to schema %s'
                 % (startschema, targetschema))
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
-    # TODO: ASK: truncate data from targetschema tables?
-    process.compute_dma(conn, startschema, targetschema, logger)
+    process.process_dma(conn, startschema, targetschema, policy, logger)
     logger.info('process concluded')

@@ -435,7 +435,7 @@ def compute_ifs(records, num_expected, at_least_perc=0.75):
     """
     flag = compute_flag(records, at_least_perc, num_expected)
     valid_values = [r[3] for r in records if r[4] > 0 and len(r[3]) == 2 and r[3][0] is not None
-                     and r[3][1] is not None]
+                    and r[3][1] is not None]
     temp_threshold = 5
     ur_threshold = 40
     num = len([r for r in valid_values if r[0] < temp_threshold and r[1] < ur_threshold])
@@ -602,8 +602,6 @@ def compute_prs_prec(records, num_expected, at_least_perc=0.9):
     :param records: list of `data` objects
     :param num_expected: number of records expected
     :param at_least_perc: minimum percentage of valid data for the validation flag
-    :return: (flag, num_01, num_02, num_03)
-    :return:
     """
     flag = compute_flag(records, at_least_perc, num_expected)
     valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
@@ -651,6 +649,285 @@ def compute_prs_prec(records, num_expected, at_least_perc=0.9):
                  nwet_01, totwet_01, datawet_01, nwet_02, totwet_02, datawet_02,
                  nwet_03, totwet_03, datawet_03] + [None] * 9
     return ret_value
+
+
+def compute_prs_t200mx(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'Persistenza temperatura (Tmassima)'
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    """
+    flag = compute_temp_flag(records, at_least_perc, num_expected)
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    numX = [0] * 11
+    dataX = [None] * 11
+
+    def group_by_trange(value):
+        if value <= -10:
+            return 0
+        elif -10 < value <= -5:
+            return 1
+        elif -5 < value <= 0:
+            return 2
+        elif 0 < value <= 5:
+            return 3
+        elif 5 < value <= 10:
+            return 4
+        elif 10 < value <= 15:
+            return 5
+        elif 15 < value <= 20:
+            return 6
+        elif 20 < value <= 25:
+            return 7
+        elif 25 < value <= 30:
+            return 8
+        elif 30 < value <= 35:
+            return 9
+        elif 35 < value <= 40:
+            return 10
+        # else > 40:
+        return 11
+
+    for the_index, rec_sequence in itertools.groupby(valid_records, group_by_trange):
+        rec_sequence = list(rec_sequence)
+        if len(rec_sequence) > numX[the_index]:
+            numX[the_index] = len(rec_sequence)
+            dataX[the_index] = rec_sequence[0][1].strftime('%Y-%m-%d 00:00:00')
+    # fields = [numX[0], dataX[0], numX[1], dataX[1], ...]
+    fields = list(functools.reduce(operator.add, zip(numX, dataX)))
+    ret_value = [flag] + fields
+    return ret_value
+
+
+def compute_prs_t200mn(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'persistenza temperatura (Tminima)'
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    """
+    flag = compute_temp_flag(records, at_least_perc, num_expected)
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    numX = [0] * 9
+    dataX = [None] * 9
+
+    def group_by_trange(record):
+        value = record[3]
+        if value <= -20:
+            return 0
+        elif -20 < value <= -15:
+            return 1
+        elif -15 < value <= -10:
+            return 2
+        elif -10 < value <= -5:
+            return 3
+        elif -5 < value <= 0:
+            return 4
+        elif 0 < value <= 5:
+            return 5
+        elif 5 < value <= 10:
+            return 6
+        elif 10 < value <= 15:
+            return 7
+        elif 15 < value <= 20:
+            return 8
+        # value > 20
+        return 9
+
+    for the_index, rec_sequence in itertools.groupby(valid_records, group_by_trange):
+        rec_sequence = list(rec_sequence)
+        if len(rec_sequence) > numX[the_index]:
+            numX[the_index] = len(rec_sequence)
+            dataX[the_index] = rec_sequence[0][1].strftime('%Y-%m-%d 00:00:00')
+    # fields = [numX[0], dataX[0], numX[1], dataX[1], ...]
+    fields = list(functools.reduce(operator.add, zip(numX, dataX)))
+    ret_value = [flag] + fields
+    return ret_value
+
+
+def compute_tmdgg(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'temperatura media' for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, val_md, val_vr
+    """
+    flag = compute_temp_flag(records, at_least_perc, num_expected)
+    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    val_md = None
+    val_vr = None
+    if valid_values:
+        val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    if len(valid_values) >= 2:
+        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
+    return flag, val_md, val_vr
+
+
+def compute_tmxgg(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'temperatura massima' for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, val_md, val_vr, val_x, data_x (val_md is the max)
+    """
+    flag = compute_temp_flag(records, at_least_perc, num_expected)
+    val_vr = None
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    if not valid_records:
+        return None
+    values = [r[3] for r in valid_records]
+    val_x = round(statistics.mean(values), ROUND_PRECISION)
+    if len(values) >= 2:
+        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
+
+    max_record = max(valid_records, key=operator.itemgetter(3))
+    data_x = max_record[1].strftime('%Y-%m-%d 00:00:00')
+    val_md = round(max_record[3], ROUND_PRECISION)
+
+    return flag, val_md, val_vr, val_x, data_x
+
+
+def compute_tmngg(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'temperatura minima' for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, val_md, val_vr, val_x, data_x (val_md is the min)
+    """
+    flag = compute_temp_flag(records, at_least_perc, num_expected)
+    val_vr = None
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    if not valid_records:
+        return None
+    values = [r[3] for r in valid_records]
+    val_x = round(statistics.mean(values), ROUND_PRECISION)
+    if len(values) >= 2:
+        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
+
+    min_record = min(valid_records, key=operator.itemgetter(3))
+    data_x = min_record[1].strftime('%Y-%m-%d 00:00:00')
+    val_md = round(min_record[3], ROUND_PRECISION)
+
+    return flag, val_md, val_vr, val_x, data_x
+
+
+def compute_cl_tmxgg(records, *args, **kwargs):
+    """
+    It returns the iterable (cl_01, cl_02, ...cl_11) according to the number of days in `records`
+    with tmax inside defined intervals.
+
+    :param records: input records
+    :return: [cl_01, cl_02, ...cl_11]
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    cl_01 = len([d for d in valid_records if d[3] <= -5])
+    cl_02 = len([d for d in valid_records if -5 < d[3] <= 0])
+    cl_03 = len([d for d in valid_records if 0 < d[3] <= 5])
+    cl_04 = len([d for d in valid_records if 5 < d[3] <= 10])
+    cl_05 = len([d for d in valid_records if 10 < d[3] <= 15])
+    cl_06 = len([d for d in valid_records if 15 < d[3] <= 20])
+    cl_07 = len([d for d in valid_records if 20 < d[3] <= 25])
+    cl_08 = len([d for d in valid_records if 25 < d[3] <= 30])
+    cl_09 = len([d for d in valid_records if 30 < d[3] <= 35])
+    cl_10 = len([d for d in valid_records if 35 < d[3] <= 40])
+    cl_11 = len([d for d in valid_records if d[3] > 40])
+    return cl_01, cl_02, cl_03, cl_04, cl_05, cl_06, cl_07, cl_08, cl_09, cl_10, cl_11
+
+
+def compute_cl_tmngg(records, *args, **kwargs):
+    """
+    It returns the iterable (cl_01, cl_02, ...cl_09) according to the number of days in `records`
+    with tmax inside defined intervals.
+
+    :param records: input records
+    :return: [cl_01, cl_02, ...cl_11]
+    """
+    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    cl_01 = len([d for d in valid_records if d[3] <= -15])
+    cl_02 = len([d for d in valid_records if -15 < d[3] <= -10])
+    cl_03 = len([d for d in valid_records if -10 < d[3] <= -5])
+    cl_04 = len([d for d in valid_records if -5 < d[3] <= 0])
+    cl_05 = len([d for d in valid_records if 0 < d[3] <= 5])
+    cl_06 = len([d for d in valid_records if 5 < d[3] <= 10])
+    cl_07 = len([d for d in valid_records if 10 < d[3] <= 15])
+    cl_08 = len([d for d in valid_records if 15 < d[3] <= 20])
+    cl_09 = len([d for d in valid_records if d[3] > 20])
+    return cl_01, cl_02, cl_03, cl_04, cl_05, cl_06, cl_07, cl_08, cl_09
+
+
+def compute_tmdgg1(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'temperatura media' for different DMA aggregations.
+    It assumes r[3] = [tmax, tmin]
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, val_md, val_vr
+    """
+    valid_records = [r for r in records if len(r[3]) == 2 and r[3][0] is not None
+                     and r[3][1] is not None and r[4] and r[4] > 0]
+    flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
+    val_md = val_vr = None
+    if not valid_records:
+        return val_md, val_vr
+    values_tmediagg1 = [(r[3][0]+r[3][1])/2 for r in valid_records]
+    val_md = round(statistics.mean(values_tmediagg1), ROUND_PRECISION)
+    if len(values_tmediagg1) >= 2:
+        val_vr = round(statistics.stdev(values_tmediagg1), ROUND_PRECISION)
+    return flag, val_md, val_vr
+
+
+def compute_deltagg(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'escursione termica' for different DMA aggregations.
+    It assumes r[3] = [tmax, tmin]
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, val_md, val_vr, val_mx, val_mn
+    """
+    valid_records = [r for r in records if len(r[3]) == 2 and r[3][0] is not None
+                     and r[3][1] is not None and r[4] and r[4] > 0]
+    flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
+    val_md = val_vr = None
+    if not valid_records:
+        return val_md, val_vr
+    values_deltagg = [(r[3][0]-r[3][1]) for r in valid_records]
+    val_md = round(statistics.mean(values_deltagg), ROUND_PRECISION)
+    if len(values_deltagg) >= 2:
+        val_vr = round(statistics.stdev(values_deltagg), ROUND_PRECISION)
+    val_mx = max(values_deltagg)
+    val_mn = min(values_deltagg)
+    return flag, val_md, val_vr, val_mx, val_mn
+
+
+def compute_day_gelo(records, num_expected, at_least_perc=0.75):
+    """
+    Compute 'numero giorni di gelo' for different DMA aggregations.
+
+    :param records: list of `data` objects
+    :param num_expected: number of records expected
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :return flag, num
+    """
+    valid_records = [r for r in records if r[3] is not None and r[4] > 0]
+    flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
+    val_md = val_vr = None
+    if not valid_records:
+        return val_md, val_vr
+    num = len([r for r in valid_records if r[3] < 0])
+    return flag, num
 
 
 def compute_dma_records(table_records, field=None, field_funct=None, map_funct=None):
@@ -934,48 +1211,47 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
 def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     logger.info('starting process DMA precipitazione')
     logger.info('selecting for input records (prec01) ...')
-    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
-                 % ('prec01', 'prec01', 'val_mx', 'prec01')
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
-    logger.info('computing aggregations for prec01...')
-    data_prec01 = compute_dma_records(table_records, 'prec01', compute_prec01_06_12)
 
-    logger.info('selecting for input records (prec24) ...')
-    sql_fields = "cod_staz, data_i, 'prec24', (prec24).val_tot, ((prec24).flag).wht"
+    sql_fields = "cod_staz, data_i, " \
+                 "(prec01).val_mx, ((prec01).flag).wht, " \
+                 "(prec24).val_tot, ((prec24).flag).wht, " \
+                 "(prec12).val_tot, ((prec12).flag).wht, " \
+                 "(prec06).val_tot, ((prec06).flag).wht"
     table_records = querying.select_records(
         conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
     table_records = list(table_records)
+    logger.info('computing aggregations for prec01...')
+    prec01_records = [[r[0], r[1], 'prec01', r[2], r[3]] for r in table_records]
+    data_prec01 = compute_dma_records(prec01_records, 'prec01', compute_prec01_06_12)
+
+    logger.info('selecting for input records (prec24) ...')
+    prec24_records = [[r[0], r[1], 'prec24', r[4], r[5]] for r in table_records]
     map_funct = {
         'prec24': compute_prec24,
         'cl_prec24': compute_cl_prec24,
     }
     logger.info('computing aggregations for prec24...')
-    data_prec24 = compute_dma_records(table_records, map_funct=map_funct)
+    data_prec24 = compute_dma_records(prec24_records, map_funct=map_funct)
 
     logger.info('computing aggregations for persistenza precipitazione')
-    data_prs_prec = compute_year_records(table_records, 'prs_prec', compute_prs_prec)
+    data_prs_prec = compute_year_records(prec24_records, 'prs_prec', compute_prs_prec)
 
     logger.info('selecting for input records (prec12) ...')
-    sql_fields = "cod_staz, data_i, '', (prec12).val_tot, ((prec12).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    prec12_records = [[r[0], r[1], 'prec12', r[6], r[7]] for r in table_records]
     map_funct = {
         'prec12': compute_prec01_06_12,
         'cl_prec12': compute_cl_prec_06_12,
     }
     logger.info('computing aggregations for prec24...')
-    data_prec12 = compute_dma_records(table_records, map_funct=map_funct)
+    data_prec12 = compute_dma_records(prec12_records, map_funct=map_funct)
 
     logger.info('selecting for input records (prec06) ...')
-    sql_fields = "cod_staz, data_i, '', (prec06).val_tot, ((prec06).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+    data_prec06 = [[r[0], r[1], 'prec12', r[8], r[9]] for r in table_records]
     map_funct = {
         'prec06': compute_prec01_06_12,
         'cl_prec06': compute_cl_prec_06_12,
     }
-    data_prec06 = compute_dma_records(table_records, map_funct=map_funct)
+    data_prec06 = compute_dma_records(data_prec06, map_funct=map_funct)
 
     logger.info('update records for persistenza precipitazione...')
     sql = upsert.create_upsert(
@@ -999,33 +1275,97 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
 
 def process_dma_vento(conn, startschema, targetschema, policy, logger):
     logger.info('starting process DMA vento')
-    logger.info('selecting for input records (vntmd)...')
+    logger.info('selecting for input records...')
     data_items = dict()
-    sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
-                 % ('vntmd', 'vntmd', 'ff', 'vntmd')
+    wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
+    vnt_array_field = 'ARRAY[frq_calme,' + ','.join(['(vnt).%s' % s for s in wind_subfields]) + ']'
+    sql_fields = "cod_staz, data_i, (vntmd).ff, ((vntmd).flag).wht, " \
+                 "ARRAY[(vntmxgg).ff,(vntmxgg).dd], ((vntmxgg).flag).wht, " \
+                 "%s, ((vnt).flag).wht" % vnt_array_field
     table_records = querying.select_records(
         conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
-    logger.info('computing aggregations...')
-    data_items['vntmd1'] = compute_dma_records(table_records, 'vntmd', compute_vntmd)
+    table_records = list(table_records)
 
-    wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
-    for table, field, subfields, funct in [
-        # table to query, field to consider, list of subfields, aggregate function
-        ('ds__vnt10', 'vntmxgg', ['ff', 'dd'], compute_vntmxgg),
-        ('ds__vnt10', 'vntmd', ['ff', 'dd'], compute_vntmxgg),  # FIXME: already computed above?
-        ('ds__vnt10', 'vnt', wind_subfields, compute_vnt),
-    ]:
-        logger.info('selecting for input records (%s)...' % field)
-        array_field = 'ARRAY[' + ','.join(['(%s).%s' % (field, s) for s in subfields]) + ']'
-        sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % (field, array_field, field)
-        table_records = querying.select_records(
-            conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
-        data_items[field] = compute_dma_records(table_records, field, funct)
+    logger.info('selecting for input records (vntmxgg)...')
+    vntmx_records = [[r[0], r[1], 'vntmxgg', r[4], r[5]] for r in table_records]
+    logger.info('computing aggregations (vntmd)...')
+    data_items['vntmxgg'] = compute_dma_records(vntmx_records, 'vntmxgg', compute_vntmxgg)
+
+    logger.info('selecting for input records (vnt)...')
+    vnt_records = [[r[0], r[1], 'vnt', r[6], r[7]] for r in table_records]
+    logger.info('computing aggregations (vnt)...')
+    data_items['vnt'] = compute_dma_records(vnt_records, 'vnt', compute_vnt)
+
+    logger.info('computing aggregations (vntmd)...')
+    vntmd_records = [[r[0], r[1], 'vntmd', r[2], r[3]] for r in table_records]
+    data_items['vntmd'] = compute_dma_records(vntmd_records, 'vntmd', compute_vntmd)
 
     logger.info('merging records before update of table ds__prec...')
     data = functools.reduce(merge_data_items, data_items.values())
+
+    logger.info('update records...')
     fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt']
-    sql = upsert.create_upsert(table, targetschema, fields, data, policy)
+    sql = upsert.create_upsert('ds__vnt10', targetschema, fields, data, policy)
     if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, table))
         conn.execute(sql)
+    logger.info('end process DMA vento')
+
+
+def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
+    logger.info('starting process DMA temperatura')
+    logger.info('selecting for input records...')
+    data_items = dict()
+    sql_fields = "cod_staz, data_i, " \
+                 "(tmxgg).val_md, ((tmxgg).flag).wht, " \
+                 "(tmngg).val_md, ((tmngg).flag).wht, " \
+                 "(tmdgg).val_md, ((tmdgg).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
+    table_records = list(table_records)
+
+    logger.info('computing aggregations (persistenza temperatura tmax)...')
+    tmax_records = [[r[0], r[1], 'tmax', r[2], r[3]] for r in table_records]
+    prs_t200mx = compute_year_records(tmax_records, 'prs_t200mx', compute_prs_t200mx)
+    logger.info('computing aggregations (persistenza temperatura tmin)...')
+    tmin_records = [[r[0], r[1], 'tmin', r[4], r[5]] for r in table_records]
+    prs_t200mn = compute_year_records(tmin_records, 'prs_t200mx', compute_prs_t200mn)
+
+    logger.info('merging records before update of table ds__prs_t200...')
+    data_prs = functools.reduce(merge_data_items, [prs_t200mx, prs_t200mn])
+
+    logger.info('update records of table ds__prs_t200...')
+    sql = upsert.create_upsert(
+        'ds__prs_t200', targetschema,
+        ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx'], data_prs, 'upsert')
+    if sql:
+        logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
+        conn.execute(sql)
+
+    logger.info('computing aggregations (tmdgg)...')
+    tmd_records = [[r[0], r[1], 'tmdgg', r[6], r[7]] for r in table_records]
+    data_items['tmdgg'] = compute_dma_records(tmd_records, 'tdmgg', compute_tmdgg)
+    logger.info('computing aggregations (tmxgg)...')
+    data_items['tmxgg'] = compute_dma_records(tmax_records, 'tmxgg', compute_tmxgg)
+    logger.info('computing aggregations (tmngg)...')
+    data_items['tmngg'] = compute_dma_records(tmin_records, 'tmngg', compute_tmngg)
+    logger.info('computing aggregations (cl_tmxgg)...')
+    data_items['c_tmxgg'] = compute_dma_records(tmax_records, 'cl_tmxgggg', compute_cl_tmxgg)
+    logger.info('computing aggregations (cl_tmngg)...')
+    data_items['c_tmngg'] = compute_dma_records(tmin_records, 'cl_tmngggg', compute_cl_tmngg)
+    logger.info('computing aggregations (tmdgg1)...')
+    tmdgg1_records = [[r[0], r[1], 'tmdgg1', [r[2], r[4]], r[3] and r[5]] for r in table_records]
+    data_items['tmdgg1'] = compute_dma_records(tmdgg1_records, 'tmdgg1', compute_tmdgg1)
+    logger.info('computing aggregations (deltagg)...')
+    data_items['deltagg'] = compute_dma_records(tmdgg1_records, 'deltagg', compute_deltagg)
+    logger.info('computing aggregations (day_gelo)...')
+    data_items['day_gelo'] = compute_dma_records(tmax_records, 'day_gelo', compute_day_gelo)
+
+    logger.info('merging records before update of table ds__t200...')
+    data = functools.reduce(merge_data_items, data_items.values())
+
+    logger.info('update records of table ds__t200...')
+    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'tdmgg', ]
+    sql = upsert.create_upsert('ds__t200', targetschema, fields, data, policy)
+    if sql:
+        conn.execute(sql)
+    logger.info('end process DMA temperatura')

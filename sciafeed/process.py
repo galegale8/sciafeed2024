@@ -453,23 +453,4 @@ def process_dma(conn, startschema, targetschema, policy, logger):
     dma.process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     dma.process_dma_precipitazione(conn, startschema, targetschema, policy, logger)
     dma.process_dma_vento(conn, startschema, targetschema, policy, logger)
-
-    # # PERSISTENZA TEMPERATURA
-    # logger.info('selecting values of table %s.%s to compute PERSISTENZA TEMPERATURA'
-    #             % (startschema, 'ds__t200'))
-    #
-    # sql_fields = "cod_staz, data_i, (tmxgg).val_md, ((tmxgg).flag).wht" \
-    #     "(tmngg).val_md, ((tmngg).flag).wht"
-    # table_records = querying.select_records(
-    #     conn, table, fields=[], sql_fields=sql_fields, schema=startschema)
-    # # records are: (metadata, datetime object, par_code, par_value, flag)
-    # tmax_records = [[r[0], r[1], 'tmax', r[2], r[3]] for r in table_records]
-    # tmin_records = [[r[0], r[1], 'tmin', r[4], r[5]] for r in table_records]
-    # data_max = dma.compute_dma_records(tmax_records, 'prs_t200mx', dma.compute_prs_t200mx)
-    # data_min = dma.compute_dma_records(tmin_records, 'prs_t200mx', dma.compute_prs_t200mn)
-    # sql = upsert.create_upsert(
-    #     'ds__prs_t200', targetschema,
-    #     ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx'], data, 'upsert')
-    # if sql:
-    #     logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
-    #     conn.execute(sql)
+    dma.process_dma_temperatura(conn, startschema, targetschema, policy, logger)

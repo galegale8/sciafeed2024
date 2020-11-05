@@ -12,6 +12,9 @@ from math import pi, acos, cos, sin, tan
 import operator
 import statistics
 
+from sqlalchemy import MetaData, Table
+
+from sciafeed import querying
 
 ROUND_PRECISION = 1
 INDICATORS_TABLES = {
@@ -38,18 +41,6 @@ INDICATORS_TABLES = {
                   'vnt', 'prs_ff', 'prs_dd', 'vntmd']
 }
 # -------------- GENERIC UTILITIES --------------
-
-
-def group_same_day(data_record):
-    """
-    utility function to group all records with the same station
-    and of the same day
-    """
-    metadata, row_day, par_code, par_value, par_flag = data_record
-    station_id = (metadata.get('cod_utente'), metadata.get('cod_rete'))
-    if isinstance(row_day, datetime):
-        row_day = row_day.date()
-    return station_id, row_day
 
 
 def sum_records_by_hour_groups(day_records, hours_interval):
@@ -1094,7 +1085,7 @@ def compute_deltaidro(prec24, etp):
     return flag, val_md, val_vr, val_mx, val_mn
 
 
-def compute_and_store(data, writers, table_map):
+def compute_and_store(conn, data, writers, table_map, logger=None):
     """
     Extract indicators from `data` object, write on CSV files with
     a structure that simulates the database tables.
@@ -1104,38 +1095,68 @@ def compute_and_store(data, writers, table_map):
 
         {table1: [column1, column2, ...], table2: [column1, column2, ...], ...}
 
-    Return the list of reporting messages and the dictionaries of computed indicators.
+    Return the dictionaries of computed indicators.
 
+    :param conn: db connection object
     :param data: list of measures
     :param writers: dictionary of CSV writers
     :param table_map: dictionary of columns of the tables where to insert the indicators
-    :return:
+    :param logger: logging object where to report actions
     """
-    msgs = []
+    def group_by_station(r):
+        return r[0]['cod_utente'], r[0]['cod_rete'], r[0]['lat'], r[0]['lon']
+
+    def group_by_date(r):
+        row_day = r[1]
+        if isinstance(row_day, datetime):
+            row_day = row_day.date()
+        return row_day
+
     computed_indicators = {}
-    data_sorted = sorted(data, key=group_same_day)
-    for ((cod_utente, cod_rete), station_day), measures_it in itertools.groupby(
-            data_sorted, key=group_same_day):
-        # measures are of a station and of a date
-        measures = list(measures_it)
-        cod_staz = "%s--%s" % (cod_utente, cod_rete)
-        station_date_str = station_day.strftime('%Y-%m-%d 00:00:00')
-        # msg = "- computing day indicators for cod_staz=%s, day=%s" \
-        #        % (cod_staz, station_date_str)
-        # msgs.append(msg)
-        day_indicators = compute_day_indicators(measures)
-        for table, columns in table_map.items():
-            if table not in day_indicators or table not in writers:
-                continue
-            key_tuple = (table, station_date_str, cod_staz)
-            indicators_row = day_indicators[table]
-            if len([i for i in indicators_row.values() if i is not None]) == 0:
-                # don't write empty rows
-                continue
-            writer, _ = writers[table]
-            indicators_row['cod_aggr'] = 4
-            indicators_row['data_i'] = station_date_str
-            indicators_row['cod_staz'] = cod_staz
-            writer.writerow(indicators_row)
-            computed_indicators[key_tuple] = day_indicators
-    return msgs, computed_indicators
+    meta = MetaData()
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
+                       schema='dailypdbadmclima')
+    data_sorted = sorted(data, key=group_by_station)
+    for (cod_utente, cod_rete, lat, lon), stat_measures in itertools.groupby(
+            data_sorted, group_by_station):
+        # measures are all of the same station
+        stat_measures = sorted(stat_measures, key=group_by_date)
+        station_md = stat_measures[0][0]
+        station_props = {
+            'cod_rete': cod_rete
+        }
+        if station_md['format'] not in ('ARPA-ER', 'RMN'):
+            station_props['cod_utente'] = cod_utente
+        else:  # workaround to manage Emilia Romagna/RMN: try to find by name
+            station_props['nome'] = station_md['cod_utente']
+            if station_md['lat']:
+                station_props['lat'] = lat
+            if station_md['lon']:
+                station_props['lon'] = lon
+        station = querying.get_db_station(conn, anag_table, **station_props)
+        # {'cod_rete': '20', 'nome': 'Corniolo', 'lat': '43.90708', 'lon': '11.79314'}
+        if not station:
+            logger.error('station not found: cod_utente=%s cod_rete=%s' % (cod_utente, cod_rete))
+            continue
+        cod_staz = station.id_staz
+        for station_day, day_measures in itertools.groupby(stat_measures, group_by_date):
+            station_date_str = station_day.strftime('%Y-%m-%d 00:00:00')
+            # msg = "- computing day indicators for cod_staz=%s, day=%s" \
+            #        % (cod_staz, station_date_str)
+            day_measures = list(day_measures)
+            day_indicators = compute_day_indicators(day_measures)
+            for table, columns in table_map.items():
+                if table not in day_indicators or table not in writers:
+                    continue
+                key_tuple = (table, station_date_str, cod_staz)
+                indicators_row = day_indicators[table]
+                if len([i for i in indicators_row.values() if i is not None]) == 0:
+                    # don't write empty rows
+                    continue
+                writer, _ = writers[table]
+                indicators_row['cod_aggr'] = 4
+                indicators_row['data_i'] = station_date_str
+                indicators_row['cod_staz'] = cod_staz
+                writer.writerow(indicators_row)
+                computed_indicators[key_tuple] = day_indicators
+    return computed_indicators

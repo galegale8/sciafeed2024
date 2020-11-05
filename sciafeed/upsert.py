@@ -485,7 +485,7 @@ def create_upsert(table_name, schema, fields, data, policy):
     return insert_sql
 
 
-def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_staz=True):
+def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_staz=False):
     """
     Insert (or update if not exists) items into the database.
 

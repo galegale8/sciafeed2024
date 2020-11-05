@@ -31,10 +31,10 @@ def get_db_station(conn, anag_table, **kwargs):
             if col_name == 'nome':
                 # clause in this case is case insensitive
                 clause = and_(clause, func.lower(column) == col_value.lower())
-            elif col_name in ('lat', 'lon'):
-                # clause in this case is with precision 4
-                down, top = float(col_value)-10**-4, float(col_value)+10**-4
-                clause = and_(clause, column.between(down, top))
+            # elif col_name in ('lat', 'lon'):
+            #     # clause in this case is with precision 4
+            #     down, top = float(col_value)-10**-4, float(col_value)+10**-4
+            #     clause = and_(clause, column.between(down, top))
             else:
                 clause = and_(clause, column == col_value)
     query = select([anag_table]).where(clause)
@@ -75,7 +75,8 @@ def find_new_stations(data_folder, dburi):
             for record in records:
                 num_records += 1
                 record_md = record[0]
-                station_key = (record_md['cod_utente'], record_md['cod_rete'])
+                station_key = (record_md['cod_utente'], record_md['cod_rete'],
+                               record_md['lat'], record_md['lon'])
                 if station_key in all_stations:
                     continue
                 station_props = {
@@ -97,7 +98,8 @@ def find_new_stations(data_folder, dburi):
                     new_station['lat'] = record_md['lat']
                     new_station['lon'] = record_md['lon']
                     new_stations[station_key] = new_station
-                    msg = " - new station: cod_utente=%r, cod_rete=%r" % station_key
+                    msg = " - new station: cod_utente=%r, cod_rete=%r, lat=%s, lon=%s" \
+                          % station_key
                     msgs.append(msg)
     num_all_stations = len(all_stations)
     num_new_stations = len(new_stations)

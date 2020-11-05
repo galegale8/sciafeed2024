@@ -111,19 +111,24 @@ def download_hiscentral(out_csv_folder, region_id, variables, locations, report_
 @click.command()
 @click.argument('data_folder', type=click.Path(exists=True, file_okay=False))
 @click.argument('indicators_folder', type=click.Path(exists=False, file_okay=False))
+@click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
+              help="insert something like 'postgresql://user:password@address:port/database', "
+                   "default is %s" % db_utils.DEFAULT_DB_URI)
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
-def compute_daily_indicators(data_folder, indicators_folder, report_path):
+def compute_daily_indicators(data_folder, indicators_folder, dburi, report_path):
     """
     Compute daily indicators from data files located at folder `data_folder`,
     and put results as CSV files in the specified `indicators_folder`.
     """
     if not exists(indicators_folder):
         mkdir(indicators_folder)
-    msgs, _ = process.compute_daily_indicators(data_folder, indicators_folder, report_path)
-    if not report_path:
-        for msg in msgs:
-            print(msg)
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    logger = utils.setup_log(report_path)
+    logger.info('starting process of compute daily indicators')
+    process.compute_daily_indicators(conn, data_folder, indicators_folder, logger)
+    logger.info('end process of compute daily indicators')
 
 
 @click.command()

@@ -115,8 +115,11 @@ def stations2csv(stations, stations_path, extra_fields=()):
     with open(stations_path, 'w') as csv_out_file:
         writer = csv.DictWriter(csv_out_file, fieldnames=fieldnames, delimiter=';')
         writer.writeheader()
-        for station_key, station in stations.items():
-            row = {k: station.get(k, '') for k in fieldnames}
+        if not stations:
+            return
+        station_rows = sorted(stations.values(), key=lambda r: r['nome'])
+        for station_row in station_rows:
+            row = {k: station_row.get(k, '') for k in fieldnames}
             writer.writerow(row)
 
 

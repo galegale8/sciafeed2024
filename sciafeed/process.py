@@ -88,7 +88,7 @@ def make_report(in_filepath, report_filepath=None, outdata_filepath=None, do_che
     return msgs, data
 
 
-def compute_daily_indicators(data_folder, indicators_folder=None, report_path=None):
+def compute_daily_indicators(conn, data_folder, indicators_folder=None, logger=None):
     """
     Read each file located inside `data_folder` and generate indicators
     and a report of the processing.
@@ -96,46 +96,40 @@ def compute_daily_indicators(data_folder, indicators_folder=None, report_path=No
     is created at the path.
     Return the the report strings (list) and the computed indicators (dictionary).
 
+    :param conn: db connection object
     :param data_folder: folder path containing input data
     :param indicators_folder: path of the output data
-    :param report_path: path of the output file containing data
-    :return: (report_strings, computed_indicators)
+    :param logger: logging object where to report actions
+    :return: computed_indicators
     """
-    msgs = []
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     computed_indicators = dict()
     writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
-    for file_name in listdir(data_folder):
+    block_data = []
+    block_size = 10  # use blocks of 10 files
+    for i, file_name in enumerate(listdir(data_folder), 1):
         csv_path = join(data_folder, file_name)
         if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
             continue
-        msg = "ANALYSIS OF FILE %r" % csv_path
-        msgs.append(msg)
-        # msgs.append('=' * len(msg))
-        # msgs.append('')
+        logger.info("Compute indicators for %r" % csv_path)
         try:
             data = export.csv2data(csv_path)
+            block_data.extend(data)
+            if i % block_size != 0:
+                continue
         except:
-            msg = 'CSV file %r not parsable' % csv_path
-            msgs.append(msg)
-            msgs.append('')
+            logger.error('CSV file %r not parsable' % csv_path)
             continue
 
-        comp_msgs, computed_indicators = compute.compute_and_store(
-            data, writers, compute.INDICATORS_TABLES)
-        msgs.extend(comp_msgs)
-        # msgs.append('')
-        # msg = "END OF ANALYSIS OF FILE"
-        # msgs.append(msg)
-        # msgs.append('=' * len(msg))
-        # msgs.append('')
-
-        if report_path:
-            with open(report_path, 'a') as fp:
-                for msg in msgs:
-                    fp.write(msg + '\n')
-
+        computed_indicators = compute.compute_and_store(
+            conn, block_data, writers, compute.INDICATORS_TABLES, logger)
+        block_data = []
+    if block_data:
+        computed_indicators = compute.compute_and_store(
+            conn, block_data, writers, compute.INDICATORS_TABLES, logger)
     utils.close_csv_writers(writers)
-    return msgs, computed_indicators
+    return computed_indicators
 
 
 def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=None):

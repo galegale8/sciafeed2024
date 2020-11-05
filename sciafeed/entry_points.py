@@ -106,7 +106,7 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
 
 @click.command()
 @click.argument('data_folder', type=click.Path(exists=True, file_okay=False))
-@click.argument('--indicators_folder', type=click.Path(exists=False, file_okay=False))
+@click.argument('indicators_folder', type=click.Path(exists=False, file_okay=False))
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 def compute_daily_indicators(data_folder, indicators_folder, report_path):
@@ -208,7 +208,8 @@ def check_chain(dburi, report_path, station_where, schema):
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--parameters_filepath', '-p', type=click.Path(exists=True, dir_okay=False),
               help="customized file path containing information about parameters"
-                   "default is %s" % arpaer.PARAMETERS_FILEPATH, default=arpaer.PARAMETERS_FILEPATH)
+                   "default is %s" % arpaer.PARAMETERS_FILEPATH,
+              default=arpaer.PARAMETERS_FILEPATH)
 @click.option('--credentials_folder', '-c', type=click.Path(exists=True, dir_okay=True),
               help="folder containing gdrive credentials."
                    "default is %s" % arpaer.DEFAULT_CREDENTIALS_FOLDER,

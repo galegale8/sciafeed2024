@@ -200,7 +200,7 @@ def test_compute_daily_indicators(tmpdir):
     indicators_folder = str(tmpdir.join('indicators_out'))
     report_path = join(indicators_folder, 'report.txt')
     result = runner.invoke(entry_points.compute_daily_indicators,
-                           ['-d', data_folder, '-i', indicators_folder, '-r', report_path])
+                           [data_folder, indicators_folder, '-r', report_path])
     assert result.exit_code == 0
     for fname in listdir(expected_folder):
         if fname == 'result.txt':

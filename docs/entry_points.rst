@@ -26,5 +26,14 @@ entry_points
 .. click:: sciafeed.entry_points:download_er
    :prog: download_er
 
-.. click:: sciafeed.entry_points:insert_data
-   :prog: insert_data
+.. click:: sciafeed.entry_points:insert_indicators
+   :prog: insert_indicators
+
+.. click:: sciafeed.entry_points:load_unique_data
+   :prog: load_unique_data
+
+.. click:: sciafeed.entry_points:compute_daily_indicators2
+   :prog: compute_daily_indicators2
+
+.. click:: sciafeed.entry_points:process_dma
+   :prog: process_dma

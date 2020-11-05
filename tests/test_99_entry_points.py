@@ -203,7 +203,7 @@ def test_compute_daily_indicators(tmpdir):
                            [data_folder, indicators_folder, '-r', report_path])
     assert result.exit_code == 0
     for fname in listdir(expected_folder):
-        if fname == 'result.txt':
+        if fname in ('result.txt', 'report.txt'):
             # other test
             continue
         indicators_filepath = join(indicators_folder, fname)

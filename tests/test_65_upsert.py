@@ -273,10 +273,3 @@ def test_choose_main_record():
     }
     chosen = upsert.choose_main_record(records, 'cl_prec24.wet_04')
     assert not chosen
-
-
-def test_load_unique_data(conn):
-    startschema = 'test'
-    targetschema = 'test2'
-    # TODO
-    # upsert.load_unique_data(conn, startschema, targetschema, only_tables=['ds__preci'])

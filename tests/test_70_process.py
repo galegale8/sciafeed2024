@@ -377,17 +377,13 @@ def test_make_report(tmpdir):
         assert err_msg in msgs
 
 
-def test_compute_daily_indicators(tmpdir):
+def test_compute_daily_indicators(conn, tmpdir):
     data_folder = join(TEST_DATA_PATH, 'indicators', 'input')
     indicators_folder = str(tmpdir.join('indicators_out'))
     dumped_result_exp_file = join(TEST_DATA_PATH, 'indicators', 'expected', 'result.txt')
     os.mkdir(indicators_folder)
-    report_path = str(tmpdir.join('report.txt'))
-    msgs, computed_indicators = process.compute_daily_indicators(
-        data_folder, indicators_folder, report_path)
+    computed_indicators = process.compute_daily_indicators(
+        conn, data_folder, indicators_folder)
     with open(dumped_result_exp_file) as fp:
         dumped_result_exp = fp.read()
-        assert str(computed_indicators) == dumped_result_exp
-    assert msgs[0] == "ANALYSIS OF FILE '%s'" % join(
-        data_folder, 'loc01_00009_201801010100_201801011000.dat.csv')
-    assert msgs[2:] == []
+        assert str(computed_indicators) == dumped_result_exp.strip()

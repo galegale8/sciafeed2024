@@ -1158,10 +1158,3 @@ def test_compute_etp():
     etp = compute.compute_etp(7.2, 13.7, 2, 40.785333, 16)
     assert etp[0] == (None, 1)
     assert etp[1] == 1.2
-
-
-def test_compute_and_store(tmpdir):
-    # TODO
-    #table_map = compute.INDICATORS_TABLES.copy()
-    pass
-    #compute.compute_and_store(data, writers, table_map)

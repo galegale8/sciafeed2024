@@ -46,12 +46,6 @@ def test_get_db_station(conn):
     assert station
     assert station.nome == 'Carloforte'
 
-    # query with lat lon has precision 4
-    kwargs = {'cod_rete': 20, 'lat': '44.6870', 'lon': '10.96593'}
-    station = querying.get_db_station(conn, anag_table, **kwargs)
-    assert station
-    assert (station.lat,  station.lon) == (44.686929, 10.96594)
-
 
 def test_find_new_stations():
     dburi = db_utils.DEFAULT_DB_URI

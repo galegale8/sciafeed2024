@@ -2,6 +2,7 @@
 import functools
 import itertools
 import logging
+import sys
 import time
 
 from sqlalchemy import MetaData, Table
@@ -190,28 +191,32 @@ def upsert_stations(dburi, stations_path):
             stations_path,
             ['nome', 'cod_utente', 'cod_rete', 'cod_entep', 'cod_entef', 'cod_enteg'],
             ignore_fields=['source'])
-        # TODO: validation on stations (db validation + coordinates)
     except ValueError as err:
         msgs = [str(err)]
         return msgs, upserted_ids
     new_stations = []
     num_updated_stations = 0
-    for station in stations:
-        # TODO: update geometry
-        db_station = querying.get_db_station(
-            conn, anag_table, cod_rete=station['cod_rete'], cod_utente=station['cod_utente'])
-        if db_station:
-            where_clause = anag_table.c.id_staz == db_station['id_staz']
-            station['id_staz'] = db_station['id_staz']
-            conn.execute(update_obj.where(where_clause).values(**station))
-            num_updated_stations += 1
-            msgs.append('updated existing station id_staz=%s' % db_station['id_staz'])
-        else:
-            new_stations.append(station)
-    if new_stations:
-        conn.execute(insert_obj.values(new_stations))
+    try:
+        for station in stations:
+            db_station = querying.get_db_station(
+                conn, anag_table, cod_rete=station['cod_rete'], cod_utente=station['cod_utente'])
+            if db_station:
+                where_clause = anag_table.c.id_staz == db_station['id_staz']
+                station['id_staz'] = db_station['id_staz']
+                conn.execute(update_obj.where(where_clause).values(**station))
+                num_updated_stations += 1
+                msgs.append('updated existing station id_staz=%s' % db_station['id_staz'])
+            else:
+                new_stations.append(station)
+        if new_stations:
+            conn.execute(insert_obj.values(new_stations))
+    except:
+        ex_type, ex, tb = sys.exc_info()
+        msgs.append(ex._message())
+        return msgs, 0, 0
     num_inserted_stations = len(new_stations)
     msgs.append('inserted %i new stations' % num_inserted_stations)
+    msgs.append('updated %i new stations' % num_updated_stations)
     return msgs, num_inserted_stations, num_updated_stations
 
 

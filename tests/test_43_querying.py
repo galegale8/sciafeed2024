@@ -14,7 +14,6 @@ def test_get_db_station(conn):
     meta = MetaData()
     anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
                        schema='dailypdbadmclima')
-
     # query by id_staz
     kwargs = {'id_staz': 1}
     station = querying.get_db_station(conn, anag_table, **kwargs)
@@ -37,6 +36,21 @@ def test_get_db_station(conn):
     kwargs = {'cod_rete': 1220}
     station = querying.get_db_station(conn, anag_table, **kwargs)
     assert not station
+
+    # query with name should be case insensitive
+    kwargs = {'cod_rete': 14, 'nome': 'carlo'}
+    station = querying.get_db_station(conn, anag_table, **kwargs)
+    assert not station
+    kwargs = {'cod_rete': 14, 'nome': 'carloforte'}
+    station = querying.get_db_station(conn, anag_table, **kwargs)
+    assert station
+    assert station.nome == 'Carloforte'
+
+    # query with lat lon has precision 4
+    kwargs = {'cod_rete': 20, 'lat': '44.6870', 'lon': '10.96593'}
+    station = querying.get_db_station(conn, anag_table, **kwargs)
+    assert station
+    assert (station.lat,  station.lon) == (44.686929, 10.96594)
 
 
 def test_find_new_stations():

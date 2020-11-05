@@ -7,7 +7,7 @@ import operator
 from os import listdir
 from os.path import isfile, join, splitext
 
-from sqlalchemy.sql import select, and_, literal
+from sqlalchemy.sql import select, and_, literal, func
 from sqlalchemy import MetaData, Table
 
 from sciafeed import db_utils
@@ -28,8 +28,17 @@ def get_db_station(conn, anag_table, **kwargs):
     for col_name, col_value in kwargs.items():
         column = getattr(anag_table.c, col_name)
         if col_value is not None:
-            clause = and_(clause, column == col_value)
-    results = conn.execute(select([anag_table]).where(clause)).fetchall()
+            if col_name == 'nome':
+                # clause in this case is case insensitive
+                clause = and_(clause, func.lower(column) == col_value.lower())
+            elif col_name in ('lat', 'lon'):
+                # clause in this case is with precision 4
+                down, top = float(col_value)-10**-4, float(col_value)+10**-4
+                clause = and_(clause, column.between(down, top))
+            else:
+                clause = and_(clause, column == col_value)
+    query = select([anag_table]).where(clause)
+    results = conn.execute(query).fetchall()
     if results and len(results) == 1:
         return results[0]
     return None
@@ -72,11 +81,14 @@ def find_new_stations(data_folder, dburi):
                 station_props = {
                     'cod_rete': record_md['cod_rete']
                 }
-                if record_md['format'] != 'ARPA-ER':
+                if record_md['format'] not in ('ARPA-ER', 'RMN'):
                     station_props['cod_utente'] = record_md['cod_utente']
-                else:  # workaround to manage Emilia Romagna: try to find by name
+                else:  # workaround to manage Emilia Romagna/RMN: try to find by name
                     station_props['nome'] = record_md['cod_utente']
-                    # TODO: check also coordinates?
+                    if record_md['lat']:
+                        station_props['lat'] = record_md['lat']
+                    if record_md['lon']:
+                        station_props['lon'] = record_md['lon']
                 db_station = get_db_station(conn, anag_table, **station_props)
                 all_stations[station_key] = db_station
                 if not db_station:  # NOT FOUND in the database

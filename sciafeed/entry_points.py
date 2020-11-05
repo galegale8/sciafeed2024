@@ -3,7 +3,7 @@ This modules provides the functions of the SCIA FEED package's entry points
 """
 from datetime import datetime
 from os import listdir, mkdir
-from os.path import exists, isdir, isfile, join, splitext
+from os.path import exists, isfile, join, splitext
 import sys
 
 import click
@@ -29,7 +29,7 @@ from sciafeed import utils
 def make_report(**kwargs):
     """
     Parse a file containing data located at `in_filepath` and generate a report.
-    Optionally, it can also export parsed data.
+    If outdata_folder is specified, it also export parsed data.
     """
     msgs, _ = process.make_report(**kwargs)
     if not kwargs['report_filepath']:
@@ -40,27 +40,22 @@ def make_report(**kwargs):
 
 
 @click.command()
-@click.argument('in_folder', type=click.Path(exists=True, dir_okay=True))
+@click.argument('in_folder', type=click.Path(exists=True, file_okay=False))
 @click.option('--report_filepath', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
-@click.option('--outdata_folder', '-d', type=click.Path(exists=False, dir_okay=True),
+@click.option('--outdata_folder', '-d', type=click.Path(exists=False, file_okay=False),
               help="folder path where to put the output data files")
-def make_reports(**kwargs):
+def make_reports(in_folder, report_filepath, outdata_folder):
     """
     Parse a folder containing data located at `in_folder` and generate a report.
-    Optionally, it can also export parsed data.
+    If outdata_folder is specified, it also export parsed data.
     """
-    in_folder = kwargs['in_folder']
-    outdata_folder = kwargs['outdata_folder']
-    if kwargs['report_filepath'] and exists(kwargs['report_filepath']):
+    if report_filepath and exists(report_filepath):
         print('wrong "report_filepath": the report must not exist or will be overwritten')
         sys.exit(2)
         # return
     if outdata_folder and not exists(outdata_folder):
         mkdir(outdata_folder)
-    if not isdir(in_folder):
-        print('wrong "in_folder": this must be a folder')
-        sys.exit(2)
     children = sorted(listdir(in_folder))
     for child in children:
         in_filepath = join(in_folder, child)
@@ -74,22 +69,21 @@ def make_reports(**kwargs):
         current_msgs, _ = process.make_report(
             in_filepath,
             outdata_filepath=outdata_filepath,
-            report_filepath=kwargs['report_filepath']
+            report_filepath=report_filepath
         )
-        if not kwargs['report_filepath']:
+        if not report_filepath:
             for msg in current_msgs:
                 print(msg)
 
 
 @click.command()
+@click.argument('out_csv_folder', type=click.Path(exists=False, file_okay=False))
 @click.option('--region_id', '-r', help="code of the region to download (for example '01')")
 @click.option('--variables', '-v', multiple=True,
               help="list of the variables to download. Default is 'Precipitation', 'Tmax', 'Tmin'",
               default=['Precipitation', 'Tmax', 'Tmin'])
 @click.option('--locations', '-l', multiple=True,
               help="list of the locations to download. Default is all the locations of the region")
-@click.option('--out_csv_folder', '-o', type=click.Path(exists=False, dir_okay=True),
-              help="folder path where to put the downloaded CSV data files")
 def download_hiscentral(region_id, variables, locations, out_csv_folder):
     """
     Download CSV of the HISCENTRAL for region, locations and variables selected into an
@@ -101,9 +95,6 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
     if region_id not in hiscentral.REGION_IDS_MAP:
         print("region_id %r is not recognized as a valid code" % region_id)
         return
-    if not out_csv_folder:
-        print("out_csv_folder is required")
-        return
     if not locations:
         locations = None
     if not exists(out_csv_folder):
@@ -114,38 +105,17 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
 
 
 @click.command()
-@click.option('--data_folder', '-d', type=click.Path(exists=True, dir_okay=True),
-              help="folder path where to get the data files")
-@click.option('--indicators_folder', '-i', type=click.Path(exists=False, dir_okay=True),
-              help="folder path of the output files")
+@click.argument('data_folder', type=click.Path(exists=True, file_okay=False))
+@click.argument('--indicators_folder', type=click.Path(exists=False, file_okay=False))
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 def compute_daily_indicators(data_folder, indicators_folder, report_path):
     """
     Compute daily indicators from data files located at folder `data_folder`,
-    and put results in the folder `indicators_folder`.
+    and put results as CSV files in the specified `indicators_folder`.
     """
-    # print(data_folder, indicators_folder, report_path)
-    if report_path and exists(report_path):
-        print('wrong "report_path": the report must not exist or will be overwritten')
-        sys.exit(2)
-    if not data_folder:
-        print('"data_folder" is required')
-        sys.exit(2)
-    if not isdir(data_folder):
-        print('wrong "data_folder": this must be a folder')
-        sys.exit(2)
-    if indicators_folder:
-        if exists(indicators_folder):
-            if not isdir(indicators_folder):
-                print('wrong "indicators_folder": this must be a folder')
-                sys.exit(2)
-        else:
-            mkdir(indicators_folder)
-    else:
-        # this will be removed when we can insert in the database
-        print('"indicators_folder" is required')
-        sys.exit(2)
+    if not exists(indicators_folder):
+        mkdir(indicators_folder)
     msgs, _ = process.compute_daily_indicators(data_folder, indicators_folder, report_path)
     if not report_path:
         for msg in msgs:
@@ -153,7 +123,7 @@ def compute_daily_indicators(data_folder, indicators_folder, report_path):
 
 
 @click.command()
-@click.argument('data_folder', type=click.Path(exists=True, dir_okay=True))
+@click.argument('data_folder', type=click.Path(exists=True, file_okay=False))
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
                    "default is %s" % db_utils.DEFAULT_DB_URI)
@@ -168,9 +138,6 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     """
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
-        sys.exit(2)
-    if not isdir(data_folder):
-        print('wrong "DATA_FOLDER": must be a folder')
         sys.exit(2)
     if not stations_path:
         print('"stations_path" is required')
@@ -233,7 +200,7 @@ def check_chain(dburi, report_path, station_where, schema):
 
 
 @click.command()
-@click.argument('download_folder', type=click.Path(exists=False, dir_okay=True))
+@click.argument('download_folder', type=click.Path(exists=False, file_okay=False))
 @click.option('--start', '-s', help='start date: use format "YYYY-MM-DD". Default is the '
                                     'oldest available')
 @click.option('--end', '-e', help='end date: use format "YYYY-MM-DD". Default is today')
@@ -278,7 +245,7 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
 
 
 @click.command()
-@click.argument('data_folder', type=click.Path(exists=True, dir_okay=True))
+@click.argument('data_folder', type=click.Path(exists=True, file_okay=False))
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,
               help="insert something like 'postgresql://user:password@address:port/database', "
                    "default is %s" % db_utils.DEFAULT_DB_URI)
@@ -288,7 +255,10 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
               help="policy to apply in the insert")
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
-def insert_data(data_folder, dburi, report_path, policy, schema):
+def insert_indicators(data_folder, dburi, report_path, policy, schema):
+    """
+    Insert indicators from a folder `data_folder` inside the database in the selected schema.
+    """
     logger = utils.setup_log(report_path)
     logger.info('starting process of inserting data')
     engine = db_utils.ensure_engine(dburi)
@@ -326,7 +296,7 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
                 % (startschema, targetschema))
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
-    # TODO: truncate targetschema tables?
+    # ASK: truncate targetschema tables?
     upsert.load_unique_data(conn, startschema, targetschema, logger)
     logger.info('process concluded')
 

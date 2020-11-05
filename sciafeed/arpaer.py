@@ -127,7 +127,7 @@ def sql2results(sql, timeout=None, logger=None):
 
 
 def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_filters=None,
-                   timeout=None, **kwargs):
+                   timeout=None, logger=None, **kwargs):
     """
     Query the ARPAER database and return the results as a list of dictionaries.
     The dictionaries are loaded JSON (for the used json format, see
@@ -143,11 +143,12 @@ def get_db_results(start=None, end=None, limit=None, only_bcodes=None, bcodes_fi
     :param only_bcodes: if not None, select only records containing this list of provided BCODES
     :param bcodes_filters: properties 'level' and 'trange' for some BCODES to be matched
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
+    :param logger: logging object where to report actions
     :param kwargs: additional filters on the table's columns
     :return: list of dictionaries of results
     """
     sql = build_sql(TABLE_NAME, start, end, limit, only_bcodes, **kwargs)
-    results = sql2results(sql, timeout=timeout)
+    results = sql2results(sql, timeout=timeout, logger=logger)
     results_filtered = []
     # follow removing the results not including right BCODES, level, and trange
     for result in results:
@@ -212,7 +213,7 @@ def load_db_results(filepath):
 
 
 def query_recent_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, only_bcodes=None,
-                          start=None, end=None, timeout=None, limit=None, **kwargs):
+                          start=None, end=None, timeout=None, limit=None, logger=None, **kwargs):
     """
     Query the online datastore and save the results on `save_path`.
 
@@ -223,6 +224,7 @@ def query_recent_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, on
     :param end: the datetime of the end time to select
     :param timeout: number of seconds to wait for a server feedback (None=wait forever)
     :param limit: number to limit the number of results
+    :param logger: logging object where to report actions
     :param kwargs: additional filters on the table's columns
     """
     parameters_map = load_parameter_file(parameters_filepath)
@@ -230,7 +232,7 @@ def query_recent_and_save(save_path, parameters_filepath=PARAMETERS_FILEPATH, on
         only_bcodes = list(parameters_map.keys())
     bcodes_filters = {k: v for k, v in parameters_map.items() if k in only_bcodes}
     db_results = get_db_results(start, end, limit=limit, timeout=timeout, only_bcodes=only_bcodes,
-                                bcodes_filters=bcodes_filters, **kwargs)
+                                bcodes_filters=bcodes_filters, logger=logger, **kwargs)
     save_db_results(save_path, db_results)
 
 
@@ -305,7 +307,8 @@ def download_er(download_folder, start=None, end=None, parameters_filepath=PARAM
     save_path = join(download_folder, save_filename)
     logger.warning('note that downloading recent data is deprecated!')
     logger.info('downloading recent %s' % save_filename)
-    query_recent_and_save(save_path, parameters_filepath=parameters_filepath, start=start, end=end)
+    query_recent_and_save(
+        save_path, parameters_filepath=parameters_filepath, start=start, end=end, logger=logger)
 
 
 # ##### end of online interface utilities #####

@@ -3,12 +3,13 @@ This module contains the functions and utilities to download and parse a HISCENT
 """
 import csv
 from datetime import datetime
+import logging
 import xml.dom.minidom
 from os.path import abspath, basename, dirname, join, splitext
 from pathlib import PurePath
 import zeep
 
-from sciafeed import TEMPLATES_PATH
+from sciafeed import TEMPLATES_PATH, LOG_NAME
 from sciafeed import utils
 
 
@@ -42,7 +43,7 @@ WSDL_URLS = {
     '20': "http://hydrolite.ddns.net/italia/hsl-sar/index.php/default/services/cuahsi_1_1.asmx?WSDL",
     '21': "http://hydrolite.ddns.net/italia/hsl-bol/index.php/default/services/cuahsi_1_1.asmx?WSDL",
 }
-# # from sciapgm.geo_entihiscentral
+# # from dailypdbadmclima.geo_entihiscentral
 REGION_IDS_MAP = {
     '01': "PIEMONTE",
     '02': "VALLE D'AOSTA",
@@ -144,7 +145,7 @@ def get_region_locations(region_id):
     return locations
 
 
-def download_series(region_id, variable, location, out_csv_path):
+def download_series(region_id, variable, location, out_csv_path, logger=None):
     """
     Download the series of a region for a specified variable and station.
     The series is saved into a CSV located at `out_csv_path`.
@@ -153,13 +154,16 @@ def download_series(region_id, variable, location, out_csv_path):
     :param variable: the code of the variable
     :param location: the code of the station
     :param out_csv_path: the file path of the CSV to create
+    :param logger: logging object where to report actions
     """
-    print('- asking series for region_id:%s location:%s variable:%s'
-          % (region_id, location, variable))
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
+    logger.debug('- asking series for region_id:%s location:%s variable:%s'
+                 % (region_id, location, variable))
     wsdl_url = WSDL_URLS[region_id]
     series_xml = get_wsdl_service_response(wsdl_url, 'GetValues',
                                            location=location, variable=variable)
-    print('  ...and writing CSV on path %s' % out_csv_path)
+    logger.debug('  ...and writing CSV on path %s' % out_csv_path)
     doc = xml.dom.minidom.parseString(series_xml)
     key_tag_map = {
         'time': 'dateTime',
@@ -188,7 +192,9 @@ def download_series(region_id, variable, location, out_csv_path):
 
 
 # download entry point
-def download_hiscentral(region_id, out_csv_folder, variables=None, locations=None):
+def download_hiscentral(region_id, out_csv_folder, variables=None, locations=None, logger=None):
+    if logger is None:
+        logger = logging.getLogger(LOG_NAME)
     if locations is None:
         locations = get_region_locations(region_id)
     if variables is None:
@@ -200,8 +206,8 @@ def download_hiscentral(region_id, out_csv_folder, variables=None, locations=Non
             out_csv_name = "serie_%s-reg.%s%s.csv" \
                            % (location, REGION_IDS_MAP[region_id].lower(), variable.capitalize())
             out_csv_path = join(out_csv_folder, out_csv_name)
-            print("processing %s/%s ..." % (i, file_number))
-            download_series(region_id, variable, location, out_csv_path)
+            logger.info("processing %s/%s ..." % (i, file_number))
+            download_series(region_id, variable, location, out_csv_path, logger=logger)
             i += 1
 
 

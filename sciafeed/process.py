@@ -2,7 +2,6 @@
 This module contains functions and utilities that involve more components of sciafeed.
 """
 
-import functools
 import logging
 import operator
 from os import listdir

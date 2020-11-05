@@ -78,19 +78,22 @@ def make_reports(in_folder, report_filepath, outdata_folder):
 
 @click.command()
 @click.argument('out_csv_folder', type=click.Path(exists=False, file_okay=False))
-@click.option('--region_id', '-r', help="code of the region to download (for example '01')")
+@click.option('--region_id', '-R', help="code of the region to download (for example '01')")
 @click.option('--variables', '-v', multiple=True,
               help="list of the variables to download. Default is 'Precipitation', 'Tmax', 'Tmin'",
               default=['Precipitation', 'Tmax', 'Tmin'])
 @click.option('--locations', '-l', multiple=True,
               help="list of the locations to download. Default is all the locations of the region")
-def download_hiscentral(region_id, variables, locations, out_csv_folder):
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
+              help="file path of the output report. If not provided, prints on screen")
+def download_hiscentral(out_csv_folder, region_id, variables, locations, report_path):
     """
     Download CSV of the HISCENTRAL for region, locations and variables selected into an
     output folder.
     """
+    logger = utils.setup_log(report_path)
     if not region_id:
-        print('region_id is required')
+        logger.error('region_id is required')
         return
     if region_id not in hiscentral.REGION_IDS_MAP:
         print("region_id %r is not recognized as a valid code" % region_id)
@@ -99,8 +102,9 @@ def download_hiscentral(region_id, variables, locations, out_csv_folder):
         locations = None
     if not exists(out_csv_folder):
         mkdir(out_csv_folder)
-    ret_value = hiscentral.download_hiscentral(region_id, out_csv_folder, variables, locations)
-    print('done')
+    ret_value = hiscentral.download_hiscentral(
+        region_id, out_csv_folder, variables, locations, logger=logger)
+    logger.info('download completed')
     return ret_value
 
 
@@ -242,7 +246,8 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
         sys.exit(2)
     arpaer.download_er(
         download_folder, start, end, parameters_filepath=parameters_filepath,
-        credentials_folder=credentials_folder)
+        credentials_folder=credentials_folder, logger=logger)
+    logger.info('download completed')
 
 
 @click.command()

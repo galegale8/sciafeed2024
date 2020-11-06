@@ -178,7 +178,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     sql = "SELECT %s FROM %s.ds__preci" % (sql_fields, schema)
     where_clauses = []
     if stations_ids:
-        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+        where_clauses.append('cod_staz IN (%s)' % repr(list(stations_ids))[1:-1])
     if include_flag_values is not None:
         include_sql_str = repr(tuple(include_flag_values))
         if len(include_flag_values) == 1:
@@ -226,7 +226,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     sql = "SELECT %s FROM %s.ds__t200" % (sql_fields, schema)
     where_clauses = []
     if stations_ids:
-        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+        where_clauses.append('cod_staz IN (%s)' % repr(list(stations_ids))[1:-1])
     if include_flag_values is not None:
         include_sql_str = repr(tuple(include_flag_values))
         if len(include_flag_values) == 1:
@@ -281,7 +281,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
     sql = "SELECT %s FROM %s.%s" % (sql_fields, schema, table)
     where_clauses = []
     if stations_ids:
-        where_clauses.append('cod_staz IN %s' % repr(tuple(stations_ids)))
+        where_clauses.append('cod_staz IN (%s)' % repr(list(stations_ids))[1:-1])
     if include_flag_values is not None:
         include_sql_str = repr(tuple(include_flag_values))
         if len(include_flag_values) == 1:

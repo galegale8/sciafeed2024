@@ -126,13 +126,369 @@ def compute_daily_indicators(conn, data_folder, indicators_folder=None, logger=N
     return computed_indicators
 
 
-def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=None):
+def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
+    logger.info('== initial process chain for PRECI ==')
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, (prec24).val_tot, " \
+                 "case when ((prec24).flag).wht=5 then 5 else 1 end"
+    prec_records = querying.select_prec_records(
+        conn, sql_fields=sql_fields, stations_ids=stations_ids, schema=schema,
+        exclude_flag_interval=(-9, 0), exclude_null=True)
+
+    if temp_records is None:
+        logger.info('* get records of temperature...')
+        sql_fields = "cod_staz, data_i, " \
+                     "(tmxgg).val_md, case when ((tmxgg).flag).wht=5 then 5 else 1 end, " \
+                     "(tmngg).val_md, case when ((tmngg).flag).wht=5 then 5 else 1 end, " \
+                     "(tmdgg).val_md, case when ((tmdgg).flag).wht=5 then 5 else 1 end"
+        temp_records = querying.select_temp_records(
+            conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields,
+            stations_ids=stations_ids, schema=schema, exclude_flag_interval=(-9, 0),
+            exclude_null=False)
+
+    logger.info("* 'controllo valori ripetuti = 0'")
+    prec_records = checks.check1(prec_records, logger=logger)
+    logger.info("* 'controllo valori ripetuti'")
+    prec_records = checks.check2(prec_records, exclude_values=(0, None), logger=logger)
+    logger.info("* 'controllo mesi duplicati (stesso anno)'")
+    prec_records = checks.check3(prec_records, min_not_null=5, logger=logger)
+    logger.info("* 'controllo mesi duplicati (anni differenti)'")
+    prec_records = checks.check4(prec_records, min_not_null=5, logger=logger)
+    logger.info("* 'controllo world excedence'")
+    prec_records = checks.check7(prec_records, max_threshold=800, logger=logger)
+    logger.info('* controllo gap checks')
+    prec_records = checks.check8(prec_records, threshold=300, logger=logger)
+    logger.info("* 'controllo z-score checks'")
+    pos_temp_days, neg_temp_days = checks.split_days_by_average_temp(temp_records)
+    prec_records = checks.check10(prec_records, pos_temp_days, logger=logger)
+    logger.info("* 'controllo z-score checks ghiaccio'")
+    prec_records = checks.check10(prec_records, neg_temp_days, times_perc=5, flag=-26,
+                                  logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_prec_flags(conn, prec_records, schema=schema)
+    logger.info('== end process chain for PRECI ==')
+    return prec_records
+
+
+def process_checks_t200(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for T200 ==')
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, " \
+                 "(tmxgg).val_md, ((tmxgg).flag).wht, " \
+                 "(tmngg).val_md, ((tmngg).flag).wht, " \
+                 "(tmdgg).val_md, ((tmdgg).flag).wht"
+    temp_records = querying.select_temp_records(
+        conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_null=False)
+
+    for val_index in [2, 4, 6]:
+        for temp_record in temp_records:
+            if temp_record[val_index + 1] is None:
+                continue
+            if -9 <= temp_record[val_index+1] <= 0:
+                # set None to values flagged as invalid (flag in [-9, 0])
+                temp_record[val_index] = None
+            elif temp_record[val_index+1] < -9:
+                # set valid to values flagged as invalid (flag < -9)
+                temp_record[val_index+1] = 1
+            # else temp_record[3] > 0: flag 1 or 5 remains unset
+
+    logger.info("* 'controllo valori ripetuti' (Tmax)")
+    temp_records = checks.check2(temp_records, exclude_values=(None,), logger=logger)
+    logger.info("* 'controllo valori ripetuti'  (Tmin)")
+    temp_records = checks.check2(temp_records, exclude_values=(None,), val_index=4, logger=logger)
+    logger.info("* 'controllo mesi duplicati (stesso anno)' (Tmax)")
+    temp_records = checks.check3(temp_records, logger=logger)
+    logger.info("* 'controllo mesi duplicati (stesso anno)' (Tmin)")
+    temp_records = checks.check3(temp_records, val_index=4, logger=logger)
+    logger.info("* 'controllo mesi duplicati (anni differenti)' for variable Tmax")
+    temp_records = checks.check4(temp_records, logger=logger)
+    logger.info("* 'controllo mesi duplicati (anni differenti)' (Tmin)")
+    temp_records = checks.check4(temp_records, val_index=4, logger=logger)
+    logger.info("* controllo TMAX=TMIN")
+    temp_records = checks.check5(temp_records, logger=logger)
+    logger.info("* controllo TMAX=TMIN=0")
+    temp_records = checks.check6(temp_records, logger=logger)
+    logger.info("* 'controllo world excedence' for Tmax")
+    temp_records = checks.check7(temp_records, min_threshold=-30, max_threshold=50, logger=logger)
+    logger.info("* 'controllo world excedence' for Tmin")
+    temp_records = checks.check7(temp_records, min_threshold=-40, max_threshold=40,
+                                 val_index=4, logger=logger)
+    logger.info("* 'controllo gap checks temperatura' for Tmax")
+    temp_records = checks.check8(temp_records, threshold=10, split=True, logger=logger)
+    logger.info("* 'controllo gap checks temperatura' Tmin")
+    temp_records = checks.check8(temp_records, threshold=10, split=True, val_index=4,
+                                 logger=logger)
+    logger.info("* 'controllo z-score checks temperatura' for Tmax")
+    temp_records = checks.check9(temp_records, logger=logger)
+    logger.info("* 'controllo z-score checks temperatura' (Tmin)")
+    temp_records = checks.check9(temp_records, val_index=4, logger=logger)
+    logger.info("* 'controllo jump checks' for Tmax")
+    temp_records = checks.check11(temp_records, logger=logger)
+    logger.info("* 'controllo jump checks' (Tmin)")
+    temp_records = checks.check11(temp_records, val_index=4, logger=logger)
+    logger.info("* 'controllo Tmax < Tmin'")
+    temp_records = checks.check12(temp_records, logger=logger)
+    logger.info("* 'controllo dtr (diurnal temperature range)' (Tmax)")
+    operators = max, operator.ge
+    temp_records = checks.check13(temp_records, operators, logger=logger)
+    logger.info("* 'controllo dtr (diurnal temperature range)' (Tmin)")
+    operators = min, operator.le
+    temp_records = checks.check13(temp_records, operators, logger=logger)
+    logger.info("* 'controllo world excedence' (tmdgg)")
+    temp_records = checks.check7(
+        temp_records, min_threshold=-36, max_threshold=46, val_index=6, logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmxgg')
+    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmngg',
+                        flag_index=5)
+    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmdgg',
+                        flag_index=7)
+    logger.info('== end process chain for T200 ==')
+    return temp_records
+
+
+def process_checks_bagna(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for BAGNA ==')
+    table, main_field, sub_field, min_threshold, max_threshold = \
+        ('ds__bagna', 'bagna', 'val_md', -1, 25)
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
+                 % (main_field, sub_field, main_field)
+    where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
+    table_records = querying.select_records(
+        conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_flag_interval=(-9, 0), where_sql=where_sql)
+
+    logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+    table_records = checks.check7(
+        table_records, min_threshold, max_threshold, logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+
+    logger.info('== end process chain for BAGNA ==')
+    return table_records
+
+
+def process_checks_elio(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for ELIOFANIA ==')
+    table, main_field, sub_field, min_threshold, max_threshold = \
+        ('ds__elio', 'elio', 'val_md', -1, 19)
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
+                 % (main_field, sub_field, main_field)
+    where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
+    table_records = querying.select_records(
+        conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_flag_interval=(-9, 0), where_sql=where_sql)
+
+    logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+    table_records = checks.check7(
+        table_records, min_threshold, max_threshold, logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+
+    logger.info('== end process chain for ELIOFANIA ==')
+    return table_records
+
+
+def process_checks_radglob(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for RADIAZIONE GLOBALE ==')
+    table, main_field, sub_field, min_threshold, max_threshold = \
+        ('ds__radglob', 'radglob', 'val_md', -1, 601)
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
+                 % (main_field, sub_field, main_field)
+    where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
+    table_records = querying.select_records(
+        conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema, exclude_flag_interval=(-9, 0), where_sql=where_sql)
+
+    logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+    table_records = checks.check7(
+        table_records, min_threshold, max_threshold, logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+
+    logger.info('== end process chain for RADIAZIONE GLOBALE ==')
+    return table_records
+
+
+def process_checks_press(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for PRESS ==')
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, " \
+                 "(press).val_md, ((press).flag).wht, " \
+                 "(press).val_mx, ((press).flag).wht, " \
+                 "(press).val_mn, ((press).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds_press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema)
+
+    # note: only flag index = 3 is set
+    for val_index in [2, ]:
+        for table_record in table_records:
+            if table_record[val_index + 1] is None:
+                continue
+            if -9 <= table_record[val_index+1] <= 0:
+                # set None to values flagged as invalid (flag in [-9, 0])
+                table_record[val_index] = None
+            elif table_record[val_index+1] < -9:
+                # set valid to values flagged as invalid (flag < -9)
+                table_record[val_index+1] = 1
+            # else record[3] > 0: flag 1 or 5 remains unset
+
+    for main_field, sub_field, min_threshold, max_threshold, val_index in [
+            ('press', 'val_md', 959, 1061, 2),
+            ('press', 'val_mx', 959, 1061, 4),
+            ('press', 'val_mn', 959, 1061, 6),
+    ]:
+        logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+        table_records = checks.check7(
+            table_records, min_threshold, max_threshold, val_index=val_index, logger=logger,
+            flag_index=3)
+    logger.info("* 'controllo valori ripetuti' Pmedia")
+    table_records = checks.check2(
+        table_records, len_threshold=10, exclude_values=(None, ), val_index=2, logger=logger)
+    logger.info("* 'controllo consistenza'")
+    table_records = checks.check_consistency(table_records, (6, 2, 4), 3, flag=-10, logger=logger)
+
+    logger.info('* final set of flags on database...')
+    upsert.update_flags(
+        conn, table_records, 'ds__press', schema=schema, db_field='press', flag_index=3)
+
+    logger.info('== end process chain for PRESS ==')
+    return table_records
+
+
+def process_checks_urel(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for UREL ==')
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, " \
+                 "(ur).val_md, ((ur).flag).wht, " \
+                 "(ur).val_mx, ((ur).flag).wht, " \
+                 "(ur).val_mn, ((ur).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__urel', fields=['ur'], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema)
+
+    # note: only flag index = 3 is set
+    for val_index in [2, ]:
+        for table_record in table_records:
+            if table_record[val_index + 1] is None:
+                continue
+            if -9 <= table_record[val_index+1] <= 0:
+                # set None to values flagged as invalid (flag in [-9, 0])
+                table_record[val_index] = None
+            elif table_record[val_index+1] < -9:
+                # set valid to values flagged as invalid (flag < -9)
+                table_record[val_index+1] = 1
+            # else record[3] > 0: flag 1 or 5 remains unset
+
+    for main_field, sub_field, min_threshold, max_threshold, val_index in [
+        ('ur', 'val_md', -1, 101, 2),
+        ('ur', 'val_mx', -1, 101, 4),
+        ('ur', 'val_mn', -1, 101, 6),
+    ]:
+        logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+        table_records = checks.check7(
+            table_records, min_threshold, max_threshold, logger=logger, flag_index=3)
+    logger.info("* 'controllo consistenza UR'")
+    table_records = checks.check_consistency(table_records, (6, 2, 4), 3, flag=-10, logger=logger)
+
+    logger.info('* final set of flags on database for UR consistence...')
+    upsert.update_flags(conn, table_records, 'ds__urel', schema=schema, db_field='ur',
+                        flag_index=3)
+
+    logger.info('== end process chain for UREL ==')
+    return table_records
+
+
+def process_checks_wind(conn, stations_ids, schema, logger):
+    logger.info('== initial process chain for vnt10 ==')
+
+    logger.info('* query to get records...')
+    sql_fields = "cod_staz, data_i, " \
+                 "(vntmd).ff, ((vntmd).flag).wht, " \
+                 "(vntmxgg).dd, ((vntmxgg).flag).wht, " \
+                 "(vntmxgg).ff, ((vntmxgg).flag).wht"
+    table_records = querying.select_records(
+        conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=schema)
+
+    for val_index in [2, 4, 6]:
+        for table_record in table_records:
+            if table_record[val_index + 1] is None:
+                continue
+            if -9 <= table_record[val_index+1] <= 0:
+                # set None to values flagged as invalid (flag in [-9, 0])
+                table_record[val_index] = None
+            elif table_record[val_index+1] < -9:
+                # set valid to values flagged as invalid (flag < -9)
+                table_record[val_index+1] = 1
+            # else record[3] > 0: flag 1 or 5 remains unset
+
+    for main_field, sub_field, min_threshold, max_threshold, val_index in [
+        ('vntmd', 'ff', -1, 103, 2),
+        ('vntmxgg', 'dd', -1, 361, 4),
+        ('vntmxgg', 'ff', -1, 103, 6),
+    ]:
+        logger.info("* 'controllo world excedence' (%s.%s)" % (main_field, sub_field))
+        table_records = checks.check7(
+            table_records, min_threshold, max_threshold, logger=logger, val_index=val_index)
+
+    # some additional checks for series wind: valori ripetuti + consistence
+    logger.info("* check 'valori ripetuti' for vntmd.ff...")
+    filter_funct = lambda r: r[2] > 2
+    table_records = checks.check2(
+        table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger)
+    # logger.info('* final set of flags on database for FFmedia valori ripetuti')
+    # upsert.update_vntmd_flags(conn, vntmd_series, schema=schema)
+
+    logger.info("* check 'valori ripetuti' for vntmxgg.ff...")
+    filter_funct = lambda r: r[2] > 2
+    table_records = checks.check2(
+        table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger, val_index=6)
+
+    logger.info("* check 'valori ripetuti' for vntmxgg.dd...")
+    filter_funct = lambda r: r[2] > 0.5
+    table_records = checks.check2(
+        table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
+        logger=logger, val_index=4)
+
+    logger.info("* 'controllo consistenza WIND'")
+    table_records = checks.check12(table_records, min_diff=0, logger=logger, val_indexes=(6, 2))
+    logger.info('* final set of flags on database for WIND consistence...')
+
+    # vntmd.flag setta anche quello di vnt.flag, per questo uso update_vntmd_flags
+    upsert.update_vntmd_flags(conn, table_records, schema=schema, flag_index=3, logger=logger)
+    upsert.update_flags(
+        conn, table_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=5)
+    return table_records
+
+
+def process_checks_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=None,
+                         omit_flagsync=False):
     """
     Start a chain of checks on records of the database from a set of monitoring stations selected.
 
     :param dburi: db connection URI
     :param stations_ids: primary keys of the stations (if None: no filtering by stations)
     :param schema: database schema to use
+    :param omit_flagsync: if False (default), omits the synchronization for flags -9, +5
     :param logger: logging object where to report actions
     """
     if logger is None:
@@ -141,217 +497,21 @@ def check_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', logger=No
     engine = db_utils.ensure_engine(dburi)
     conn = engine.connect()
 
-    logger.info('* synchronization of flags +5 and -9 loading from schema dailypdbanpaclima...')
-    upsert.sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima', targetschema=schema,
-                      logger=logger)
+    if not omit_flagsync:
+        logger.info(
+            '* synchronization of flags +5 and -9 loading from schema dailypdbanpaclima...')
+        upsert.sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
+                          targetschema=schema, logger=logger)
+        logger.info('* end of synchronization of flags +5 and -9')
 
-    logger.info('* initial query to get records of PREC...')
-    sql_fields = "cod_staz, data_i, (prec24).val_tot, " \
-                 "case when ((prec24).flag).wht=5 then 5 else 1 end"
-    prec_records = querying.select_prec_records(
-        conn, sql_fields=sql_fields, stations_ids=stations_ids, schema=schema,
-        exclude_flag_interval=(-9, 0), exclude_null=True)
-
-    logger.info('* initial query to get records of temperature...')
-    sql_fields = "cod_staz, data_i, " \
-                 "(tmxgg).val_md, case when ((tmxgg).flag).wht=5 then 5 else 1 end, " \
-                 "(tmngg).val_md, case when ((tmngg).flag).wht=5 then 5 else 1 end"
-    temp_records = querying.select_temp_records(
-        conn, fields=['tmxgg', 'tmngg'], sql_fields=sql_fields, stations_ids=stations_ids,
-        schema=schema, exclude_flag_interval=(-9, 0), exclude_null=False)
-
-    logger.info("== STARTING CHECK CHAIN ==")
-    logger.info("* 'controllo valori ripetuti = 0' for variable PREC")
-    prec_records = checks.check1(prec_records, logger=logger)
-
-    logger.info("* 'controllo valori ripetuti' for variable PREC")
-    prec_records = checks.check2(prec_records, exclude_values=(0, None), logger=logger)
-    logger.info("* 'controllo valori ripetuti' for variable Tmax")
-    temp_records = checks.check2(temp_records, exclude_values=(None, ), logger=logger)
-    logger.info("* 'controllo valori ripetuti' for variable Tmin")
-    temp_records = checks.check2(temp_records, exclude_values=(None, ), val_index=4, logger=logger)
-
-    logger.info("* 'controllo mesi duplicati (stesso anno)' for variable PREC")
-    prec_records = checks.check3(prec_records, min_not_null=5, logger=logger)
-    logger.info("* 'controllo mesi duplicati (stesso anno)' for variable Tmax")
-    temp_records = checks.check3(temp_records, logger=logger)
-    logger.info("* 'controllo mesi duplicati (stesso anno)' for variable Tmin")
-    temp_records = checks.check3(temp_records, val_index=4, logger=logger)
-
-    logger.info("* 'controllo mesi duplicati (anni differenti)' for variable PREC")
-    prec_records = checks.check4(prec_records, min_not_null=5, logger=logger)
-    logger.info("* 'controllo mesi duplicati (anni differenti)' for variable Tmax")
-    temp_records = checks.check4(temp_records, logger=logger)
-    logger.info("* 'controllo mesi duplicati (anni differenti)' for variable Tmin")
-    temp_records = checks.check4(temp_records, val_index=4, logger=logger)
-
-    logger.info("* controllo TMAX=TMIN")
-    temp_records = checks.check5(temp_records, logger=logger)
-
-    logger.info("* controllo TMAX=TMIN=0")
-    temp_records = checks.check6(temp_records, logger=logger)
-
-    logger.info("* 'controllo world excedence' for PREC")
-    prec_records = checks.check7(prec_records, max_threshold=800, logger=logger)
-    logger.info("* 'controllo world excedence' for Tmax")
-    temp_records = checks.check7(temp_records, min_threshold=-30, max_threshold=50, logger=logger)
-    logger.info("* 'controllo world excedence' for Tmin")
-    temp_records = checks.check7(temp_records, min_threshold=-40, max_threshold=40,
-                                 val_index=4, logger=logger)
-
-    logger.info('* controllo gap checks  precipitazione')
-    prec_records = checks.check8(prec_records, threshold=300, logger=logger)
-    logger.info("* 'controllo gap checks temperatura' for Tmax")
-    temp_records = checks.check8(temp_records, threshold=10, split=True, logger=logger)
-    logger.info("* 'controllo gap checks temperatura' for Tmin")
-    temp_records = checks.check8(temp_records, threshold=10, split=True, val_index=4,
-                                 logger=logger)
-
-    logger.info("* 'controllo z-score checks temperatura' for Tmax")
-    temp_records = checks.check9(temp_records, logger=logger)
-    logger.info("* 'controllo z-score checks temperatura' for Tmin")
-    temp_records = checks.check9(temp_records, val_index=4, logger=logger)
-
-    logger.info("* 'controllo z-score checks precipitazione'")
-    pos_temp_days, neg_temp_days = checks.split_days_by_average_temp(temp_records)
-    prec_records = checks.check10(prec_records, pos_temp_days, logger=logger)
-    logger.info("* 'controllo z-score checks precipitazione ghiaccio'")
-    prec_records = checks.check10(prec_records, neg_temp_days, times_perc=5, flag=-26,
-                                  logger=logger)
-
-    logger.info("* 'controllo jump checks' for Tmax")
-    temp_records = checks.check11(temp_records, logger=logger)
-    logger.info("* 'controllo jump checks' for Tmin")
-    temp_records = checks.check11(temp_records, val_index=4, logger=logger)
-
-    logger.info("* 'controllo Tmax < Tmin'")
-    temp_records = checks.check12(temp_records, logger=logger)
-
-    logger.info("* 'controllo dtr (diurnal temperature range)' for Tmax")
-    operators = max, operator.ge
-    temp_records = checks.check13(temp_records, operators, logger=logger)
-    logger.info("* 'controllo dtr (diurnal temperature range)' for Tmin")
-    operators = min, operator.le
-    temp_records = checks.check13(temp_records, operators, logger=logger)
-
-    logger.info('* final set of flags on database for PREC and TEMP...')
-    upsert.update_prec_flags(conn, prec_records, schema=schema)
-    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmxgg')
-    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmngg',
-                        flag_index=5)
-
-    # some checks of kind "check7" for other indicators
-    pmedia_series = []
-    vntmd_series = []
-    vntmxgg_ff_series = []
-    vntmxgg_dd_series = []
-    for table, main_field, sub_field, min_threshold, max_threshold in [
-        ('ds__bagna', 'bagna', 'val_md', -1, 25),
-        ('ds__elio', 'elio', 'val_md', -1, 19),
-        ('ds__radglob', 'radglob', 'val_md', -1, 601),
-        ('ds__t200', 'tmdgg', 'val_md', -36, 46),
-        ('ds__press', 'press', 'val_md', 959, 1061),
-        ('ds__press', 'press', 'val_mx', 959, 1061),
-        ('ds__press', 'press', 'val_mn', 959, 1061),
-        ('ds__urel', 'ur', 'val_md', -1, 101),
-        ('ds__urel', 'ur', 'val_mx', -1, 101),
-        ('ds__urel', 'ur', 'val_mn', -1, 101),
-        ('ds__vnt10', 'vntmd', 'ff', -1, 103),
-        ('ds__vnt10', 'vntmxgg', 'ff', -1, 103),
-        ('ds__vnt10', 'vntmxgg', 'dd', -1, 361),
-    ]:
-        logger.info('* initial query to get records of %s...' % table)
-        sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
-                     % (main_field, sub_field, main_field)
-        where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
-        table_records = querying.select_records(
-            conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
-            schema=schema, exclude_flag_interval=(-9, 0), where_sql=where_sql)
-        # saved some series to save time after
-        if (table, main_field, sub_field) == ('ds__press', 'press', 'val_md'):
-            pmedia_series = list(table_records)
-        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmd', 'ff'):
-            vntmd_series = list(table_records)
-        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmxgg', 'ff'):
-            vntmxgg_ff_series = list(table_records)
-        elif (table, main_field, sub_field) == ('ds__vnt10', 'vntmxgg', 'ff'):
-            vntmxgg_dd_series = list(table_records)
-
-        logger.info("* 'controllo world excedence' for %s" % main_field)
-        table_records = checks.check7(
-            table_records, min_threshold=-1, max_threshold=25, logger=logger)
-        logger.info('* final set of flags on database for %s...' % table)
-        if main_field == 'vntmd':
-            upsert.update_vntmd_flags(conn, table_records, schema=schema)
-        else:
-            upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
-
-    # some additional checks for series pressures: valori ripetuti + consistence
-    logger.info("* initial query to get records for 'valori ripetuti' check PRESS...")
-    pmedia_series = checks.check2(
-        pmedia_series, len_threshold=10, exclude_values=(None, ), logger=logger)
-    logger.info('* final set of flags on database for PRESS valori ripetuti')
-    upsert.update_flags(conn, pmedia_series, 'ds__press', schema=schema, db_field='press')
-    logger.info('* initial query to get records of %s for consistence check PRESS...')
-    sql_fields = "cod_staz, data_i,(press).val_mn,(press).val_md,(press).val_mx,((press).flag).wht"
-    press_records = querying.select_records(
-        conn, 'ds__press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
-        schema=schema, exclude_flag_interval=(-9, 0))
-    logger.info("* 'controllo consistenza PRESS'")
-    press_records = checks.check_consistency(press_records, (2, 3, 4), 5, flag=-10, logger=logger)
-    logger.info('* final set of flags on database for PRESS consistence...')
-    upsert.update_flags(
-        conn, press_records, 'ds__press', schema=schema, db_field='press', flag_index=5)
-
-    # some additional checks for series umidity: consistence
-    logger.info('* initial query to get records of %s for consistence check UR...')
-    sql_fields = "cod_staz, data_i,(ur).val_mn,(ur).val_md,(ur).val_mx,((ur).flag).wht"
-    ur_records = querying.select_records(
-        conn, 'ds__urel', fields=['ur'], sql_fields=sql_fields, stations_ids=stations_ids,
-        schema=schema, exclude_flag_interval=(-9, 0))
-    logger.info("* 'controllo consistenza UR'")
-    ur_records = checks.check_consistency(ur_records, (2, 3, 4), 5, flag=-10, logger=logger)
-    logger.info('* final set of flags on database for UR consistence...')
-    upsert.update_flags(conn, ur_records, 'ds__urel', schema=schema, db_field='ur', flag_index=5)
-
-    # some additional checks for series wind: valori ripetuti + consistence
-    logger.info("* check 'valori ripetuti' for FFmedia...")
-    filter_funct = lambda r: r[2] > 2
-    vntmd_series = checks.check2(
-        vntmd_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
-        logger=logger)
-    logger.info('* final set of flags on database for FFmedia valori ripetuti')
-    upsert.update_vntmd_flags(conn, vntmd_series, schema=schema)
-
-    logger.info("* check 'valori ripetuti' for FFmax...")
-    filter_funct = lambda r: r[2] > 2
-    vntmxgg_ff_series = checks.check2(
-        vntmxgg_ff_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
-        logger=logger)
-    logger.info('* final set of flags on database for FFmax valori ripetuti')
-    upsert.update_flags(conn, vntmxgg_ff_series, table="ds__vnt10", schema=schema,
-                        db_field='vntmxgg')
-
-    logger.info("* check 'valori ripetuti' for DD...")
-    filter_funct = lambda r: r[2] > 0.5
-    vntmxgg_dd_series = checks.check2(
-        vntmxgg_dd_series, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
-        logger=logger)
-    logger.info('* final set of flags on database for FFmax valori ripetuti')
-    upsert.update_flags(conn, vntmxgg_dd_series, table='ds__vnt10', schema=schema,
-                        db_field='vntmxgg')
-
-    logger.info('* initial query to get records of %s for consistence check FF...')
-    sql_fields = "cod_staz, data_i,(vntmxgg).ff,((vntmxgg).flag).wht,(vntmd).ff,((vntmd).flag).wht"
-    wind_records = querying.select_records(
-        conn, 'ds__vnt10', fields=['vntmxgg', 'vntmd'], sql_fields=sql_fields,
-        stations_ids=stations_ids, schema=schema, exclude_flag_interval=(-9, 0))
-    logger.info("* 'controllo consistenza WIND'")
-    wind_records = checks.check12(wind_records, min_diff=0, logger=logger)
-    logger.info('* final set of flags on database for WIND consistence...')
-    upsert.update_vntmd_flags(conn, wind_records, schema=schema, flag_index=5, logger=logger)
-    upsert.update_flags(
-        conn, wind_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=3)
+    temp_records = process_checks_t200(conn, stations_ids, schema, logger)
+    process_checks_preci(conn, stations_ids, schema, logger, temp_records)
+    process_checks_bagna(conn, stations_ids, schema, logger)
+    process_checks_elio(conn, stations_ids, schema, logger)
+    process_checks_radglob(conn, stations_ids, schema, logger)
+    process_checks_press(conn, stations_ids, schema, logger)
+    process_checks_urel(conn, stations_ids, schema, logger)
+    process_checks_wind(conn, stations_ids, schema, logger)
 
     logger.info('== End process ==')
 

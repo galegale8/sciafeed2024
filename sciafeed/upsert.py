@@ -387,6 +387,7 @@ def update_flags(conn, records, table, schema='dailypdbanpacarica', db_field='tm
         num_of_updates = result.rowcount
         logger.info('update completed: %s flags updated' % num_of_updates)
     except:
+        # FIXME: sys info on error
         logger.error('update not completed: something went wrong')
     finally:
         post_cmd = 'DROP TABLE %s' % tmp_table_name
@@ -674,10 +675,11 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
 
     # OTHER TABLES
     for table, main_field, sub_field in [
+        # sub_field is the main subfield for condition of not null
         ('ds__t200', 'tmxgg', 'val_md'),
         ('ds__t200', 'tmngg', 'val_md'),
         ('ds__t200', 'tmdgg', 'val_md'),
-        ('ds__bagna', 'bagna', 'val_md'),  # ASK: or val_tot?
+        ('ds__bagna', 'bagna', 'val_md'),
         ('ds__elio', 'elio', 'val_md'),
         ('ds__radglob', 'radglob', 'val_md'),
         ('ds__urel', 'ur', 'val_md'),
@@ -685,7 +687,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         ('ds__urel', 'ur', 'val_mn'),
         ('ds__vnt10', 'vntmd', 'ff'),
         ('ds__vnt10', 'vntmxgg', 'ff'),
-        ('ds__vnt10', 'vntmxgg', 'gg'),
+        ('ds__vnt10', 'vntmxgg', 'dd'),
     ]:
         logger.info('querying source table %s.%s for flags %r (field %s.%s)'
                     % (sourceschema, flags, table, main_field, sub_field))

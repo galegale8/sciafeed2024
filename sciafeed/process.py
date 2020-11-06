@@ -107,24 +107,18 @@ def compute_daily_indicators(conn, data_folder, indicators_folder=None, logger=N
     computed_indicators = dict()
     writers = utils.open_csv_writers(indicators_folder, compute.INDICATORS_TABLES)
     block_data = []
-    block_size = 10  # use blocks of 10 files
     for i, file_name in enumerate(listdir(data_folder), 1):
         csv_path = join(data_folder, file_name)
         if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
             continue
-        logger.info("Compute indicators for %r" % csv_path)
+        logger.info("reading data from %r" % csv_path)
         try:
             data = export.csv2data(csv_path)
-            block_data.extend(data)
-            if i % block_size != 0:
-                continue
         except:
             logger.error('CSV file %r not parsable' % csv_path)
             continue
-
-        computed_indicators = compute.compute_and_store(
-            conn, block_data, writers, compute.INDICATORS_TABLES, logger)
-        block_data = []
+        block_data.extend(data)
+    logger.info("computing daily indicators...")
     if block_data:
         computed_indicators = compute.compute_and_store(
             conn, block_data, writers, compute.INDICATORS_TABLES, logger)

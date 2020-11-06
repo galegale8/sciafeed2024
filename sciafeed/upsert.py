@@ -111,7 +111,7 @@ class2subfields_map = {
         'flag.ndati', 'flag.wht', 'tot00', 'tot05', 'tot10', 'tot15', 'tot21',
     ],
     'bagna1_obj':
-        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_tot'],
+        ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx', 'val_mn', 'val_tot'],
     'stat2_obj':
         ['flag.ndati', 'flag.wht', 'val_md', 'val_vr', 'val_mx'],
     'prec_obj': ['flag.ndati', 'flag.wht', 'val_mx', 'data_mx'],
@@ -410,10 +410,12 @@ def expand_record(record):
         if field in field2class_map:
             klass = field2class_map[field]
             subfields = class2subfields_map[klass]
-            new_values = [
-                r.strip() not in ('', 'None') and r.strip() or 'NULL'
-                for r in value.replace('(', '').replace(')', '').replace("'", "").
-                replace('"', '').split(',')]
+            if value is None:
+                new_values = ['NULL'] * len(subfields)
+            else:
+                new_values = [r.strip() not in ('', 'None') and r.strip() or 'NULL'
+                              for r in value.replace('(', '').replace(')', '').replace("'", "").
+                              replace('"', '').replace('[', '').replace(']', '').split(',')]
             for i, subfield in enumerate(subfields):
                 record["%s.%s" % (field, subfield)] = new_values[i]
             del record[field]
@@ -488,6 +490,9 @@ def create_upsert(table_name, schema, fields, data, policy):
 def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_staz=False):
     """
     Insert (or update if not exists) items into the database.
+    It assumes all items are dictionaries with the same keys.
+    The 'upsert' policy update to None also the empty/null values, if they are present
+    in the item keys.
 
     :param conn: db connection object
     :param items: list of dictionaries to be upserted. They must be the same for keys
@@ -500,6 +505,9 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+    if not items:
+        logger.warning('no items to upsert')
+        return 0
     meta = MetaData()
     anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
                        schema='dailypdbadmclima')
@@ -528,6 +536,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
             record = functools.reduce(lambda a, b: a.update(b) or a, day_records, {})
             record['cod_staz'] = cod_staz
             record = expand_record(record)
+            # this one so that empty values are empty strings in the sql
             record = {
                 k: v for k, v in record.items()
                 if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))

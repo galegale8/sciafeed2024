@@ -5,8 +5,10 @@ from datetime import datetime
 from os import listdir, mkdir
 from os.path import exists, isfile, join, splitext
 import sys
+import warnings
 
 import click
+from sqlalchemy import exc
 
 from sciafeed import arpaer
 from sciafeed import db_utils
@@ -16,6 +18,8 @@ from sciafeed import process
 from sciafeed import querying
 from sciafeed import upsert
 from sciafeed import utils
+
+warnings.filterwarnings("ignore", category=exc.SAWarning)
 
 
 @click.command()
@@ -266,7 +270,7 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
               help="policy to apply in the insert")
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
-def insert_indicators(data_folder, dburi, report_path, policy, schema):
+def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
     """
     Insert indicators from a folder `data_folder` inside the database in the selected schema.
     """
@@ -284,10 +288,15 @@ def insert_indicators(data_folder, dburi, report_path, policy, schema):
         if not table_cols:
             logger.warning('ignoring file %s: not found the table %s.%s'
                            % (child, schema, table_name))
+            continue
         logger.info('- reading data from file %s' % child)
-        items = export.csv2items(csv_table_path, ignore_empty_fields=True)
-        logger.info('- start insert of %s records from file %s' % (len(items), child))
-        upsert.upsert_items(conn, items, policy, schema, table_name, logger)
+        try:
+            items = export.csv2items(csv_table_path)
+            logger.info('- start insert of %s records from file %s' % (len(items), child))
+            upsert.upsert_items(conn, items, policy, schema, table_name, logger)
+        except:
+            ex_type, ex, tb = sys.exc_info()
+            logger.error(ex._message())
 
 
 @click.command()

@@ -114,7 +114,7 @@ def test_expand_fields():
         'data_i', 'tmxgg.flag.ndati', 'tmxgg.flag.wht', 'tmxgg.val_md',
         'tmxgg.val_vr', 'tmxgg.val_x', 'tmxgg.data_x', 'bagna.flag.ndati',
         'bagna.flag.wht', 'bagna.val_md', 'bagna.val_vr', 'bagna.val_mx',
-        'bagna.val_tot', 'cod_staz'
+        'bagna.val_mn', 'bagna.val_tot', 'cod_staz'
     ]
 
 

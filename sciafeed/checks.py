@@ -405,7 +405,8 @@ def check6(records, flag=-20, logger=None):
     return new_records
 
 
-def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2, logger=None):
+def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=2, logger=None,
+           flag_index=None):
     """
     Check "controllo world excedence" for the input records.
     Assumes all records are sorted by station, date.
@@ -419,15 +420,18 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param logger: logging object where to report actions
+    :param flag_index: index of the flag to be reset (default is val_index+1
     :return: new_records
     """
+    if flag_index is None:
+        flag_index = val_index + 1
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s)"
                 % (min_threshold, max_threshold, flag, val_index))
 
     new_records = [r[:] for r in records]
-    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
+    records_to_use = [r for r in new_records if r[flag_index] > 0 and r[val_index] is not None]
     num_invalid_records = 0
     val_getter = operator.itemgetter(val_index)
 
@@ -442,8 +446,8 @@ def check7(records, min_threshold=None, max_threshold=None, flag=-21, val_index=
 
     for record in records_to_use:
         if exclude_condition(record):
-            if record[val_index+1] != 5:
-                record[val_index+1] = flag
+            if record[flag_index] != 5:
+                record[flag_index] = flag
                 num_invalid_records += 1
 
     logger.info("Checked %s records" % len(records_to_use))
@@ -901,7 +905,7 @@ def check_consistency(records, val_indexes, flag_index, flag=-10, logger=None):
     :param val_indexes: indexes of the values to be checked for consistency
     :param flag_index: the index of the flag to be set
     :param flag: the value of the flag to set for found errors
-    :param val_indexes: record[val_indexes[0]] and record[val_indexes[1]] are the values to compare
+    :param val_indexes: indexes of the values to compare
     :param logger: logging object where to report actions
     :return: new_records
     """

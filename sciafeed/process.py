@@ -144,8 +144,16 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
                      "(tmdgg).val_md, case when ((tmdgg).flag).wht=5 then 5 else 1 end"
         temp_records = querying.select_temp_records(
             conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields,
-            stations_ids=stations_ids, schema=schema, exclude_flag_interval=(-9, 0),
-            exclude_null=False)
+            stations_ids=stations_ids, schema=schema, exclude_null=False)
+        temp_records = list(temp_records)
+        for val_index in [2, 4, 6]:
+            for temp_record in temp_records:
+                if temp_record[val_index + 1] is None or temp_record[val_index+1] < -9:
+                    temp_record[val_index+1] = 1
+                elif -9 <= temp_record[val_index+1] <= 0:
+                    # set None to values flagged as invalid (flag in [-9, 0])
+                    temp_record[val_index] = None
+                # else temp_record[3] > 0: flag 1 or 5 remains unset
 
     logger.info("* 'controllo valori ripetuti = 0'")
     prec_records = checks.check1(prec_records, logger=logger)
@@ -167,7 +175,8 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
                                   logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_prec_flags(conn, prec_records, schema=schema)
+    flag_records = [r for r in prec_records if r[3] and r[3] <= -10]
+    upsert.update_prec_flags(conn, flag_records, schema=schema)
     logger.info('== end process chain for PRECI ==')
     return prec_records
 
@@ -183,17 +192,15 @@ def process_checks_t200(conn, stations_ids, schema, logger):
     temp_records = querying.select_temp_records(
         conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema, exclude_null=False)
+    temp_records = list(temp_records)
 
     for val_index in [2, 4, 6]:
         for temp_record in temp_records:
-            if temp_record[val_index + 1] is None:
-                continue
-            if -9 <= temp_record[val_index+1] <= 0:
+            if temp_record[val_index + 1] is None or temp_record[val_index+1] < -9:
+                temp_record[val_index+1] = 1
+            elif -9 <= temp_record[val_index+1] <= 0:
                 # set None to values flagged as invalid (flag in [-9, 0])
                 temp_record[val_index] = None
-            elif temp_record[val_index+1] < -9:
-                # set valid to values flagged as invalid (flag < -9)
-                temp_record[val_index+1] = 1
             # else temp_record[3] > 0: flag 1 or 5 remains unset
 
     logger.info("* 'controllo valori ripetuti' (Tmax)")
@@ -237,16 +244,20 @@ def process_checks_t200(conn, stations_ids, schema, logger):
     temp_records = checks.check13(temp_records, operators, logger=logger)
     logger.info("* 'controllo dtr (diurnal temperature range)' (Tmin)")
     operators = min, operator.le
-    temp_records = checks.check13(temp_records, operators, logger=logger)
+    temp_records = checks.check13(temp_records, operators, logger=logger, jump=-35,
+                                  val_indexes=(4,2))
     logger.info("* 'controllo world excedence' (tmdgg)")
     temp_records = checks.check7(
         temp_records, min_threshold=-36, max_threshold=46, val_index=6, logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmxgg')
-    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmngg',
+    flag_records = [r for r in temp_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, 'ds__t200', schema=schema, db_field='tmxgg')
+    flag_records = [r for r in temp_records if r[5] and r[5] <= -10]
+    upsert.update_flags(conn, flag_records, 'ds__t200', schema=schema, db_field='tmngg',
                         flag_index=5)
-    upsert.update_flags(conn, temp_records, 'ds__t200', schema=schema, db_field='tmdgg',
+    flag_records = [r for r in temp_records if r[7] and r[7] <= -10]
+    upsert.update_flags(conn, flag_records, 'ds__t200', schema=schema, db_field='tmdgg',
                         flag_index=7)
     logger.info('== end process chain for T200 ==')
     return temp_records
@@ -270,7 +281,8 @@ def process_checks_bagna(conn, stations_ids, schema, logger):
         table_records, min_threshold, max_threshold, logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, table, schema=schema, db_field=main_field)
 
     logger.info('== end process chain for BAGNA ==')
     return table_records
@@ -294,7 +306,8 @@ def process_checks_elio(conn, stations_ids, schema, logger):
         table_records, min_threshold, max_threshold, logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, table, schema=schema, db_field=main_field)
 
     logger.info('== end process chain for ELIOFANIA ==')
     return table_records
@@ -318,7 +331,8 @@ def process_checks_radglob(conn, stations_ids, schema, logger):
         table_records, min_threshold, max_threshold, logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_flags(conn, table_records, table, schema=schema, db_field=main_field)
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, table, schema=schema, db_field=main_field)
 
     logger.info('== end process chain for RADIAZIONE GLOBALE ==')
     return table_records
@@ -333,20 +347,18 @@ def process_checks_press(conn, stations_ids, schema, logger):
                  "(press).val_mx, ((press).flag).wht, " \
                  "(press).val_mn, ((press).flag).wht"
     table_records = querying.select_records(
-        conn, 'ds_press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
+        conn, 'ds__press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
+    table_records = list(table_records)
 
     # note: only flag index = 3 is set
     for val_index in [2, ]:
         for table_record in table_records:
-            if table_record[val_index + 1] is None:
-                continue
-            if -9 <= table_record[val_index+1] <= 0:
+            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
+                table_record[val_index+1] = 1
+            elif -9 <= table_record[val_index+1] <= 0:
                 # set None to values flagged as invalid (flag in [-9, 0])
                 table_record[val_index] = None
-            elif table_record[val_index+1] < -9:
-                # set valid to values flagged as invalid (flag < -9)
-                table_record[val_index+1] = 1
             # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
@@ -365,8 +377,8 @@ def process_checks_press(conn, stations_ids, schema, logger):
     table_records = checks.check_consistency(table_records, (6, 2, 4), 3, flag=-10, logger=logger)
 
     logger.info('* final set of flags on database...')
-    upsert.update_flags(
-        conn, table_records, 'ds__press', schema=schema, db_field='press', flag_index=3)
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, 'ds__press', schema=schema, db_field='press')
 
     logger.info('== end process chain for PRESS ==')
     return table_records
@@ -382,18 +394,16 @@ def process_checks_urel(conn, stations_ids, schema, logger):
     table_records = querying.select_records(
         conn, 'ds__urel', fields=['ur'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
+    table_records = list(table_records)
 
     # note: only flag index = 3 is set
     for val_index in [2, ]:
         for table_record in table_records:
-            if table_record[val_index + 1] is None:
-                continue
-            if -9 <= table_record[val_index+1] <= 0:
+            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
+                table_record[val_index+1] = 1
+            elif -9 <= table_record[val_index+1] <= 0:
                 # set None to values flagged as invalid (flag in [-9, 0])
                 table_record[val_index] = None
-            elif table_record[val_index+1] < -9:
-                # set valid to values flagged as invalid (flag < -9)
-                table_record[val_index+1] = 1
             # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
@@ -407,9 +417,9 @@ def process_checks_urel(conn, stations_ids, schema, logger):
     logger.info("* 'controllo consistenza UR'")
     table_records = checks.check_consistency(table_records, (6, 2, 4), 3, flag=-10, logger=logger)
 
-    logger.info('* final set of flags on database for UR consistence...')
-    upsert.update_flags(conn, table_records, 'ds__urel', schema=schema, db_field='ur',
-                        flag_index=3)
+    logger.info('* final set of flags on database...')
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_flags(conn, flag_records, 'ds__urel', schema=schema, db_field='ur')
 
     logger.info('== end process chain for UREL ==')
     return table_records
@@ -426,17 +436,14 @@ def process_checks_wind(conn, stations_ids, schema, logger):
     table_records = querying.select_records(
         conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
-
+    table_records = list(table_records)
     for val_index in [2, 4, 6]:
         for table_record in table_records:
-            if table_record[val_index + 1] is None:
-                continue
-            if -9 <= table_record[val_index+1] <= 0:
+            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
+                table_record[val_index+1] = 1
+            elif -9 <= table_record[val_index+1] <= 0:
                 # set None to values flagged as invalid (flag in [-9, 0])
                 table_record[val_index] = None
-            elif table_record[val_index+1] < -9:
-                # set valid to values flagged as invalid (flag < -9)
-                table_record[val_index+1] = 1
             # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
@@ -471,12 +478,14 @@ def process_checks_wind(conn, stations_ids, schema, logger):
 
     logger.info("* 'controllo consistenza WIND'")
     table_records = checks.check12(table_records, min_diff=0, logger=logger, val_indexes=(6, 2))
-    logger.info('* final set of flags on database for WIND consistence...')
+    logger.info('* final set of flags on database...')
 
     # vntmd.flag setta anche quello di vnt.flag, per questo uso update_vntmd_flags
-    upsert.update_vntmd_flags(conn, table_records, schema=schema, flag_index=3, logger=logger)
+    flag_records = [r for r in table_records if r[3] and r[3] <= -10]
+    upsert.update_vntmd_flags(conn, flag_records, schema=schema, logger=logger)
+    flag_records = [r for r in table_records if r[5] and r[5] <= -10]
     upsert.update_flags(
-        conn, table_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=5)
+        conn, flag_records, 'ds__vnt10', schema=schema, db_field='vntmxgg', flag_index=5)
     return table_records
 
 

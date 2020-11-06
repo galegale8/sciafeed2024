@@ -139,7 +139,7 @@ def check1(records, len_threshold=180, flag=-12, val_index=2, logger=None):
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s)" % (len_threshold, flag, val_index))
 
-    new_records = [r[:] for r in records]
+    new_records = [r[:] for r in records if r[val_index] is not None]
     records_to_use = [r for r in new_records if r[val_index+1] > 0]
     num_invalid_records = 0
     group_by_station = operator.itemgetter(0)

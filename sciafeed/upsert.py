@@ -234,6 +234,8 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+    if not list(records):
+        return 0
     logger.debug('start db update of PREC flags')
     tmp_table_name = "updates_preci%s" % round(time.time())
     pre_sql_cmds = [
@@ -294,6 +296,8 @@ def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3,
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+    if not list(records):
+        return 0
     logger.debug('start db update of PREC flags')
     tmp_table_name = "updates_vnt%s" % round(time.time())
     pre_sql_cmds = [
@@ -319,7 +323,7 @@ def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3,
         update_sql = """
             UPDATE %s.ds__vnt10 t SET (
                 vntmxgg.flag.wht,
-                vnt.flag.wht,
+                vnt.flag.wht
                 ) = (u.flag, u.flag)
             FROM %s u
             WHERE t.cod_staz = u.cod_staz AND t.data_i = u.data_i 
@@ -329,7 +333,9 @@ def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3,
         num_of_updates = result.rowcount
         logger.info('update completed: %s flags updated' % num_of_updates)
     except:
+        ex_type, ex, tb = sys.exc_info()
         logger.error('update not completed: something went wrong')
+        logger.error(ex._message())
     finally:
         post_cmd = 'DROP TABLE %s' % tmp_table_name
         conn.execute(post_cmd)
@@ -355,6 +361,8 @@ def update_flags(conn, records, table, schema='dailypdbanpacarica', db_field='tm
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+    if not list(records):
+        return 0
     logger.debug('start db update of flags (%s)' % db_field)
     tmp_table_name = "updates_temp%s" % round(time.time())
     pre_sql_cmds = [
@@ -387,7 +395,8 @@ def update_flags(conn, records, table, schema='dailypdbanpacarica', db_field='tm
         num_of_updates = result.rowcount
         logger.info('update completed: %s flags updated' % num_of_updates)
     except:
-        # FIXME: sys info on error
+        ex_type, ex, tb = sys.exc_info()
+        logger.error(ex._message())
         logger.error('update not completed: something went wrong')
     finally:
         post_cmd = 'DROP TABLE %s' % tmp_table_name
@@ -671,7 +680,8 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         no_order=True)
     prec_records = db_utils.force_flags(prec_records, prec_flag_map)
     logger.info('update flags of destination table %s.ds__preci' % targetschema)
-    update_prec_flags(conn, prec_records, schema=targetschema, logger=logger)
+    flag_records = [r for r in prec_records if r[3] in flags]
+    update_prec_flags(conn, flag_records, schema=targetschema, logger=logger)
 
     # OTHER TABLES
     for table, main_field, sub_field in [
@@ -690,7 +700,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         ('ds__vnt10', 'vntmxgg', 'dd'),
     ]:
         logger.info('querying source table %s.%s for flags %r (field %s.%s)'
-                    % (sourceschema, flags, table, main_field, sub_field))
+                    % (sourceschema, table, flags, main_field, sub_field))
         sql_fields = "cod_stazprinc, data_i, (%s).%s, ((%s).flag).wht" \
                      % (main_field, sub_field, main_field)
         where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
@@ -708,5 +718,6 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         table_records = db_utils.force_flags(table_records, table_flag_map)
         logger.info('update flags of table %s.%s (field %s.%s)'
                     % (targetschema, table, main_field, sub_field))
-        update_flags(conn, table_records, table, schema=targetschema, db_field=main_field,
+        flag_records = [r for r in table_records if r[3] in flags]
+        update_flags(conn, flag_records, table, schema=targetschema, db_field=main_field,
                      logger=logger)

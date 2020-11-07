@@ -5,7 +5,7 @@ import logging
 import sys
 import time
 
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData, Table, create_engine
 
 from sciafeed import LOG_NAME
 from sciafeed import db_utils
@@ -14,6 +14,13 @@ from sciafeed import querying
 
 
 field2class_map = {
+    'prs_t200mx': 'pers_tmx_obj',
+    'prs_t200mn': 'pers_tmn_obj',
+    'ifs': 'nxxx_obj',
+    'ifu': 'nxxx_obj',
+    'ics': 'nxxx_obj',
+    'icu': 'nxxx_obj',
+    'sharl': 'bio_idx_obj',
     'etp': 'stat0_obj',
     'bagna': 'bagna1_obj',
     'elio': 'stat2_obj',
@@ -99,6 +106,15 @@ field2class_map = {
     'deltaidro': 'stat0_obj',
 }
 class2subfields_map = {
+    'pers_tmx_obj': ['flag.ndati', 'flag.wht', 'num01', 'data01_ini', 'num02', 'data02_ini',
+                     'num03', 'data03_ini', 'num04', 'data04_ini', 'num05', 'data05_ini', 'num06',
+                     'data06_ini', 'num07', 'data07_ini', 'num08', 'data08_ini', 'num09',
+                     'data09_ini', 'num10', 'data10_ini', 'num11', 'data11_ini'],
+    'pers_tmn_obj': ['flag.ndati', 'flag.wht', 'num01', 'data01_ini', 'num02', 'data02_ini',
+                     'num03', 'data03_ini', 'num04', 'data04_ini', 'num05', 'data05_ini', 'num06',
+                     'data06_ini', 'num07', 'data07_ini', 'num08', 'data08_ini', 'num09',
+                     'data09_ini'],
+    'bio_idx_obj': ['flag.ndati', 'flag.wht', 'num_01', 'num02', 'num03'],
     'pers_prec_obj': [
         'flag.ndati', 'flag.wht',
         'ndry_01', 'datadry_01', 'ndry_02', 'datadry_02', 'ndry_03', 'datadry_03',
@@ -587,11 +603,56 @@ def choose_main_record(records, master_field):
     return result
 
 
-def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=None):
+def load_unique_data_table(dburi, table_name, master_field, startschema, targetschema,
+                           gruppi_tschema, gruppi_tname, group2mainstation, logger_name):
+    # note: master_field is always validated by "%s.flag.wht" % master_field.rsplit('.', 1)[0]
+    # (if present), otherwise the first record that has a not not value for master_field
+
+    # engine_multiprocessing = create_engine(db_utils.DEFAULT_DB_URI, pool=db_utils.mypool)
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    logger = logging.getLogger(logger_name)
+    group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
+
+    logger.info('* start working on table %s' % table_name)
+    logger.info(' selecting data on table %s' % table_name)
+    sql = """SELECT idgruppo, data_i, %s.%s.* 
+             FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
+             ORDER BY (idgruppo, data_i, progstazione)""" \
+          % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
+    results = conn.execute(sql)
+    inserted = 0
+    logger.info(' start merge&insert on table %s' % table_name)
+    cols = db_utils.get_table_columns(table_name, targetschema)
+    fields = expand_fields(cols)
+    data = []
+    for group_attrs, group_records in itertools.groupby(results, group_funct):
+        groupid, data_i = group_attrs
+        main_station = group2mainstation[groupid]
+        expanded_group_records = [expand_record(dict(r)) for r in group_records]
+        main_record = choose_main_record(expanded_group_records, master_field)
+        if main_record:
+            del main_record['idgruppo']
+            main_record['cod_staz'] = main_station
+            main_record = {k: v for k, v in main_record.items() if v not in (None, 'NULL')}
+            data.append(main_record)
+            inserted += 1
+            if divmod(inserted, 10000)[1] == 0:  # flush in blocks of 100000
+                sql = create_insert(table_name, targetschema, fields, data)
+                conn.execute(sql)
+                data = []
+    if data:
+        sql = create_insert(table_name, targetschema, fields, data)
+        conn.execute(sql)
+    logger.info('inserted %s records on table %s' % (inserted, table_name))
+    conn.close()
+
+
+def load_unique_data(dburi, startschema, targetschema, logger=None, only_tables=None):
     """
     Load data from `startschema` to `targetschema`, merging data from duplicate stations.
 
-    :param conn: db connection object
+    :param dburi: db connection string
     :param startschema: db schema where to find input data tables
     :param targetschema: db schema where to put merged records
     :param logger: logger object for reporting
@@ -599,11 +660,15 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+
+    logger.info("loading tabgruppistazioni")
     gruppi_tname = 'tabgruppistazioni'
     gruppi_tschema = 'dailypdbanpacarica'
-    logger.info("loading tabgruppistazioni")
-    group2mainstation = querying.load_main_station_groups(conn, gruppi_tname, gruppi_tschema)
-    group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
+    engine = db_utils.ensure_engine(dburi)
+    conn = engine.connect()
+    group2mainstation = querying.load_main_station_groups(
+        conn, gruppi_tname, gruppi_tschema)
+    conn.close()
     tables = [
         ('ds__preci', 'prec24.val_tot'),
         ('ds__t200', 'tmxgg.val_md'),
@@ -619,39 +684,26 @@ def load_unique_data(conn, startschema, targetschema, logger=None, only_tables=N
     ]
     if only_tables is not None:
         tables = [t for t in tables if t[0] in only_tables]
+
+    # single process solution
+    logger_name = logger.name
     for table_name, master_field in tables:
-        logger.info('* start working on table %s' % table_name)
-        logger.info(' selecting data')
-        sql = """SELECT idgruppo, data_i::varchar, %s.%s.* 
-                 FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
-                 ORDER BY (idgruppo, data_i, progstazione)""" \
-              % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
-        results = conn.execute(sql)
-        inserted = 0
-        logger.info(' start merge&insert')
-        cols = db_utils.get_table_columns(table_name, targetschema)
-        fields = expand_fields(cols)
-        data = []
-        for group_attrs, group_records in itertools.groupby(results, group_funct):
-            groupid, data_i = group_attrs
-            main_station = group2mainstation[groupid]
-            expanded_group_records = [expand_record(dict(r)) for r in group_records]
-            main_record = choose_main_record(expanded_group_records, master_field)
-            if main_record:
-                del main_record['idgruppo']
-                main_record['cod_staz'] = main_station
-                main_record['data_i'] = data_i
-                main_record = {k: v for k, v in main_record.items() if v not in (None, 'NULL')}
-                data.append(main_record)
-                inserted += 1
-                if divmod(inserted, 10000)[1] == 0:  # flush in blocks of 10000
-                    sql = create_insert(table_name, targetschema, fields, data)
-                    conn.execute(sql)
-                    data = []
-        if data:
-            sql = create_insert(table_name, targetschema, fields, data)
-            conn.execute(sql)
-        logger.info('inserted %s records' % inserted)
+        load_unique_data_table(
+            dburi, table_name, master_field, startschema, targetschema, gruppi_tschema,
+            gruppi_tname, group2mainstation, logger_name)
+
+    # multiprocessing
+    # import multiprocessing as mp
+    # pool = mp.Pool(mp.cpu_count())
+    # logger_name = logger.name
+    # results = pool.starmap(
+    #     load_unique_data_table,
+    #     [(
+    #         dburi, table_name, master_field, startschema, targetschema,
+    #         gruppi_tschema, gruppi_tname, group2mainstation, logger_name
+    #     ) for table_name, master_field in tables]
+    # )
+    # pool.close()
 
 
 def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',

@@ -628,7 +628,6 @@ def compute_daily_indicators2(conn, schema, logger):
 
 
 def process_dma(conn, startschema, targetschema, policy, logger):
-
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
 

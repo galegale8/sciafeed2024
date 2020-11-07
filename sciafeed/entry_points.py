@@ -314,10 +314,8 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
     logger = utils.setup_log(report_path)
     logger.info('starting process of loading unique data (from %s to %s)'
                 % (startschema, targetschema))
-    engine = db_utils.ensure_engine(dburi)
-    conn = engine.connect()
-    # ASK: truncate targetschema tables?
-    upsert.load_unique_data(conn, startschema, targetschema, logger)
+
+    upsert.load_unique_data(dburi, startschema, targetschema, logger)
     logger.info('process concluded')
 
 

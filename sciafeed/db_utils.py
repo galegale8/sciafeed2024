@@ -37,6 +37,15 @@ def configure(db_uri=None):
 
 configure()
 
+# import sqlalchemy.pool as pool
+# import psycopg2
+#
+# def getconn():
+#     c = psycopg2.connect(user=USER, host=ADDRESS, dbname=DB_NAME, password=PASSWORD, port=PORT)
+#     return c
+#
+# mypool = pool.QueuePool(getconn, max_overflow=10, pool_size=5)
+
 
 def ensure_engine(db_uri='sqlite:///:memory:'):
     """

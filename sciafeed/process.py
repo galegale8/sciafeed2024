@@ -538,59 +538,93 @@ def compute_daily_indicators2(conn, schema, logger):
         logger = logging.getLogger(LOG_NAME)
     logger.info('* querying ds__t200 for compute temperature indicators...')
     sql = """
-    SELECT cod_staz, data_i, (tmxgg).val_md, (tmngg).val_md, (tmdgg).val_md, lat
-    FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz
-    WHERE (tmxgg).val_md IS NOT NULL AND ((tmxgg).flag).wht > 0 AND
-    (tmngg).val_md IS NOT NULL AND ((tmngg).flag).wht > 0 """ % schema
+    SELECT cod_staz, data_i, lat,
+    (tmxgg).val_md, ((tmxgg).flag).wht,
+    (tmngg).val_md, ((tmngg).flag).wht,
+    (tmdgg).val_md, ((tmdgg).flag).wht
+    FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz""" % schema
+
     temp_records = map(list, conn.execute(sql))
 
     logger.info('* computing temperature indicators...')
     temp_items = []
     grgg_items = []
     etp_items = []
+
     for record in temp_records:
-        # data_i_str = record[1].strftime('%Y-%m-%d 00:00:00')
-        tmax, tmin, tmedia, lat = record[2:6]
-        jd = int(record[1].strftime('%j'))
-        deltagg = tmax - tmin
-        tmdgg1 = deltagg / 2
-        grgg = compute.compute_grgg(tmedia)
-        etp = compute.compute_etp(deltagg, tmax, tmin, lat, jd)
-        temp_item = {'data_i': record[1], 'cod_staz': record[0], 'tmdgg1': tmdgg1,
-                     'deltagg': deltagg}
-        temp_items.append(temp_item)
-        grgg_item = {'data_i': record[1], 'cod_staz': record[0], 'grgg': grgg}
-        grgg_items.append(grgg_item)
-        etp_item = {'data_i': record[1], 'cod_staz': record[0], 'etp': etp}
-        etp_items.append(etp_item)
+        cod_staz, data_i, lat = record[0:3]
+        base_item = {'data_i': data_i, 'cod_staz': cod_staz,  'cod_aggr': 4}
+        tmax, tmax_flag = record[3:5]
+        tmin, tmin_flag = record[5:7]
+        tmedia, tmedia_flag = record[7:9]
+        allow_compute_grgg = tmedia is not None and tmedia_flag is not None and tmedia_flag > 0
+        if allow_compute_grgg:
+            grgg_flag, grgg1, grgg2, grgg3, grgg4, grgg5 = compute.compute_grgg(tmedia)
+            grgg_item = base_item.copy()
+            grgg_item.update({
+                'grgg.flag.wht': grgg_flag[1], 'grgg.tot00': grgg1, 'grgg.tot05': grgg2,
+                'grgg.tot10': grgg3, 'grgg.tot15': grgg4, 'grgg.tot21': grgg5})
+            grgg_items.append(grgg_item)
+        allow_compute_deltagg = tmax is not None and tmax_flag is not None and tmax_flag > 0 or \
+            tmin is not None and tmin_flag is not None and tmin_flag > 0
+        if allow_compute_deltagg:
+            deltagg = tmax - tmin
+            tmdgg1 = deltagg / 2
+            temp_item = base_item.copy()
+            temp_item.update({'tmdgg1.val_md': tmdgg1, 'tmdgg1.flag.wht': 1,
+                              'deltagg.val_md': deltagg, 'deltagg.flag.wht': 1})
+            temp_items.append(temp_item)
+        if allow_compute_grgg and allow_compute_deltagg and lat is not None:
+            jd = int(data_i.strftime('%j'))
+            etp = compute.compute_etp(tmedia, tmax, tmin, lat, jd)
+            etp_item = base_item.copy()
+            etp_item.update({'etp.val_md': etp[1], 'etp.flag.wht': etp[0][1]})
+            etp_items.append(etp_item)
+
+    temp_fields = []
+    if temp_items:
+        temp_fields = list(temp_items[0].keys())
+    etp_fields = []
+    if etp_items:
+        etp_fields = list(etp_items[0].keys())
+    grgg_fields = []
+    if grgg_items:
+        grgg_fields = list(grgg_items[0].keys())
     for table_name, fields, data in [
-        ('ds__t200', ['data_i', 'cod_staz', 'tmdgg1', 'deltagg'], temp_items),
-        ('ds__etp', ['data_i', 'cod_staz', 'etp'], etp_items),
-        ('ds__grgg', ['data_i', 'cod_staz', 'grgg'], grgg_items),
+        ('ds__t200', temp_fields, temp_items),
+        ('ds__etp', etp_fields, etp_items),
+        ('ds__grgg', grgg_fields, grgg_items),
     ]:
+        logger.info('updating temperature indicators on table %s.%s' % (schema, table_name))
         sql = upsert.create_upsert(table_name, schema, fields, data, 'upsert')
         if sql:
-            logger.info('updating temperature indicators on table %s.%s' % (schema, table_name))
             conn.execute(sql)
+
     logger.info('* computing bilancio idrico...')
     sql = """
-    SELECT cod_staz, data_i, (prec24).val_tot, (etp).val_md
+    SELECT cod_staz, data_i, (prec24).val_tot, (etp).val_md 
     FROM %s.ds__etp a JOIN %s.ds__preci b USING (cod_staz,data_i) 
-    WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0""" % (schema, schema)
+    WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0 
+    AND (prec24).val_tot IS NOT NULL AND (etp).val_md IS NOT NULL
+    """ % (schema, schema)
     idro_records = map(list, conn.execute(sql))
     idro_items = []
     for idro_record in idro_records:
+        cod_staz, data_i, lat = idro_record[0:3]
+        base_item = {'data_i': data_i, 'cod_staz': cod_staz, 'cod_aggr': 4}
         prec24, etp = idro_record[2:4]
         deltaidro = compute.compute_deltaidro(prec24, etp)
-        idro_item = {'data_i': idro_record[1], 'cod_staz': idro_record[0], 'deltaidro': deltaidro}
+        idro_item = base_item.copy()
+        idro_item.update({'deltaidro.flag.wht': deltaidro[0][1], 'deltaidro.val_md': deltaidro[1]})
         idro_items.append(idro_item)
-    for table_name, fields, data in [
-        ('ds__delta_idro', ['data_i', 'cod_staz', 'deltaidro'], idro_items),
-    ]:
-        sql = upsert.create_upsert(table_name, schema, fields, data, 'upsert')
-        if sql:
-            logger.info('updating bilancio idrico on table %s.%s' % (schema, table_name))
-            conn.execute(sql)
+
+    logger.info('updating bilancio idrico on table %s.%s' % (schema, 'ds__delta_idro'))
+    idro_fields = []
+    if idro_items:
+        idro_fields = list(idro_items[0].keys())
+    sql = upsert.create_upsert('ds__delta_idro', schema, idro_fields, idro_items, 'upsert')
+    if sql:
+        conn.execute(sql)
 
 
 def process_dma(conn, startschema, targetschema, policy, logger):

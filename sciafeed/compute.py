@@ -1028,8 +1028,6 @@ def compute_grgg(tmedia, thresholds=(0, 5, 10, 15, 21)):
     :param thresholds: thresholds to compute grgg components
     :return: fields of grgg (gradi giorno)
     """
-    if not tmedia:
-        return None
     flag = (None, 1)
     tot00 = max(0, tmedia - thresholds[0])
     tot05 = max(0, tmedia - thresholds[1])
@@ -1042,6 +1040,7 @@ def compute_grgg(tmedia, thresholds=(0, 5, 10, 15, 21)):
 def compute_etp(tmedia, tmax, tmin, lat, jd):
     """
     Compute "Evapotraspirazione potenziale giornaliera"
+    It assume all input values are not None.
 
     :param tmedia: average daily temperature
     :param tmax: max daily temperature
@@ -1050,9 +1049,9 @@ def compute_etp(tmedia, tmax, tmin, lat, jd):
     :param jd: julian day
     :return: flag, value, None, None, None
     """
-    if not tmedia:
-        return None
     flag = (None, 1)
+    # needed to manage possible input of 'decimal' objects
+    tmedia, tmax, tmin, lat = map(float, [tmedia, tmax, tmin, lat])
     delta_t = tmax - tmin
     g_sc = 0.082
     lat_rad = lat * pi / 180

@@ -500,9 +500,12 @@ def create_upsert(table_name, schema, fields, data, policy):
 def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_staz=False):
     """
     Insert (or update if not exists) items into the database.
-    It assumes all items are dictionaries with the same keys.
+    It assumes all items are dictionaries with the same keys. Object fields must be represented
+    as strings.
     The 'upsert' policy update to None also the empty/null values, if they are present
     in the item keys.
+    It is used after loading items from CSV files' rows (values are always strings).
+    Rows of same (station, day) are merged.
 
     :param conn: db connection object
     :param items: list of dictionaries to be upserted. They must be the same for keys

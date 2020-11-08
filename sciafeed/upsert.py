@@ -21,6 +21,7 @@ field2class_map = {
     'ics': 'nxxx_obj',
     'icu': 'nxxx_obj',
     'sharl': 'bio_idx_obj',
+    'ifu1': 'bio_idx_obj',
     'etp': 'stat0_obj',
     'bagna': 'bagna1_obj',
     'elio': 'stat2_obj',
@@ -114,7 +115,7 @@ class2subfields_map = {
                      'num03', 'data03_ini', 'num04', 'data04_ini', 'num05', 'data05_ini', 'num06',
                      'data06_ini', 'num07', 'data07_ini', 'num08', 'data08_ini', 'num09',
                      'data09_ini'],
-    'bio_idx_obj': ['flag.ndati', 'flag.wht', 'num_01', 'num02', 'num03'],
+    'bio_idx_obj': ['flag.ndati', 'flag.wht', 'num_01', 'num_02', 'num_03'],
     'pers_prec_obj': [
         'flag.ndati', 'flag.wht',
         'ndry_01', 'datadry_01', 'ndry_02', 'datadry_02', 'ndry_03', 'datadry_03',

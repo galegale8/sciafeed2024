@@ -19,13 +19,13 @@ def merge_data_items(records1, records2, pkeys=('data_i', 'cod_staz', 'cod_aggr'
     dict1 = dict()
     for record1 in records1:
         key = tuple([record1[p] for p in pkeys])
-        dict1[key] = record1
+        dict1[key] = record1.copy()
     for record2 in records2:
         key = tuple([record2[p] for p in pkeys])
         if key in dict1:
             dict1[key].update(record2)
         else:
-            dict1[key] = record2
+            dict1[key] = record2.copy()
     return list(dict1.values())
 
 
@@ -46,7 +46,7 @@ def compute_flag(records, at_least_perc, num_expected=10):
     """
     if not records:
         return 0, 0
-    ndati = len([r for r in records if r[4] > 0 and r[3] is not None])
+    ndati = len([r for r in records if r[4] is not None and r[4] > 0 and r[3] is not None])
     wht = 0
     if ndati / num_expected >= at_least_perc:
         wht = 1
@@ -88,17 +88,17 @@ def compute_bagna(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: (flag, val_md, val_vr, val_mx, val_mn, val_tot)
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
-        return None
+        return (None, None), None, None, None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_tot = round(statistics.mean(valid_values), ROUND_PRECISION)
-    val_mx = round(max(valid_values), ROUND_PRECISION)
-    val_mn = round(min(valid_values), ROUND_PRECISION)
-    val_md = round(sum(valid_values), ROUND_PRECISION)
+    val_tot = float(round(statistics.mean(valid_values), ROUND_PRECISION))
+    val_mx = float(round(max(valid_values), ROUND_PRECISION))
+    val_mn = float(round(min(valid_values), ROUND_PRECISION))
+    val_md = float(round(sum(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx, val_mn, val_tot
 
 
@@ -111,16 +111,16 @@ def compute_deltaidro(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
-        return None
+        return (None, None), None, None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_md = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
-    val_mx = round(max(valid_values), ROUND_PRECISION)
-    val_mn = round(min(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
+    val_mx = float(round(max(valid_values), ROUND_PRECISION))
+    val_mn = float(round(min(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -133,15 +133,15 @@ def compute_elio(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, val_mx)
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     val_vr = None
     val_mx = None
     if not valid_values:
-        return None
+        return (None, None), None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_md = round(sum(valid_values), ROUND_PRECISION)
+    val_md = float(round(sum(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx
 
 
@@ -154,16 +154,16 @@ def compute_etp(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
-        return None
+        return (None, None), None, None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_md = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
-    val_mx = round(max(valid_values), ROUND_PRECISION)
-    val_mn = round(min(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
+    val_mx = float(round(max(valid_values), ROUND_PRECISION))
+    val_mn = float(round(min(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -176,16 +176,16 @@ def compute_radglob(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, val_md, val_vr, val_mx, val_mn
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     val_vr = None
     if not valid_values:
-        return None
+        return (None, None), None, None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    val_md = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
-    val_mx = round(max(valid_values), ROUND_PRECISION)
-    val_mn = round(min(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
+    val_mx = float(round(max(valid_values), ROUND_PRECISION))
+    val_mn = float(round(min(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -199,22 +199,27 @@ def compute_grgg(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the wht
     :return: flag, tot00, tot05, tot10, tot15, tot21
     """
-    valid_records = [r for r in records if r[4] > 0]
-    valid_values_00 = [r[3] for r in valid_records if r[3][0] is not None]
-    valid_values_05 = [r[3] for r in valid_records if r[3][1] is not None]
-    valid_values_10 = [r[3] for r in valid_records if r[3][2] is not None]
-    valid_values_15 = [r[3] for r in valid_records if r[3][3] is not None]
-    valid_values_21 = [r[3] for r in valid_records if r[3][4] is not None]
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0]
+    valid_values_00 = [r[3][0] for r in valid_records if r[3][0] is not None]
+    valid_values_05 = [r[3][1] for r in valid_records if r[3][1] is not None]
+    valid_values_10 = [r[3][2] for r in valid_records if r[3][2] is not None]
+    valid_values_15 = [r[3][3] for r in valid_records if r[3][3] is not None]
+    valid_values_21 = [r[3][4]  for r in valid_records if r[3][4] is not None]
 
     if not valid_records:
-        return None
+        return (None, None), None, None, None, None, None
 
     flag = compute_flag(records, at_least_perc, num_expected)
-    tot00 = valid_values_00 and round(statistics.mean(valid_values_00), ROUND_PRECISION) or None
-    tot05 = valid_values_05 and round(statistics.mean(valid_values_05), ROUND_PRECISION) or None
-    tot10 = valid_values_10 and round(statistics.mean(valid_values_10), ROUND_PRECISION) or None
-    tot15 = valid_values_15 and round(statistics.mean(valid_values_15), ROUND_PRECISION) or None
-    tot21 = valid_values_21 and round(statistics.mean(valid_values_21), ROUND_PRECISION) or None
+    tot00 = valid_values_00 and float(
+        round(statistics.mean(valid_values_00), ROUND_PRECISION)) or None
+    tot05 = valid_values_05 and float(
+        round(statistics.mean(valid_values_05), ROUND_PRECISION)) or None
+    tot10 = valid_values_10 and float(
+        round(statistics.mean(valid_values_10), ROUND_PRECISION)) or None
+    tot15 = valid_values_15 and float(
+        round(statistics.mean(valid_values_15), ROUND_PRECISION)) or None
+    tot21 = valid_values_21 and float(
+        round(statistics.mean(valid_values_21), ROUND_PRECISION)) or None
     return flag, tot00, tot05, tot10, tot15, tot21
 
 
@@ -228,27 +233,27 @@ def compute_press(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
-    valid_records = [r for r in records if r[4] > 0]
-    pmedia_values = [r[3] for r in valid_records if r[3][0] is not None]
-    pmax_values = [r[3] for r in valid_records if r[3][1] is not None]
-    pmin_values = [r[3] for r in valid_records if r[3][2] is not None]
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0]
+    pmedia_values = [r[3][0] for r in valid_records if r[3][0] is not None]
+    pmax_values = [r[3][1] for r in valid_records if r[3][1] is not None]
+    pmin_values = [r[3][2] for r in valid_records if r[3][2] is not None]
     if not pmin_values and not pmax_values and not pmedia_values:
-        return None
+        return (None, None), None, None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
     val_md = None
     val_vr = None
     val_mx = None
     val_mn = None
     if pmedia_values:
-        val_md = round(statistics.mean(pmedia_values), ROUND_PRECISION)
-        val_mx = round(max(pmedia_values), ROUND_PRECISION)
-        val_mn = round(min(pmedia_values), ROUND_PRECISION)
+        val_md = float(round(statistics.mean(pmedia_values), ROUND_PRECISION))
+        val_mx = float(round(max(pmedia_values), ROUND_PRECISION))
+        val_mn = float(round(min(pmedia_values), ROUND_PRECISION))
         if len(pmedia_values) >= 2:
-            val_vr = round(statistics.stdev(pmedia_values), ROUND_PRECISION)
+            val_vr = float(round(statistics.stdev(pmedia_values), ROUND_PRECISION))
     if pmax_values:
-        val_mx = round(max(pmax_values), ROUND_PRECISION)
+        val_mx = float(round(max(pmax_values), ROUND_PRECISION))
     if pmin_values:
-        val_mn = round(min(pmin_values), ROUND_PRECISION)
+        val_mn = float(round(min(pmin_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -262,25 +267,25 @@ def compute_ur(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_md, val_vr, flag1, val_mx, val_mn)
     """
-    valid_records = [r for r in records if r[4] > 0]
-    urmedia_values = [r[3] for r in valid_records if r[3][0] is not None]
-    urmax_values = [r[3] for r in valid_records if r[3][2] is not None]
-    urmin_values = [r[3] for r in valid_records if r[3][3] is not None]
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0]
+    urmedia_values = [r[3][0] for r in valid_records if r[3][0] is not None]
+    urmax_values = [r[3][2] for r in valid_records if r[3][2] is not None]
+    urmin_values = [r[3][3] for r in valid_records if r[3][3] is not None]
     if not urmedia_values and not urmax_values and not urmin_values:
-        return None
+        return (None, None), None, None, None, None, None
     flag = flag1 = compute_flag(records, at_least_perc, num_expected)
     val_md = None
     val_vr = None
     val_mx = None
     val_mn = None
     if urmedia_values:
-        val_md = round(statistics.mean(urmedia_values), ROUND_PRECISION)
+        val_md = float(round(statistics.mean(urmedia_values), ROUND_PRECISION))
         if len(urmedia_values) >= 2:
-            val_vr = round(statistics.stdev(urmedia_values), ROUND_PRECISION)
+            val_vr = float(round(statistics.stdev(urmedia_values), ROUND_PRECISION))
     if urmax_values:
-        val_mx = round(max(urmax_values), ROUND_PRECISION)
+        val_mx = float(round(max(urmax_values), ROUND_PRECISION))
     if urmin_values:
-        val_mn = round(min(urmin_values), ROUND_PRECISION)
+        val_mn = float(round(min(urmin_values), ROUND_PRECISION))
     return flag, val_md, val_vr, flag1, val_mx, val_mn
 
 
@@ -294,18 +299,19 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff, dd)
     """
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None and len(r[3]) == 2]
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3] is not None
+                     and len(r[3]) == 2]
     valid_ff = [r for r in valid_records if r[3][0] is not None]
     valid_dd = [r for r in valid_records if r[3][1] is not None]
     if not valid_records:
-        return None
+        return (None, None), None, None
     ff = None
     dd = None
     flag = compute_flag(records, at_least_perc, num_expected)
     if valid_ff:
-        ff = round(max(valid_ff), ROUND_PRECISION)
+        ff = float(round(max(valid_ff), ROUND_PRECISION))
     if valid_dd:
-        dd = round(max(valid_dd), ROUND_PRECISION)
+        dd = float(round(max(valid_dd), ROUND_PRECISION))
     return flag, ff, dd
 
 
@@ -318,11 +324,11 @@ def compute_vntmd(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff)
     """
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
     if not valid_values:
-        return None
+        return (None, None), None
     flag = compute_flag(records, at_least_perc, num_expected)
-    ff = round(statistics.mean(valid_values), ROUND_PRECISION)
+    ff = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     return flag, ff
 
 
@@ -337,9 +343,14 @@ def compute_vnt(records, num_expected, at_least_perc=0.75):
     :return: (flag, frq_calme, frq_s(i)c(j))
     """
     flag = compute_flag(records, at_least_perc, num_expected)
-    valid_records = [r for r in records if r[4] > 0 and r[3]]
-    valid_values = [r[3] for r in valid_records]
-    ret_subvalues = [flag] + list(np.sum(valid_values, axis=0))  # i.e. sum of vectors
+    if not flag[1]:
+        return [flag] + [None] * 65
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3]]
+    subfields_days = []  # list of vectors
+    for valid_record in valid_records:
+        subfields_day = [v is not None and float(v) or 0 for v in valid_record[3]]
+        subfields_days.append(subfields_day)
+    ret_subvalues = [flag] + list(np.sum(subfields_days, axis=0))  # i.e. sum of vectors
     return ret_subvalues
 
 
@@ -356,12 +367,12 @@ def compute_prec24(records, num_expected, at_least_perc=0.9):
     valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
     valid_values = [r[3] for r in valid_records]
     if not valid_values:
-        return None
+        return (None, None), None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_tot = round(sum(valid_values), ROUND_PRECISION)
+    val_tot = float(round(sum(valid_values), ROUND_PRECISION))
     max_record = max(valid_records, key=operator.itemgetter(3))
     data_mx = max_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_mx = round(max_record[3], ROUND_PRECISION)
+    val_mx = float(round(max_record[3], ROUND_PRECISION))
     return flag, val_tot, val_mx, data_mx
 
 
@@ -393,34 +404,59 @@ def compute_cl_prec24(records, *args, **kwargs):
 def compute_prec01_06_12(records, num_expected, at_least_perc=0.9):
     """
     Compute "precipitazione cumulata su 1, 6 o 12 ore" for different DMA aggregations.
+    Assume r[3][0] is the value for each record.
 
     :param records: list of `data` objects
     :param num_expected: number of records expected
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, val_mx, data_mx)
     """
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
-    valid_values = [r[3] for r in valid_records]
+    valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3][0] is not None]
+    valid_values = [r[3][0] for r in valid_records]
     if not valid_values:
-        return None
+        return (None, None), None, None
     flag = compute_flag(records, at_least_perc, num_expected)
     max_record = max(valid_records, key=operator.itemgetter(3))
     data_mx = max_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_mx = round(max_record[3], ROUND_PRECISION)
+    val_mx = float(round(max_record[3][0], ROUND_PRECISION))
     return flag, val_mx, data_mx
 
 
 def compute_cl_prec_06_12(records, *args, **kwargs):
     """
     Compute "distribuzione precipitazione cumulata su 6 o 12 ore" for different DMA aggregations.
+    Assume r[3][1:] are the values for each record.
 
     :param records: list of `data` objects
     :return: (dry, wet_01, wet_02, wet_03, wet_04, wet_05)
     """
-    valid_records = [r for r in records if r[4] > 0 and r[3]]
-    valid_values = [r[3] for r in valid_records]
-    ret_subvalues = list(np.sum(valid_values, axis=0))  # i.e. sum of vectors
-    return ret_subvalues
+    valid_values = [r[3][1:] for r in records if r[4] is not None and r[4] > 0]
+    if not valid_values:
+        return (0, )*6
+    dry, wet_01, wet_02, wet_03, wet_04, wet_05 = [0] * 6
+    for day_values in valid_values:
+        cdry, cwet_01, cwet_02, cwet_03, cwet_04, cwet_05 = day_values
+        if cdry is not None:
+            dry += float(cdry)
+        if cwet_01 is not None:
+            wet_01 += float(cwet_01)
+        if cwet_02 is not None:
+            wet_02 += float(cwet_02)
+        if cwet_03 is not None:
+            wet_03 += float(cwet_03)
+        if cwet_04 is not None:
+            wet_04 += float(cwet_04)
+        if cwet_05 is not None:
+            wet_05 += float(cwet_05)
+    return dry, wet_01, wet_02, wet_03, wet_04, wet_05
+    # alternative:
+    # valid_values = [r for r in records if r[4] is not None and r[4] > 0]
+    # subfields_days = []  # list of vectors
+    # for valid_record in valid_records:
+    #     subfields_day = [v is not None and float(v) or 0 for v in valid_record[3][1:]]
+    #     subfields_days.append(subfields_day)
+    # ret_subvalues = list(np.sum(subfields_days, axis=0))  # i.e. sum of vectors
+    # return ret_subvalues
 
 
 def compute_ifs(records, num_expected, at_least_perc=0.75):
@@ -540,9 +576,9 @@ def compute_sharl(records, num_expected, at_least_perc=0.75):
 
     for critical_temp, urel_set in itertools.groupby(sortedbyurel, group_by_ur):
         urel_set = list(urel_set)
-        num_01 += len([r for r in urel_set if r[0] - critical_temp > 0])
-        num_02 += len([r for r in urel_set if r[0] - critical_temp > 1])
-        num_02 += len([r for r in urel_set if r[0] - critical_temp > 2])
+        num_01 += len([r for r in urel_set if float(r[0]) - critical_temp > 0])
+        num_02 += len([r for r in urel_set if float(r[0]) - critical_temp > 1])
+        num_02 += len([r for r in urel_set if float(r[0]) - critical_temp > 2])
     return flag, num_01, num_02, num_03
 
 
@@ -589,9 +625,9 @@ def compute_ifu1(records, num_expected, at_least_perc=0.75):
 
     for critical_temp, urel_set in itertools.groupby(sortedbyurel, group_by_ur):
         urel_set = list(urel_set)
-        num_01 += len([r for r in urel_set if r[0] - critical_temp > 0])
-        num_02 += len([r for r in urel_set if r[0] - critical_temp > 1])
-        num_02 += len([r for r in urel_set if r[0] - critical_temp > 2])
+        num_01 += len([r for r in urel_set if float(r[0]) - critical_temp > 0])
+        num_02 += len([r for r in urel_set if float(r[0]) - critical_temp > 1])
+        num_02 += len([r for r in urel_set if float(r[0]) - critical_temp > 2])
     return flag, num_01, num_02, num_03
 
 
@@ -624,27 +660,39 @@ def compute_prs_prec(records, num_expected, at_least_perc=0.9):
     dry_sequences.sort(key=lambda r: len(r), reverse=True)
     wet_sequences.sort(key=lambda r: len(r), reverse=True)
     if len(dry_sequences) > 1:
-        ndry_01 = len(dry_sequences[0])
-        datadry_01 = dry_sequences[0][1]
+        longest = dry_sequences[0]
+        ndry_01 = len(longest)
+        datadry_01 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
     if len(dry_sequences) > 2:
-        ndry_02 = len(dry_sequences[1])
-        datadry_02 = dry_sequences[1][1]
+        longest = dry_sequences[1]
+        ndry_02 = len(longest)
+        datadry_02 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
     if len(dry_sequences) > 3:
-        ndry_03 = len(dry_sequences[2])
-        datadry_03 = dry_sequences[2][1]
+        longest = dry_sequences[1]
+        ndry_03 = len(longest)
+        datadry_03 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
 
     if len(wet_sequences) > 1:
-        nwet_01 = len(wet_sequences[0])
-        totwet_01 = sum([r[3] for r in wet_sequences[0]])
-        datawet_01 = wet_sequences[0][1]
+        longest = wet_sequences[0]
+        nwet_01 = len(longest)
+        totwet_01 = float(sum([r[3] for r in longest]))
+        datawet_01 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
     if len(wet_sequences) > 2:
-        nwet_02 = len(wet_sequences[1])
-        totwet_02 = sum([r[3] for r in wet_sequences[1]])
-        datawet_02 = wet_sequences[1][1]
+        longest = wet_sequences[1]
+        nwet_02 = len(longest)
+        totwet_02 = float(sum([r[3] for r in longest]))
+        datawet_02 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
     if len(wet_sequences) > 3:
-        nwet_03 = len(wet_sequences[2])
-        totwet_03 = sum([r[3] for r in wet_sequences[2]])
-        datawet_03 = wet_sequences[2][1]
+        longest = wet_sequences[2]
+        nwet_03 = len(longest)
+        totwet_03 = float(sum([r[3] for r in longest]))
+        datawet_03 = sorted(longest, key=operator.itemgetter(1))[0][1].strftime(
+            '%Y-%m-%d 00:00:00')
     ret_value = [flag, ndry_01, datadry_01, ndry_02, datadry_02, ndry_03, datadry_03,
                  nwet_01, totwet_01, datawet_01, nwet_02, totwet_02, datawet_02,
                  nwet_03, totwet_03, datawet_03] + [None] * 9
@@ -660,35 +708,34 @@ def compute_prs_t200mx(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     """
     flag = compute_temp_flag(records, at_least_perc, num_expected)
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
     numX = [0] * 11
     dataX = [None] * 11
 
-    def group_by_trange(value):
-        if value <= -10:
+    def group_by_trange(record):
+        value = record[3]
+        if value <= -5:
             return 0
-        elif -10 < value <= -5:
-            return 1
         elif -5 < value <= 0:
-            return 2
+            return 1
         elif 0 < value <= 5:
-            return 3
+            return 2
         elif 5 < value <= 10:
-            return 4
+            return 3
         elif 10 < value <= 15:
-            return 5
+            return 4
         elif 15 < value <= 20:
-            return 6
+            return 5
         elif 20 < value <= 25:
-            return 7
+            return 6
         elif 25 < value <= 30:
-            return 8
+            return 7
         elif 30 < value <= 35:
-            return 9
+            return 8
         elif 35 < value <= 40:
-            return 10
+            return 9
         # else > 40:
-        return 11
+        return 10
 
     for the_index, rec_sequence in itertools.groupby(valid_records, group_by_trange):
         rec_sequence = list(rec_sequence)
@@ -710,7 +757,7 @@ def compute_prs_t200mn(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     """
     flag = compute_temp_flag(records, at_least_perc, num_expected)
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
     numX = [0] * 9
     dataX = [None] * 9
 
@@ -732,10 +779,8 @@ def compute_prs_t200mn(records, num_expected, at_least_perc=0.75):
             return 6
         elif 10 < value <= 15:
             return 7
-        elif 15 < value <= 20:
-            return 8
-        # value > 20
-        return 9
+        # value > 15
+        return 8
 
     for the_index, rec_sequence in itertools.groupby(valid_records, group_by_trange):
         rec_sequence = list(rec_sequence)
@@ -758,13 +803,13 @@ def compute_tmdgg(records, num_expected, at_least_perc=0.75):
     :return flag, val_md, val_vr
     """
     flag = compute_temp_flag(records, at_least_perc, num_expected)
-    valid_values = [r[3] for r in records if r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4] and r[4] > 0 and r[3] is not None]
     val_md = None
     val_vr = None
     if valid_values:
-        val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+        val_md = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
-        val_vr = round(statistics.stdev(valid_values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr
 
 
@@ -779,17 +824,17 @@ def compute_tmxgg(records, num_expected, at_least_perc=0.75):
     """
     flag = compute_temp_flag(records, at_least_perc, num_expected)
     val_vr = None
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
     if not valid_records:
-        return None
+        return (None, None), None, None, None, None
     values = [r[3] for r in valid_records]
-    val_x = round(statistics.mean(values), ROUND_PRECISION)
+    val_x = float(round(statistics.mean(values), ROUND_PRECISION))
     if len(values) >= 2:
-        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(values), ROUND_PRECISION))
 
     max_record = max(valid_records, key=operator.itemgetter(3))
     data_x = max_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_md = round(max_record[3], ROUND_PRECISION)
+    val_md = float(round(max_record[3], ROUND_PRECISION))
 
     return flag, val_md, val_vr, val_x, data_x
 
@@ -805,17 +850,17 @@ def compute_tmngg(records, num_expected, at_least_perc=0.75):
     """
     flag = compute_temp_flag(records, at_least_perc, num_expected)
     val_vr = None
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
-    if not valid_records:
-        return None
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
+    if not valid_records or not flag[1]:
+        return flag, None, None, None, None
     values = [r[3] for r in valid_records]
-    val_x = round(statistics.mean(values), ROUND_PRECISION)
+    val_x = float(round(statistics.mean(values), ROUND_PRECISION))
     if len(values) >= 2:
-        val_vr = round(statistics.stdev(values), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(values), ROUND_PRECISION))
 
     min_record = min(valid_records, key=operator.itemgetter(3))
     data_x = min_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_md = round(min_record[3], ROUND_PRECISION)
+    val_md = float(round(min_record[3], ROUND_PRECISION))
 
     return flag, val_md, val_vr, val_x, data_x
 
@@ -828,7 +873,7 @@ def compute_cl_tmxgg(records, *args, **kwargs):
     :param records: input records
     :return: [cl_01, cl_02, ...cl_11]
     """
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
     cl_01 = len([d for d in valid_records if d[3] <= -5])
     cl_02 = len([d for d in valid_records if -5 < d[3] <= 0])
     cl_03 = len([d for d in valid_records if 0 < d[3] <= 5])
@@ -851,7 +896,7 @@ def compute_cl_tmngg(records, *args, **kwargs):
     :param records: input records
     :return: [cl_01, cl_02, ...cl_11]
     """
-    valid_records = [r for r in records if r[4] > 0 and r[3] is not None]
+    valid_records = [r for r in records if r[4] and r[4] > 0 and r[3] is not None]
     cl_01 = len([d for d in valid_records if d[3] <= -15])
     cl_02 = len([d for d in valid_records if -15 < d[3] <= -10])
     cl_03 = len([d for d in valid_records if -10 < d[3] <= -5])
@@ -875,15 +920,15 @@ def compute_tmdgg1(records, num_expected, at_least_perc=0.75):
     :return flag, val_md, val_vr
     """
     valid_records = [r for r in records if len(r[3]) == 2 and r[3][0] is not None
-                     and r[3][1] is not None and r[4] and r[4] > 0]
+                     and r[3][1] is not None and r[4] and r[4] and r[4] > 0]
     flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
     val_md = val_vr = None
-    if not valid_records:
-        return val_md, val_vr
+    if not valid_records or not flag[1]:
+        return flag, val_md, val_vr
     values_tmediagg1 = [(r[3][0]+r[3][1])/2 for r in valid_records]
-    val_md = round(statistics.mean(values_tmediagg1), ROUND_PRECISION)
+    val_md = float(round(statistics.mean(values_tmediagg1), ROUND_PRECISION))
     if len(values_tmediagg1) >= 2:
-        val_vr = round(statistics.stdev(values_tmediagg1), ROUND_PRECISION)
+        val_vr = float(round(statistics.stdev(values_tmediagg1), ROUND_PRECISION))
     return flag, val_md, val_vr
 
 
@@ -900,15 +945,15 @@ def compute_deltagg(records, num_expected, at_least_perc=0.75):
     valid_records = [r for r in records if len(r[3]) == 2 and r[3][0] is not None
                      and r[3][1] is not None and r[4] and r[4] > 0]
     flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
-    val_md = val_vr = None
-    if not valid_records:
-        return val_md, val_vr
+    val_md = val_vr = val_mx = val_mn = None
+    if not valid_records or not flag[1]:
+        return flag, val_md, val_vr, val_mx, val_mn
     values_deltagg = [(r[3][0]-r[3][1]) for r in valid_records]
-    val_md = round(statistics.mean(values_deltagg), ROUND_PRECISION)
+    val_md = float(round(statistics.mean(values_deltagg), ROUND_PRECISION))
     if len(values_deltagg) >= 2:
-        val_vr = round(statistics.stdev(values_deltagg), ROUND_PRECISION)
-    val_mx = max(values_deltagg)
-    val_mn = min(values_deltagg)
+        val_vr = float(round(statistics.stdev(values_deltagg), ROUND_PRECISION))
+    val_mx = float(max(values_deltagg))
+    val_mn = float(min(values_deltagg))
     return flag, val_md, val_vr, val_mx, val_mn
 
 
@@ -921,11 +966,11 @@ def compute_day_gelo(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return flag, num
     """
-    valid_records = [r for r in records if r[3] is not None and r[4] > 0]
+    valid_records = [r for r in records if r[3] is not None and r[4] and r[4] > 0]
     flag = compute_temp_flag(valid_records, at_least_perc, num_expected)
     val_md = val_vr = None
-    if not valid_records:
-        return val_md, val_vr
+    if not valid_records or not flag[1]:
+        return flag, val_md, val_vr
     num = len([r for r in valid_records if r[3] < 0])
     return flag, num
 
@@ -958,7 +1003,7 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
     def group_by_decade(r):
         if r[1].day <= 10:
             return 1
-        elif r[2].day <= 20:
+        elif r[1].day <= 20:
             return 2
         return 3
 
@@ -973,7 +1018,7 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                 'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3, 'provenienza': 'daily'}
             days_in_year = calendar.isleap(year) and 366 or 365
             for field, field_funct in map_funct.items():
-                year_item[field] = field_funct(year_records, days_in_year)
+                year_item[field] = str(field_funct(year_records, days_in_year))
             year_items.append(year_item)
             for month, month_records in itertools.groupby(year_records, group_by_month):
                 month_records = list(month_records)
@@ -982,7 +1027,7 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                 month_item = {
                     'data_i': data_i, 'cod_staz': station,  'cod_aggr': 2, 'provenienza': 'daily'}
                 for field, field_funct in map_funct.items():
-                    month_item[field] = field_funct(month_records, days_in_month)
+                    month_item[field] = str(field_funct(month_records, days_in_month))
                 month_items.append(month_item)
                 for decade, dec_records in itertools.groupby(month_records, group_by_decade):
                     dec_records = list(dec_records)
@@ -995,10 +1040,18 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
                     decade_item = {'data_i': data_i, 'cod_staz': station, 'cod_aggr': 1,
                                    'provenienza': 'daily'}
                     for field, field_funct in map_funct.items():
-                        decade_item[field] = field_funct(dec_records, days_in_decade)
+                        decade_item[field] = str(field_funct(dec_records, days_in_decade))
                     decade_items.append(decade_item)
     data = year_items + month_items + decade_items
-    return data
+    ret_value = []
+    for record in data:
+        record = upsert.expand_record(record)
+        record = {
+            k: v for k, v in record.items()
+            if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+        }
+        ret_value.append(record)
+    return ret_value
 
 
 def compute_year_records(table_records, field=None, field_funct=None, map_funct=None):
@@ -1026,10 +1079,18 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
                 'data_i': data_i, 'cod_staz': station, 'cod_aggr': 3, 'provenienza': 'daily'}
             days_in_year = calendar.isleap(year) and 366 or 365
             for field, field_funct in map_funct.items():
-                year_item[field] = field_funct(year_records, days_in_year)
+                year_item[field] = str(field_funct(year_records, days_in_year))
             year_items.append(year_item)
     data = year_items
-    return data
+    ret_value = []
+    for record in data:
+        record = upsert.expand_record(record)
+        record = {
+            k: v for k, v in record.items()
+            if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+        }
+        ret_value.append(record)
+    return ret_value
 
 
 def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
@@ -1042,7 +1103,7 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
         conn, 'ds__bagna', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'bagna', compute_bagna)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna']
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__bagna', targetschema, fields, data, policy)
     if sql:
@@ -1060,7 +1121,7 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
         conn, 'ds__delta_idro', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro']
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__delta_idro', targetschema, fields, data, policy)
     if sql:
@@ -1077,8 +1138,8 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
     table_records = querying.select_records(
         conn, 'ds__elio', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
-    data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio']
+    data = compute_dma_records(table_records, 'elio', compute_elio)
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__elio', targetschema, fields, data, policy)
     if sql:
@@ -1095,8 +1156,8 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logg
     table_records = querying.select_records(
         conn, 'ds__radglob', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
-    data = compute_dma_records(table_records, 'deltaidro', compute_radglob)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob']
+    data = compute_dma_records(table_records, 'radglob', compute_radglob)
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__radglob', targetschema, fields, data, policy)
     if sql:
@@ -1113,8 +1174,8 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logg
     table_records = querying.select_records(
         conn, 'ds__etp', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
-    data = compute_dma_records(table_records, 'deltaidro', compute_etp)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp']
+    data = compute_dma_records(table_records, 'etp', compute_etp)
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__etp', targetschema, fields, data, policy)
     if sql:
@@ -1133,7 +1194,7 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
         conn, 'ds__grgg', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'grgg', compute_grgg)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg']
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__grgg', targetschema, fields, data, policy)
     if sql:
@@ -1152,7 +1213,7 @@ def process_dma_pressione(conn, startschema, targetschema, policy, logger):
         conn, 'ds__press', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'press', compute_press)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press']
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__press', targetschema, fields, data, policy)
     if sql:
@@ -1165,13 +1226,13 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
     subfields = ['val_md', 'val_vr', 'val_mx', 'val_mn']
-    array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('press', s) for s in subfields]) + ']'
+    array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('ur', s) for s in subfields]) + ']'
     sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('ur', array_field, 'ur')
     table_records = querying.select_records(
         conn, 'ds__urel', fields=[], sql_fields=sql_fields, schema=startschema)
     logger.info('computing aggregations...')
-    data = compute_dma_records(table_records, 'press', compute_ur)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur']
+    data = compute_dma_records(table_records, 'ur', compute_ur)
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur'])
     logger.info('update records....')
     sql = upsert.create_upsert('ds__urel', targetschema, fields, data, policy)
     if sql:
@@ -1200,7 +1261,8 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     }
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, map_funct=map_funct)
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza'] + list(map_funct.keys())
+    fields = upsert.expand_fields(
+        ['data_i', 'cod_staz', 'cod_aggr', 'provenienza'] + list(map_funct.keys()))
     logger.info('update records....')
     sql = upsert.create_upsert('ds__bioclima', targetschema, fields, data, policy)
     if sql:
@@ -1210,18 +1272,24 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
 
 def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     logger.info('starting process DMA precipitazione')
-    logger.info('selecting for input records (prec01) ...')
+    logger.info('selecting for input records...')
 
     sql_fields = "cod_staz, data_i, " \
                  "(prec01).val_mx, ((prec01).flag).wht, " \
                  "(prec24).val_tot, ((prec24).flag).wht, " \
-                 "(prec12).val_tot, ((prec12).flag).wht, " \
-                 "(prec06).val_tot, ((prec06).flag).wht"
+                 "(prec12).val_mx, ((prec12).flag).wht, " \
+                 "(prec06).val_mx, ((prec06).flag).wht, " \
+                 "(cl_prec06).dry, (cl_prec06).wet_01, " \
+                 "(cl_prec06).wet_02, (cl_prec06).wet_03, " \
+                 "(cl_prec06).wet_04, (cl_prec06).wet_05, " \
+                 "(cl_prec12).dry, (cl_prec12).wet_01, " \
+                 "(cl_prec12).wet_02, (cl_prec12).wet_03, " \
+                 "(cl_prec12).wet_04, (cl_prec12).wet_05"
     table_records = querying.select_records(
         conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
     table_records = list(table_records)
     logger.info('computing aggregations for prec01...')
-    prec01_records = [[r[0], r[1], 'prec01', r[2], r[3]] for r in table_records]
+    prec01_records = [[r[0], r[1], 'prec01', (r[2],), r[3]] for r in table_records]
     data_prec01 = compute_dma_records(prec01_records, 'prec01', compute_prec01_06_12)
 
     logger.info('selecting for input records (prec24) ...')
@@ -1237,26 +1305,26 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     data_prs_prec = compute_year_records(prec24_records, 'prs_prec', compute_prs_prec)
 
     logger.info('selecting for input records (prec12) ...')
-    prec12_records = [[r[0], r[1], 'prec12', r[6], r[7]] for r in table_records]
+    prec12_records = [[r[0], r[1], 'prec12', ([r[6]]+r[16:]), r[7]] for r in table_records]
     map_funct = {
         'prec12': compute_prec01_06_12,
         'cl_prec12': compute_cl_prec_06_12,
     }
-    logger.info('computing aggregations for prec24...')
+    logger.info('computing aggregations for prec12...')
     data_prec12 = compute_dma_records(prec12_records, map_funct=map_funct)
 
     logger.info('selecting for input records (prec06) ...')
-    data_prec06 = [[r[0], r[1], 'prec12', r[8], r[9]] for r in table_records]
+    data_prec06 = [[r[0], r[1], 'prec06', ([r[8]]+r[10:16]), r[9]] for r in table_records]
     map_funct = {
         'prec06': compute_prec01_06_12,
         'cl_prec06': compute_cl_prec_06_12,
     }
+    logger.info('computing aggregations for prec06...')
     data_prec06 = compute_dma_records(data_prec06, map_funct=map_funct)
 
     logger.info('update records for persistenza precipitazione...')
-    sql = upsert.create_upsert(
-        'ds__prs_prec', targetschema,
-        ['data_i', 'cod_staz', 'cod_aggr', 'prs_prec', 'provenienza'], data_prs_prec, policy)
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'prs_prec', 'provenienza'])
+    sql = upsert.create_upsert('ds__prs_prec', targetschema, fields, data_prs_prec, policy)
     if sql:
         logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
         conn.execute(sql)
@@ -1264,8 +1332,9 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     logger.info('merging records before update of table ds__prec...')
     data = functools.reduce(merge_data_items, [data_prec01, data_prec24, data_prec12, data_prec06])
     logger.info('update records for table ds__prec...')
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prec01', 'prec24', 'cl_prec24',
-              'prec12', 'cl_prec12', 'prec06', 'cl_prec06']
+    fields = upsert.expand_fields(
+        ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prec01', 'prec24', 'cl_prec24',
+         'prec12', 'cl_prec12', 'prec06', 'cl_prec06'])
     sql = upsert.create_upsert('ds__preci', targetschema, fields, data, policy)
     if sql:
         conn.execute(sql)
@@ -1278,7 +1347,8 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
     logger.info('selecting for input records...')
     data_items = dict()
     wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
-    vnt_array_field = 'ARRAY[frq_calme,' + ','.join(['(vnt).%s' % s for s in wind_subfields]) + ']'
+    vnt_array_field = 'ARRAY[(vnt).frq_calme,' + \
+                      ','.join(['(vnt).%s' % s for s in wind_subfields]) + ']'
     sql_fields = "cod_staz, data_i, (vntmd).ff, ((vntmd).flag).wht, " \
                  "ARRAY[(vntmxgg).ff,(vntmxgg).dd], ((vntmxgg).flag).wht, " \
                  "%s, ((vnt).flag).wht" % vnt_array_field
@@ -1304,7 +1374,8 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
     data = functools.reduce(merge_data_items, data_items.values())
 
     logger.info('update records...')
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt']
+    fields = upsert.expand_fields(
+        ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt'])
     sql = upsert.create_upsert('ds__vnt10', targetschema, fields, data, policy)
     if sql:
         conn.execute(sql)
@@ -1320,38 +1391,38 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
                  "(tmngg).val_md, ((tmngg).flag).wht, " \
                  "(tmdgg).val_md, ((tmdgg).flag).wht"
     table_records = querying.select_records(
-        conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__t200', fields=[], sql_fields=sql_fields, schema=startschema)
     table_records = list(table_records)
 
     logger.info('computing aggregations (persistenza temperatura tmax)...')
     tmax_records = [[r[0], r[1], 'tmax', r[2], r[3]] for r in table_records]
     prs_t200mx = compute_year_records(tmax_records, 'prs_t200mx', compute_prs_t200mx)
-    logger.info('computing aggregations (persistenza temperatura tmin)...')
+    # logger.info('computing aggregations (persistenza temperatura tmin)...')
     tmin_records = [[r[0], r[1], 'tmin', r[4], r[5]] for r in table_records]
-    prs_t200mn = compute_year_records(tmin_records, 'prs_t200mx', compute_prs_t200mn)
+    prs_t200mn = compute_year_records(tmin_records, 'prs_t200mn', compute_prs_t200mn)
 
     logger.info('merging records before update of table ds__prs_t200...')
     data_prs = functools.reduce(merge_data_items, [prs_t200mx, prs_t200mn])
 
     logger.info('update records of table ds__prs_t200...')
-    sql = upsert.create_upsert(
-        'ds__prs_t200', targetschema,
-        ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx'], data_prs, 'upsert')
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx',
+                                   'prs_t200mn'])
+    sql = upsert.create_upsert('ds__prs_t200', targetschema, fields, data_prs, policy)
     if sql:
         logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
         conn.execute(sql)
 
     logger.info('computing aggregations (tmdgg)...')
     tmd_records = [[r[0], r[1], 'tmdgg', r[6], r[7]] for r in table_records]
-    data_items['tmdgg'] = compute_dma_records(tmd_records, 'tdmgg', compute_tmdgg)
+    data_items['tmdgg'] = compute_dma_records(tmd_records, 'tmdgg', compute_tmdgg)
     logger.info('computing aggregations (tmxgg)...')
     data_items['tmxgg'] = compute_dma_records(tmax_records, 'tmxgg', compute_tmxgg)
     logger.info('computing aggregations (tmngg)...')
     data_items['tmngg'] = compute_dma_records(tmin_records, 'tmngg', compute_tmngg)
     logger.info('computing aggregations (cl_tmxgg)...')
-    data_items['c_tmxgg'] = compute_dma_records(tmax_records, 'cl_tmxgggg', compute_cl_tmxgg)
+    data_items['c_tmxgg'] = compute_dma_records(tmax_records, 'cl_tmxgg', compute_cl_tmxgg)
     logger.info('computing aggregations (cl_tmngg)...')
-    data_items['c_tmngg'] = compute_dma_records(tmin_records, 'cl_tmngggg', compute_cl_tmngg)
+    data_items['c_tmngg'] = compute_dma_records(tmin_records, 'cl_tmngg', compute_cl_tmngg)
     logger.info('computing aggregations (tmdgg1)...')
     tmdgg1_records = [[r[0], r[1], 'tmdgg1', [r[2], r[4]], r[3] and r[5]] for r in table_records]
     data_items['tmdgg1'] = compute_dma_records(tmdgg1_records, 'tmdgg1', compute_tmdgg1)
@@ -1364,7 +1435,9 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
     data = functools.reduce(merge_data_items, data_items.values())
 
     logger.info('update records of table ds__t200...')
-    fields = ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'tdmgg', ]
+    fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'tmdgg',
+                                   'tmxgg', 'tmngg', 'cl_tmxgg', 'cl_tmngg', 'tmdgg1', 'deltagg',
+                                   'day_gelo'])
     sql = upsert.create_upsert('ds__t200', targetschema, fields, data, policy)
     if sql:
         conn.execute(sql)

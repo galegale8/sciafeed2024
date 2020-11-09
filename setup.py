@@ -61,6 +61,7 @@ setup(
             'load_unique_data = sciafeed.entry_points:load_unique_data',
             'compute_daily_indicators2 = sciafeed.entry_points:compute_daily_indicators2',
             'process_dma = sciafeed.entry_points:process_dma',
+            'sciafeed_gui = sciafeed.gui:run_sciafeed_gui',
         ],
     },
 )

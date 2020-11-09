@@ -13,11 +13,13 @@ from sqlalchemy import exc
 from sciafeed import arpaer
 from sciafeed import db_utils
 from sciafeed import export
+from sciafeed import gui
 from sciafeed import hiscentral
 from sciafeed import process
 from sciafeed import querying
 from sciafeed import upsert
 from sciafeed import utils
+
 
 warnings.filterwarnings("ignore", category=exc.SAWarning)
 
@@ -358,3 +360,8 @@ def process_dma(dburi, report_path, startschema, targetschema, policy):
     conn = engine.connect()
     process.process_dma(conn, startschema, targetschema, policy, logger)
     logger.info('process concluded')
+
+
+def sciafeed_gui(policy):
+    """Graphical interface for SCIA-FEED"""
+    return gui.run_sciafeed_gui()

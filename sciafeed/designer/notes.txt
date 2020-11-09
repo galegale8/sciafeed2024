@@ -1,0 +1,16 @@
+
+Per pyqt4: (da verificare):
+sudo apt-get install python3-qt4
+sudo apt-get install -y python3-pyqt4.qtopengl
+source ve/bin/activate
+./ve/bin/pip install --no-use-wheel vext.pyqt4
+
+Per pyuic4: (compilazione automatica dei file .ui generati da qt designer):
+
+sudo apt-get install pyqt4-dev-tools
+
+compilazione dei file di designer:
+modificare il file sudo vi /usr/bin/pyuic4 sulla base di: https://stackoverflow.com/questions/42444150/sphinx-qt-valueerror-api-qdate-has-already-been-set-to-version-1
+cioè, aggiungere 'import  qgis.core' alla prima riga
+quindi:
+pyuic4 sciafeed_main.ui.xml -o sciafeed_main_ui.py

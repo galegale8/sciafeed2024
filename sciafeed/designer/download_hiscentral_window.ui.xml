@@ -249,17 +249,17 @@ p, li { white-space: pre-wrap; }
       </property>
       <item>
        <property name="text">
-        <string>Precipitazione</string>
+        <string>Precipitation</string>
        </property>
       </item>
       <item>
        <property name="text">
-        <string>Temperatura massima</string>
+        <string>Tmax</string>
        </property>
       </item>
       <item>
        <property name="text">
-        <string>Temperatura minima</string>
+        <string>Tmin</string>
        </property>
       </item>
      </widget>

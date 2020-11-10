@@ -1,4 +1,5 @@
 
+from datetime import date
 from functools import partial
 from os.path import abspath, dirname, join
 import sys
@@ -61,8 +62,11 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
         self.select_destination_button.clicked.connect(self.on_select_dest_clicked)
         self.select_report_button.clicked.connect(self.on_select_report_clicked)
         # other ui setup
-        for region_id, region in hiscentral.REGION_IDS_MAP.items():
-            self.input_region.addItem(region, region_id)
+        today = date.today()
+        yearseve_tokens = [today.year, 1, 1]
+        today_tokens = [today.year, today.month, today.day]
+        self.input_start.setDate(QtCore.QDate(*yearseve_tokens))
+        self.input_end.setDate(QtCore.QDate(*today_tokens))
 
     def on_select_dest_clicked(self):
         caption = 'seleziona cartella destinazione'
@@ -77,21 +81,24 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
     def collect_inputs(self):
         kwargs = dict()
         kwargs['out_csv_folder'] = self.input_destination.text().strip()
-        kwargs['region_id'] = '%02d' % (self.input_region.currentIndex() + 1)
         report_path = self.input_report.text().strip()
-        if report_path:
-            kwargs['report_path'] = report_path
-        locations = [
-            r.strip() for r in self.input_locations.toPlainText().split('\n') if r.strip()]
-        if locations:
-            kwargs['locations'] = locations
-        kwargs['variables'] = [v.text() for v in self.input_variables.selectedItems()]
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        kwargs['start'] = date(*self.input_start.date().getDate()).strftime('%Y-%m-%d')
+        kwargs['end'] = date(*self.input_end.date().getDate()).strftime('%Y-%m-%d')
         return kwargs
 
     def generate_cmd(self, bin_path, kwargs):
-        #script = join(bin_path, self.bin_name)
-        # TODO
-        pass
+        script = join(bin_path, self.bin_name)
+        arguments = []
+        if kwargs['report_path']:
+            arguments.extend(['-r', kwargs['report_path']])
+        if [kwargs['out_csv_folder']]:
+            arguments.extend([kwargs['out_csv_folder']])
+        arguments.extend(['-s', kwargs['start']])
+        arguments.extend(['-e', kwargs['end']])
+        cmd = "%s %s" % (script, ' '.join(arguments))
+        return cmd
 
 
 class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):

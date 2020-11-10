@@ -25,7 +25,7 @@ install_requires = [
     'zeep==3.4.0',
     'google-api-python-client',
     # 'google-auth-httplib2',
-    'oauth2client',
+    'oauth2client < 4.0.0',
     'google-auth-oauthlib',
     'numpy',
 ]

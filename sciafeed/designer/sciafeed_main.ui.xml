@@ -149,7 +149,7 @@ Python:from qwt import *</comment>
 HISCENTRAL</string>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="checked">
           <bool>false</bool>
@@ -172,7 +172,7 @@ HISCENTRAL</string>
 Emilia-Romagna</string>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>

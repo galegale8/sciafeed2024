@@ -1,17 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>download_hiscentral_form</class>
+ <widget class="QWidget" name="download_hiscentral_form">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>480</width>
+    <width>490</width>
     <height>640</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>490</width>
+    <height>640</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>490</width>
+    <height>640</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Download HISCENTRAL</string>
   </property>
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
@@ -24,7 +45,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_4">
     <item>
-     <widget class="QPushButton" name="download_hiscentral_close">
+     <widget class="QPushButton" name="script_close">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -49,7 +70,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="download_hiscentral_run">
+     <widget class="QPushButton" name="script_run">
       <property name="text">
        <string>Avvia</string>
       </property>
@@ -78,9 +99,10 @@
      </widget>
     </item>
     <item>
-     <widget class="QTextEdit" name="textEdit_2">
+     <widget class="QTextEdit" name="output_console">
       <property name="font">
        <font>
+        <pointsize>5</pointsize>
         <weight>50</weight>
         <bold>false</bold>
        </font>
@@ -95,14 +117,14 @@
        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'.SF NS Text'; font-size:13pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:5pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>
    </layout>
   </widget>
-  <widget class="QLabel" name="label_6">
+  <widget class="QLabel" name="download_hiscentral_description">
    <property name="geometry">
     <rect>
      <x>28</x>
@@ -114,44 +136,6 @@ p, li { white-space: pre-wrap; }
    <property name="text">
     <string>Scaricamento di dati attraverso il servizio HISCENTRAL</string>
    </property>
-  </widget>
-  <widget class="QWidget" name="layoutWidget_3">
-   <property name="geometry">
-    <rect>
-     <x>28</x>
-     <y>130</y>
-     <width>159</width>
-     <height>29</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>Regione</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QComboBox" name="comboBox">
-      <item>
-       <property name="text">
-        <string>Lazio</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Calabria</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Piemonte</string>
-       </property>
-      </item>
-     </widget>
-    </item>
-   </layout>
   </widget>
   <widget class="QWidget" name="layoutWidget_4">
    <property name="geometry">
@@ -171,10 +155,17 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
     <item>
-     <widget class="QLineEdit" name="destination_folder_edit"/>
+     <widget class="QLineEdit" name="input_destination">
+      <property name="contextMenuPolicy">
+       <enum>Qt::NoContextMenu</enum>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+     </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="select_folder_button">
+     <widget class="QPushButton" name="select_destination_button">
       <property name="text">
        <string>Cerca...</string>
       </property>
@@ -186,9 +177,9 @@ p, li { white-space: pre-wrap; }
    <property name="geometry">
     <rect>
      <x>248</x>
-     <y>130</y>
+     <y>120</y>
      <width>206</width>
-     <height>161</height>
+     <height>171</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -200,7 +191,7 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
     <item>
-     <widget class="QTextEdit" name="textEdit"/>
+     <widget class="QTextEdit" name="input_locations"/>
     </item>
    </layout>
   </widget>
@@ -238,7 +229,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>28</x>
      <y>180</y>
-     <width>181</width>
+     <width>201</width>
      <height>101</height>
     </rect>
    </property>
@@ -251,7 +242,7 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
     <item>
-     <widget class="QListWidget" name="listWidget">
+     <widget class="QListWidget" name="input_variables">
       <property name="selectionMode">
        <enum>QAbstractItemView::MultiSelection</enum>
       </property>
@@ -294,9 +285,53 @@ p, li { white-space: pre-wrap; }
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QLineEdit" name="input_report"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="select_report_button">
+      <property name="text">
+       <string>Cerca...</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>120</y>
+     <width>201</width>
+     <height>52</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout_4">
+    <item>
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Regione</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="input_region"/>
+    </item>
    </layout>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>input_region</tabstop>
+  <tabstop>input_variables</tabstop>
+  <tabstop>input_locations</tabstop>
+  <tabstop>input_destination</tabstop>
+  <tabstop>select_destination_button</tabstop>
+  <tabstop>input_report</tabstop>
+  <tabstop>select_report_button</tabstop>
+  <tabstop>output_console</tabstop>
+  <tabstop>script_close</tabstop>
+  <tabstop>script_run</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -10,6 +10,7 @@ from sciafeed import DESIGNER_PATH
 from sciafeed import hiscentral
 from sciafeed.designer.download_hiscentral_window import Ui_download_hiscentral_form
 from sciafeed.designer.download_er_window import Ui_download_er_form
+from sciafeed.designer.make_report import Ui_make_report_form
 
 
 def debug_trace():
@@ -17,6 +18,101 @@ def debug_trace():
   from pdb import set_trace
   pyqtRemoveInputHook()
   set_trace()
+
+
+
+class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
+    bin_name1 = 'make_report'
+    bin_name2 = 'make_reports'
+    close_signal = QtCore.pyqtSignal()
+    run_signal = QtCore.pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(MakeReport, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.base_setup()
+
+    def terminal_redirect(self):
+        cursor = self.output_console.textCursor()
+        cursor.movePosition(cursor.End)
+        cursor.insertText(str(self.process.readAll(), 'utf-8'))
+        self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def closeEvent(self, event):
+        self.close_signal.emit()
+
+    def run_script(self):
+        self.run_signal.emit()
+
+    def base_setup(self):
+        # terminal stuff
+        self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
+        self.process = QtCore.QProcess(self)
+        self.process.readyRead.connect(self.terminal_redirect)
+        self.process.started.connect(lambda: self.script_run.setEnabled(False))
+        self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
+
+        # connect run/close buttons
+        self.script_close.clicked.connect(self.close)
+        self.script_run.clicked.connect(self.run_script)
+
+    def setupUi(self, Ui_make_report_form):
+        super(MakeReport, self).setupUi(Ui_make_report_form)
+        # buttons for selecting inputs
+        self.select_input_file_button.clicked.connect(self.on_select_input_file_clicked)
+        self.select_input_folder_button.clicked.connect(self.on_select_input_folder_clicked)
+        self.select_report_button.clicked.connect(self.on_select_report_clicked)
+        # other ui setup
+        self.input_folder.setDisabled(True)
+        self.select_input_folder_button.setDisabled(True)
+        self.select_file.clicked.connect(self.on_radio_file_clicked)
+        self.select_folder.clicked.connect(self.on_radio_folder_clicked)
+
+    def on_radio_file_clicked(self):
+        self.select_folder.setChecked(not self.select_file.isChecked())
+        self.input_folder.setDisabled(True)
+        self.select_input_folder_button.setDisabled(True)
+        self.input_file.setDisabled(False)
+        self.select_input_file_button.setDisabled(False)
+
+    def on_radio_folder_clicked(self):
+        self.select_file.setChecked(not self.select_folder.isChecked())
+        self.input_file.setDisabled(True)
+        self.select_input_file_button.setDisabled(True)
+        self.input_folder.setDisabled(False)
+        self.select_input_folder_button.setDisabled(False)
+
+    def on_select_input_file_clicked(self):
+        caption = 'seleziona file di input'
+        filepath = str(QtGui.QFileDialog.getOpenFileName(self, caption))
+        self.input_file.setText(filepath)
+
+    def on_select_input_folder_clicked(self):
+        caption = 'seleziona cartella di input'
+        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        self.input_folder.setText(folderpath)
+
+    def on_select_report_clicked(self):
+        caption = 'seleziona report destinazione'
+        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        self.input_report.setText(filepath)
+
+    def collect_inputs(self):
+        kwargs = dict()
+        kwargs['out_csv_folder'] = self.input_destination.text().strip()
+        report_path = self.input_report.text().strip()
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        kwargs['start'] = date(*self.input_start.date().getDate()).strftime('%Y-%m-%d')
+        kwargs['end'] = date(*self.input_end.date().getDate()).strftime('%Y-%m-%d')
+        return kwargs
+
+    def generate_cmd(self, bin_path, kwargs):
+        # TODO
+        pass
 
 
 class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
@@ -189,6 +285,7 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
 class SciaFeedMainWindow(QtGui.QMainWindow):
     open_hiscentral_signal = QtCore.pyqtSignal()
     open_er_signal = QtCore.pyqtSignal()
+    open_makereport_signal = QtCore.pyqtSignal()
 
     def __init__(self):
         super(SciaFeedMainWindow, self).__init__()
@@ -197,6 +294,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
         for button, signal_name in [
             (self.OpenWindow_download_hiscentral, 'open_hiscentral_signal'),
             (self.OpenWindow_download_er, 'open_er_signal'),
+            (self.OpenWindow_make_report, 'open_makereport_signal'),
         ]:
             signal_obj = getattr(self, signal_name)
             open_function = partial(self.show_window, button, signal_obj)
@@ -219,6 +317,8 @@ class Controller:
              self.main_window.OpenWindow_download_hiscentral),
             (DownloadEr, 'download_er_window', 'open_er_signal',
              self.main_window.OpenWindow_download_er),
+            (MakeReport, 'makereport_window', 'open_makereport_signal',
+             self.main_window.OpenWindow_make_report),
         ]:
             signal_obj = getattr(self.main_window, signal_name)
             show_funct = partial(self.show_window, klass, controller_attribute, main_window_button)

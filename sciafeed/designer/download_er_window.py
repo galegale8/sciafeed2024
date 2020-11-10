@@ -25,7 +25,6 @@ except AttributeError:
 class Ui_download_er_form(object):
     def setupUi(self, download_er_form):
         download_er_form.setObjectName(_fromUtf8("download_er_form"))
-        download_er_form.setWindowModality(QtCore.Qt.WindowModal)
         download_er_form.resize(490, 640)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -73,7 +72,7 @@ class Ui_download_er_form(object):
         self.output_console.setObjectName(_fromUtf8("output_console"))
         self.verticalLayout_3.addWidget(self.output_console)
         self.download_er_description = QtGui.QLabel(download_er_form)
-        self.download_er_description.setGeometry(QtCore.QRect(28, 80, 431, 17))
+        self.download_er_description.setGeometry(QtCore.QRect(28, 80, 441, 17))
         self.download_er_description.setObjectName(_fromUtf8("download_er_description"))
         self.layoutWidget_4 = QtGui.QWidget(download_er_form)
         self.layoutWidget_4.setGeometry(QtCore.QRect(29, 310, 421, 29))
@@ -110,7 +109,7 @@ class Ui_download_er_form(object):
         self.title_frame.setFrameShadow(QtGui.QFrame.Raised)
         self.title_frame.setObjectName(_fromUtf8("title_frame"))
         self.Title = QtGui.QLabel(self.title_frame)
-        self.Title.setGeometry(QtCore.QRect(20, 10, 391, 41))
+        self.Title.setGeometry(QtCore.QRect(20, 10, 341, 41))
         self.Title.setObjectName(_fromUtf8("Title"))
         self.layoutWidget_6 = QtGui.QWidget(download_er_form)
         self.layoutWidget_6.setGeometry(QtCore.QRect(28, 180, 201, 101))
@@ -173,7 +172,7 @@ class Ui_download_er_form(object):
         download_er_form.setTabOrder(self.script_close, self.script_run)
 
     def retranslateUi(self, download_er_form):
-        download_er_form.setWindowTitle(_translate("download_er_form", "Download Emilia-Romagna", None))
+        download_er_form.setWindowTitle(_translate("download_er_form", "Download Emilia Romagna", None))
         self.script_close.setText(_translate("download_er_form", "Chiudi", None))
         self.script_run.setText(_translate("download_er_form", "Avvia", None))
         self.label_7.setText(_translate("download_er_form", "Output processamento", None))
@@ -181,12 +180,13 @@ class Ui_download_er_form(object):
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:5pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;\"><br /></p></body></html>", None))
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9pt; color:#ffffff;\">READY</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:9pt; color:#ffffff;\"><br /></p></body></html>", None))
         self.download_er_description.setText(_translate("download_er_form", "Scaricamento di dati attraverso il servizio ARPA Emilia-Romagna", None))
         self.label_4.setText(_translate("download_er_form", "Destinazione", None))
         self.select_destination_button.setText(_translate("download_er_form", "Cerca...", None))
         self.label_3.setText(_translate("download_er_form", "lista stazioni (1 per riga)", None))
-        self.Title.setText(_translate("download_er_form", "<html><head/><body><p><span style=\" font-family:\'Sans Serif\'; font-size:16pt;\">Download Emilia-Romagna</span></p></body></html>", None))
+        self.Title.setText(_translate("download_er_form", "<html><head/><body><p><span style=\" font-family:\'Sans Serif\'; font-size:16pt;\">Download Emilia Romagna</span></p></body></html>", None))
         self.label.setText(_translate("download_er_form", "Variabile", None))
         __sortingEnabled = self.input_variables.isSortingEnabled()
         self.input_variables.setSortingEnabled(False)

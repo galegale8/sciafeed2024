@@ -25,7 +25,6 @@ except AttributeError:
 class Ui_download_hiscentral_form(object):
     def setupUi(self, download_hiscentral_form):
         download_hiscentral_form.setObjectName(_fromUtf8("download_hiscentral_form"))
-        download_hiscentral_form.setWindowModality(QtCore.Qt.WindowModal)
         download_hiscentral_form.resize(490, 640)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -181,7 +180,8 @@ class Ui_download_hiscentral_form(object):
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'Ubuntu\'; font-size:5pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;\"><br /></p></body></html>", None))
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:9pt; color:#ffffff;\">READY</span></p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:9pt; color:#ffffff;\"><br /></p></body></html>", None))
         self.download_hiscentral_description.setText(_translate("download_hiscentral_form", "Scaricamento di dati attraverso il servizio HISCENTRAL", None))
         self.label_4.setText(_translate("download_hiscentral_form", "Destinazione", None))
         self.select_destination_button.setText(_translate("download_hiscentral_form", "Cerca...", None))

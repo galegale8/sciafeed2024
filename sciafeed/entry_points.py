@@ -106,6 +106,7 @@ def download_hiscentral(out_csv_folder, region_id, variables, locations, report_
         return
     if not locations:
         locations = None
+    print('out_csv_folder: %r' % out_csv_folder)
     if not exists(out_csv_folder):
         mkdir(out_csv_folder)
     ret_value = hiscentral.download_hiscentral(

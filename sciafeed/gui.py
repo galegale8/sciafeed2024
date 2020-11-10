@@ -1,13 +1,13 @@
 
 from functools import partial
-from os.path import join
+from os.path import abspath, dirname, join
 import sys
 
 from PyQt4 import QtGui, QtCore, uic
 
 from sciafeed import DESIGNER_PATH
 from sciafeed import hiscentral
-from sciafeed.designer.download_hiscentral_window import _fromUtf8, Ui_download_hiscentral_form
+from sciafeed.designer.download_hiscentral_window import Ui_download_hiscentral_form
 from sciafeed.designer.download_er_window import Ui_download_er_form
 
 
@@ -18,7 +18,8 @@ def debug_trace():
   set_trace()
 
 
-class DownloadEr(QtGui.QWidget, Ui_download_er_form):
+class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
+    bin_name = 'download_er'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
 
@@ -32,6 +33,8 @@ class DownloadEr(QtGui.QWidget, Ui_download_er_form):
         cursor.movePosition(cursor.End)
         cursor.insertText(str(self.process.readAll(), 'utf-8'))
         self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def closeEvent(self, event):
         self.close_signal.emit()
@@ -42,11 +45,11 @@ class DownloadEr(QtGui.QWidget, Ui_download_er_form):
     def base_setup(self):
         # terminal stuff
         self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
-        self.output_console.setFontPointSize(14)
         self.process = QtCore.QProcess(self)
         self.process.readyRead.connect(self.terminal_redirect)
         self.process.started.connect(lambda: self.script_run.setEnabled(False))
         self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
 
         # connect run/close buttons
         self.script_close.clicked.connect(self.close)
@@ -85,12 +88,14 @@ class DownloadEr(QtGui.QWidget, Ui_download_er_form):
         kwargs['variables'] = [v.text() for v in self.input_variables.selectedItems()]
         return kwargs
 
-    def generate_cmd(self, kwargs):
+    def generate_cmd(self, bin_path, kwargs):
+        #script = join(bin_path, self.bin_name)
         # TODO
-        return 'echo Hello world!'
+        pass
 
 
 class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
+    bin_name = 'download_hiscentral'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
 
@@ -104,6 +109,8 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
         cursor.movePosition(cursor.End)
         cursor.insertText(str(self.process.readAll(), 'utf-8'))
         self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def closeEvent(self, event):
         self.close_signal.emit()
@@ -114,11 +121,11 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
     def base_setup(self):
         # terminal stuff
         self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
-        self.output_console.setFontPointSize(14)
         self.process = QtCore.QProcess(self)
         self.process.readyRead.connect(self.terminal_redirect)
         self.process.started.connect(lambda: self.script_run.setEnabled(False))
         self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
 
         # connect run/close buttons
         self.script_close.clicked.connect(self.close)
@@ -145,21 +152,31 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
 
     def collect_inputs(self):
         kwargs = dict()
-        kwargs['out_csv_folder'] = self.input_destination.text().strip()
+        kwargs['out_csv_folder'] = str(self.input_destination.text()).strip()
         kwargs['region_id'] = '%02d' % (self.input_region.currentIndex() + 1)
-        report_path = self.input_report.text().strip()
-        if report_path:
-            kwargs['report_path'] = report_path
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
         locations = [
             r.strip() for r in self.input_locations.toPlainText().split('\n') if r.strip()]
-        if locations:
-            kwargs['locations'] = locations
+        kwargs['locations'] = locations
         kwargs['variables'] = [v.text() for v in self.input_variables.selectedItems()]
         return kwargs
 
-    def generate_cmd(self, kwargs):
-        # TODO
-        return 'echo Hello world!'
+    def generate_cmd(self, bin_path, kwargs):
+        script = join(bin_path, self.bin_name)
+        arguments = []
+        if kwargs['region_id']:
+            arguments.extend(['-R', kwargs['region_id']])
+        for var in kwargs['variables']:
+            arguments.extend(['-v', var])
+        for loc in kwargs['locations']:
+            arguments.extend(['-l', loc])
+        if kwargs['report_path']:
+            arguments.extend(['-r', kwargs['report_path']])
+        if [kwargs['out_csv_folder']]:
+            arguments.extend([kwargs['out_csv_folder']])
+        cmd = "%s %s" % (script, ' '.join(arguments))
+        return cmd
 
 
 class SciaFeedMainWindow(QtGui.QMainWindow):
@@ -184,6 +201,9 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
 
 
 class Controller:
+    def __init__(self, bin_path):
+        self.bin_path = bin_path
+
     def show_main(self):
         self.main_window = SciaFeedMainWindow()
         # connect each signal of main window to the show function of the controller
@@ -201,9 +221,9 @@ class Controller:
 
     def run_script(self, window):
         kwargs = window.collect_inputs()
-        cmd = window.generate_cmd(kwargs)
+        cmd = window.generate_cmd(self.bin_path, kwargs)
         print('run cmd: %r' % cmd)
-        window.process.start(cmd)  # 'ping',['127.0.0.1'])
+        window.process.start(cmd)
 
     def close_window(self, window, main_window_button):
         window.process.kill()
@@ -211,7 +231,7 @@ class Controller:
         main_window_button.setEnabled(True)
 
     def show_window(self, theklass, controller_attribute, main_window_button):
-        setattr(self, controller_attribute, theklass())
+        setattr(self, controller_attribute, theklass(self.main_window))
         window = getattr(self, controller_attribute)
         close_download_hiscentral = partial(self.close_window, window, main_window_button)
         window.close_signal.connect(close_download_hiscentral)
@@ -222,6 +242,7 @@ class Controller:
 
 def run_sciafeed_gui():
     app = QtGui.QApplication(sys.argv)
-    controller = Controller()
+    bin_path = dirname(abspath(sys.argv[0]))
+    controller = Controller(bin_path)
     controller.show_main()
     sys.exit(app.exec_())

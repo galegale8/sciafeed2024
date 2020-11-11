@@ -108,19 +108,20 @@ class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
         return kwargs
 
     def generate_cmd(self, bin_path, kwargs):
+        args = []
         if self.select_file.isChecked():
             bin_name = self.bin_name1
             cmd = join(bin_path, bin_name)
             if kwargs['in_filepath']:
-                cmd += " %s" % quote(kwargs['in_filepath'])
+                args += [kwargs['in_filepath']]
         else:
             bin_name = self.bin_name2
             cmd = join(bin_path, bin_name)
             if kwargs['in_folder']:
-                cmd += " %s" % quote(kwargs['in_folder'])
+                args += [kwargs['in_folder']]
         if kwargs['report_path']:
-            cmd += ' -r %s' % quote(kwargs['report_path'])
-        return cmd
+            args += ['-r', kwargs['report_path']]
+        return cmd, args
 
 
 class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
@@ -194,13 +195,14 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
 
     def generate_cmd(self, bin_path, kwargs):
         cmd = join(bin_path, self.bin_name)
+        args = []
         if kwargs['report_path']:
-            cmd += " -r' %s" % quote(kwargs['report_path'])
+            args += ["-r", kwargs['report_path']]
         if kwargs['out_csv_folder']:
-            cmd += " %s" % quote(kwargs['out_csv_folder'])
-        cmd += " -s %s" % quote(kwargs['start'])
-        cmd += " -e %s" % quote(kwargs['end'])
-        return cmd
+            args += [kwargs['out_csv_folder']]
+        args += ['-s', kwargs['start']]
+        args += ["-e", kwargs['end']]
+        return cmd, args
 
 
 class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
@@ -273,17 +275,18 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
 
     def generate_cmd(self, bin_path, kwargs):
         cmd = join(bin_path, self.bin_name)
+        args = []
         if kwargs['region_id']:
-            cmd += ' -R %s' % kwargs['region_id']
+            args += ['-R', kwargs['region_id']]
         for var in kwargs['variables']:
-            cmd += ' -v %s' % var
+            args += ['-v', var]
         for loc in kwargs['locations']:
-            cmd += " -l %s" % quote(loc)
+            args += ["-l", loc]
         if kwargs['report_path']:
-            cmd += " -r' %s" % quote(kwargs['report_path'])
+            args += ["-r", kwargs['report_path']]
         if kwargs['out_csv_folder']:
-            cmd += " %s" % quote(kwargs['out_csv_folder'])
-        return cmd
+            args += [kwargs['out_csv_folder']]
+        return cmd, args
 
 
 class SciaFeedMainWindow(QtGui.QMainWindow):
@@ -332,9 +335,9 @@ class Controller:
 
     def run_script(self, window):
         kwargs = window.collect_inputs()
-        cmd = window.generate_cmd(self.bin_path, kwargs)
-        print('run cmd: %r' % cmd)
-        window.process.start(cmd)
+        cmd, args = window.generate_cmd(self.bin_path, kwargs)
+        print('run cmd: %r with args: %r' % (cmd, args))
+        window.process.start(cmd, args)
 
     def close_window(self, window, main_window_button):
         window.process.kill()

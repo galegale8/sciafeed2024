@@ -187,7 +187,7 @@ Emilia-Romagna</string>
 sorgenti</string>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -198,7 +198,7 @@ sorgenti</string>
 normalizzati</string>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -212,9 +212,6 @@ normalizzati</string>
           <string>Trova nuove 
 stazioni</string>
          </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
         </widget>
        </item>
        <item>
@@ -222,9 +219,6 @@ stazioni</string>
          <property name="text">
           <string>Aggiungi nuove 
 stazioni</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -238,9 +232,6 @@ stazioni</string>
           <string>Calcolo indicatori
  primari</string>
          </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
         </widget>
        </item>
        <item>
@@ -248,9 +239,6 @@ stazioni</string>
          <property name="text">
           <string>Inserimento indicatori
  primari</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -264,9 +252,6 @@ stazioni</string>
           <string>Catena di controllo
  indicatori</string>
          </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
         </widget>
        </item>
        <item>
@@ -274,9 +259,6 @@ stazioni</string>
          <property name="text">
           <string>Calcolo indicatori 
 secondari</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -290,9 +272,6 @@ secondari</string>
           <string>Eliminazione serie 
 duplicate</string>
          </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
         </widget>
        </item>
        <item>
@@ -300,9 +279,6 @@ duplicate</string>
          <property name="text">
           <string>Aggiornamento 
 dati DMA</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
          </property>
         </widget>
        </item>

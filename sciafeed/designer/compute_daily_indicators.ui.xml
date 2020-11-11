@@ -82,9 +82,9 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>380</y>
+     <y>340</y>
      <width>431</width>
-     <height>211</height>
+     <height>251</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -169,8 +169,8 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>30</x>
      <y>100</y>
-     <width>431</width>
-     <height>272</height>
+     <width>430</width>
+     <height>221</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_5">

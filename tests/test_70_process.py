@@ -3,7 +3,7 @@ from datetime import datetime
 from os.path import exists, join
 import os
 
-from sciafeed import process, arpa19
+from sciafeed import process, arpa19, utils
 
 from . import TEST_DATA_PATH
 
@@ -16,13 +16,16 @@ def test_make_report(tmpdir):
     out_filepath = str(tmpdir.join('report.txt'))
     outdata_filepath = str(tmpdir.join('data.csv'))
     assert not exists(out_filepath)
+    logger = utils.setup_log(out_filepath)
     assert not exists(outdata_filepath)
-    msgs, data_parsed = process.make_report(
-        in_filepath, out_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
-        limiting_params=limiting_params)
+    data_parsed = process.make_report(
+        in_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
+        limiting_params=limiting_params, logger=logger)
     assert exists(out_filepath)
     assert exists(outdata_filepath)
-    assert "No errors found" in msgs
+    with open(out_filepath) as fp:
+        msgs = fp.read()
+        assert "No errors found" in msgs
     assert data_parsed == arpa19.parse(in_filepath, parameters_filepath)[0]
 
     # some formatting errors
@@ -31,12 +34,15 @@ def test_make_report(tmpdir):
     out_filepath = str(tmpdir.join('report2.txt'))
     outdata_filepath = str(tmpdir.join('data2.csv'))
     assert not exists(out_filepath)
+    logger = utils.setup_log(out_filepath)
     assert not exists(outdata_filepath)
-    msgs, data_parsed = process.make_report(
-        in_filepath, out_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
-        limiting_params=limiting_params)
+    data_parsed = process.make_report(
+        in_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
+        limiting_params=limiting_params, logger=logger)
     assert exists(out_filepath)
     assert exists(outdata_filepath)
+    with open(out_filepath) as fp:
+        msgs = fp.read()
     err_msgs = [
         "Row 2: The spacing in the row is wrong",
         'Row 3: the latitude changes',
@@ -355,13 +361,14 @@ def test_make_report(tmpdir):
     # some errors
     in_filepath = join(TEST_DATA_PATH, 'arpa19', 'wrong_70002_201301010000_201401010100.dat')
     limiting_params = {'Tmedia': ('FF', 'DD')}
-    out_filepath = str(tmpdir.join('report3.txt'))
     outdata_filepath = str(tmpdir.join('data3.csv'))
-    assert not exists(out_filepath)
     assert not exists(outdata_filepath)
-    msgs, data_parsed = process.make_report(
-        in_filepath, out_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
-        limiting_params=limiting_params)
+    out_filepath = str(tmpdir.join('report3.txt'))
+    assert not exists(out_filepath)
+    logger = utils.setup_log(out_filepath)
+    process.make_report(
+        in_filepath, outdata_filepath, parameters_filepath=parameters_filepath,
+        limiting_params=limiting_params, logger=logger)
     assert exists(out_filepath)
     assert exists(outdata_filepath)
     err_msgs = [
@@ -373,6 +380,8 @@ def test_make_report(tmpdir):
         "Row 7: The values of 'Tmedia' and 'DD' are not consistent",
         "Row 20: The values of 'Tmedia' and 'DD' are not consistent"
     ]
+    with open(out_filepath) as fp:
+        msgs = fp.read()
     for err_msg in err_msgs:
         assert err_msg in msgs
 

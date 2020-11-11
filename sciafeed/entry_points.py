@@ -26,40 +26,35 @@ warnings.filterwarnings("ignore", category=exc.SAWarning)
 
 @click.command()
 @click.argument('in_filepath', type=click.Path(exists=True, dir_okay=False))
-@click.option('--report_filepath', '-r', type=click.Path(exists=False, dir_okay=False),
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--outdata_filepath', '-d', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output data file")
 @click.option('--parameters_filepath', '-p', type=click.Path(exists=True, dir_okay=False),
               help="customized file path containing information about parameters")
-def make_report(**kwargs):
+def make_report(in_filepath, report_path, outdata_filepath, parameters_filepath):
     """
     Parse a file containing data located at `in_filepath` and generate a report.
     If outdata_folder is specified, it also export parsed data.
     """
-    msgs, _ = process.make_report(**kwargs)
-    if not kwargs['report_filepath']:
-        for msg in msgs:
-            print(msg)
-    if kwargs['outdata_filepath']:
-        print('data saved on %s' % kwargs['outdata_filepath'])
+    logger = utils.setup_log(report_path, log_format='%(message)s')
+    process.make_report(in_filepath, outdata_filepath, parameters_filepath, logger)
+    if outdata_filepath:
+        logger.info('data saved on %s' % outdata_filepath)
 
 
 @click.command()
 @click.argument('in_folder', type=click.Path(exists=True, file_okay=False))
-@click.option('--report_filepath', '-r', type=click.Path(exists=False, dir_okay=False),
+@click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--outdata_folder', '-d', type=click.Path(exists=False, file_okay=False),
               help="folder path where to put the output data files")
-def make_reports(in_folder, report_filepath, outdata_folder):
+def make_reports(in_folder, report_path, outdata_folder):
     """
     Parse a folder containing data located at `in_folder` and generate a report.
     If outdata_folder is specified, it also export parsed data.
     """
-    if report_filepath and exists(report_filepath):
-        print('wrong "report_filepath": the report must not exist or will be overwritten')
-        sys.exit(2)
-        # return
+    logger = utils.setup_log(report_path, log_format='%(message)s')
     if outdata_folder and not exists(outdata_folder):
         mkdir(outdata_folder)
     children = sorted(listdir(in_folder))
@@ -67,19 +62,12 @@ def make_reports(in_folder, report_filepath, outdata_folder):
         in_filepath = join(in_folder, child)
         if not isfile(in_filepath):
             continue
-        print('processing file %r' % child)
+        logger.info('processing file %r' % child)
         if outdata_folder:
             outdata_filepath = join(outdata_folder, child + '.csv')
         else:
             outdata_filepath = None
-        current_msgs, _ = process.make_report(
-            in_filepath,
-            outdata_filepath=outdata_filepath,
-            report_filepath=report_filepath
-        )
-        if not report_filepath:
-            for msg in current_msgs:
-                print(msg)
+        process.make_report(in_filepath, outdata_filepath=outdata_filepath, logger=logger)
 
 
 @click.command()

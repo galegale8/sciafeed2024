@@ -21,18 +21,18 @@ def test_make_report(tmpdir):
     assert not exists(out_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
-    assert result.output == ""
+    assert 'No errors found' in result.output
     assert exists(out_filepath)
     with open(out_filepath) as fp:
-        lines = fp.readlines()
-        assert 'No errors found\n' in lines
+        lines = fp.read()
+        assert 'No errors found' in lines
 
     # creating a data file
     outdata_filepath = str(tmpdir.join('data1.csv'))
     assert not exists(outdata_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-d', outdata_filepath])
     assert result.exit_code == 0
-    assert 'No errors found\n' in result.output
+    assert 'No errors found' in result.output
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
@@ -48,18 +48,18 @@ def test_make_report(tmpdir):
     assert not exists(out_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
-    assert result.output == ""
+    assert 'No errors found' in result.output
     assert exists(out_filepath)
     with open(out_filepath) as fp:
-        lines = fp.readlines()
-        assert 'No errors found\n' in lines
+        lines = fp.read()
+        assert 'No errors found' in lines
 
     # creating a data file
     outdata_filepath = str(tmpdir.join('data2.csv'))
     assert not exists(outdata_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-d', outdata_filepath])
     assert result.exit_code == 0
-    assert 'No errors found\n' in result.output
+    assert 'No errors found' in result.output
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
@@ -75,18 +75,18 @@ def test_make_report(tmpdir):
     assert not exists(out_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
-    assert result.output == ""
+    assert 'No errors found' in result.output
     assert exists(out_filepath)
     with open(out_filepath) as fp:
-        lines = fp.readlines()
-        assert 'No errors found\n' in lines
+        lines = fp.read()
+        assert 'No errors found' in lines
 
     # creating a data file
     outdata_filepath = str(tmpdir.join('data3.csv'))
     assert not exists(outdata_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-d', outdata_filepath])
     assert result.exit_code == 0
-    assert 'No errors found\n' in result.output
+    assert 'No errors found' in result.output
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
@@ -102,18 +102,18 @@ def test_make_report(tmpdir):
     assert not exists(out_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-r', out_filepath])
     assert result.exit_code == 0
-    assert result.output == ""
+    assert 'No errors found' in result.output
     assert exists(out_filepath)
     with open(out_filepath) as fp:
-        lines = fp.readlines()
-        assert 'No errors found\n' in lines
+        lines = fp.read()
+        assert 'No errors found' in lines
 
     # creating a data file
     outdata_filepath = str(tmpdir.join('data4.csv'))
     assert not exists(outdata_filepath)
     result = runner.invoke(entry_points.make_report, [in_filepath, '-d', outdata_filepath])
     assert result.exit_code == 0
-    assert 'No errors found\n' in result.output
+    assert 'No errors found' in result.output
     assert exists(outdata_filepath)
     with open(outdata_filepath) as fp:
         lines = fp.readlines()
@@ -155,8 +155,9 @@ def test_make_reports(tmpdir):
     result = runner.invoke(entry_points.make_reports, [in_folder, '-r', out_filepath])
     assert result.exit_code == 0
     filenames_sorted = sorted(files_to_parse, key=operator.itemgetter(1))
-    expected_output = '\n'.join(["processing file %r" % f[1] for f in filenames_sorted]) + '\n'
-    assert result.output == expected_output
+    expected_output = ["processing file %r" % f[1] for f in filenames_sorted]
+    for line in expected_output:
+        assert line in result.output
     assert exists(out_filepath)
     with open(out_filepath) as fp:
         lines = fp.readlines()
@@ -164,12 +165,6 @@ def test_make_reports(tmpdir):
         filepath = join(in_folder, filename)
         line = 'START OF ANALYSIS OF %s FILE %r\n' % (label, filepath)
         assert line in lines
-
-    # try to overwrite the report
-    result = runner.invoke(entry_points.make_reports, [in_folder, '-r', out_filepath])
-    assert result.exit_code != 0
-    expected_output = 'wrong "report_filepath": the report must not exist or will be overwritten\n'
-    assert result.output == expected_output
 
     # run with data files
     outdata_folder = str(tmpdir.join('data'))

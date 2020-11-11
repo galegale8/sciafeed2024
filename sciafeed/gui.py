@@ -2,6 +2,7 @@
 from datetime import date
 from functools import partial
 from os.path import abspath, dirname, join
+from shlex import quote
 import sys
 
 from PyQt4 import QtGui, QtCore, uic
@@ -12,12 +13,10 @@ from sciafeed.designer.download_hiscentral_window import Ui_download_hiscentral_
 from sciafeed.designer.download_er_window import Ui_download_er_form
 from sciafeed.designer.make_report import Ui_make_report_form
 
-
-def debug_trace():
+import pdb
+def import_pdb():
   from PyQt4.QtCore import pyqtRemoveInputHook
-  from pdb import set_trace
   pyqtRemoveInputHook()
-  set_trace()
 
 
 
@@ -102,17 +101,26 @@ class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
 
     def collect_inputs(self):
         kwargs = dict()
-        kwargs['out_csv_folder'] = self.input_destination.text().strip()
-        report_path = self.input_report.text().strip()
+        kwargs['in_folder'] = str(self.input_folder.text().strip())
+        kwargs['in_filepath'] = str(self.input_file.text().strip())
         report_path = str(self.input_report.text()).strip()
         kwargs['report_path'] = report_path
-        kwargs['start'] = date(*self.input_start.date().getDate()).strftime('%Y-%m-%d')
-        kwargs['end'] = date(*self.input_end.date().getDate()).strftime('%Y-%m-%d')
         return kwargs
 
     def generate_cmd(self, bin_path, kwargs):
-        # TODO
-        pass
+        if self.select_file.isChecked():
+            bin_name = self.bin_name1
+            cmd = join(bin_path, bin_name)
+            if kwargs['in_filepath']:
+                cmd += " %s" % quote(kwargs['in_filepath'])
+        else:
+            bin_name = self.bin_name2
+            cmd = join(bin_path, bin_name)
+            if kwargs['in_folder']:
+                cmd += " %s" % quote(kwargs['in_folder'])
+        if kwargs['report_path']:
+            cmd += ' -r %s' % quote(kwargs['report_path'])
+        return cmd
 
 
 class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
@@ -185,15 +193,13 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
         return kwargs
 
     def generate_cmd(self, bin_path, kwargs):
-        script = join(bin_path, self.bin_name)
-        arguments = []
+        cmd = join(bin_path, self.bin_name)
         if kwargs['report_path']:
-            arguments.extend(['-r', kwargs['report_path']])
-        if [kwargs['out_csv_folder']]:
-            arguments.extend([kwargs['out_csv_folder']])
-        arguments.extend(['-s', kwargs['start']])
-        arguments.extend(['-e', kwargs['end']])
-        cmd = "%s %s" % (script, ' '.join(arguments))
+            cmd += " -r' %s" % quote(kwargs['report_path'])
+        if kwargs['out_csv_folder']:
+            cmd += " %s" % quote(kwargs['out_csv_folder'])
+        cmd += " -s %s" % quote(kwargs['start'])
+        cmd += " -e %s" % quote(kwargs['end'])
         return cmd
 
 
@@ -266,19 +272,17 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
         return kwargs
 
     def generate_cmd(self, bin_path, kwargs):
-        script = join(bin_path, self.bin_name)
-        arguments = []
+        cmd = join(bin_path, self.bin_name)
         if kwargs['region_id']:
-            arguments.extend(['-R', kwargs['region_id']])
+            cmd += ' -R %s' % kwargs['region_id']
         for var in kwargs['variables']:
-            arguments.extend(['-v', var])
+            cmd += ' -v %s' % var
         for loc in kwargs['locations']:
-            arguments.extend(['-l', loc])
+            cmd += " -l %s" % quote(loc)
         if kwargs['report_path']:
-            arguments.extend(['-r', kwargs['report_path']])
-        if [kwargs['out_csv_folder']]:
-            arguments.extend([kwargs['out_csv_folder']])
-        cmd = "%s %s" % (script, ' '.join(arguments))
+            cmd += " -r' %s" % quote(kwargs['report_path'])
+        if kwargs['out_csv_folder']:
+            cmd += " %s" % quote(kwargs['out_csv_folder'])
         return cmd
 
 

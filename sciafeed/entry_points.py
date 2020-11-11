@@ -120,7 +120,8 @@ def compute_daily_indicators(data_folder, indicators_folder, dburi, report_path)
     """
     if not exists(indicators_folder):
         mkdir(indicators_folder)
-    engine = db_utils.ensure_engine(dburi)
+    db_utils.configure(dburi)
+    engine = db_utils.ensure_engine()
     conn = engine.connect()
     logger = utils.setup_log(report_path)
     logger.info('starting process of compute daily indicators')
@@ -145,6 +146,7 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     if not stations_path:
         print('"stations_path" is required')
         sys.exit(2)
+    db_utils.configure(dburi)
     msgs1, not_found_stations = querying.find_new_stations(data_folder, dburi)
     export.stations2csv(not_found_stations, stations_path, extra_fields=['source'])
     msgs2 = ['Exported new stations on CSV %r' % stations_path]
@@ -173,6 +175,7 @@ def upsert_stations(stations_path, dburi, report_path):
     if report_path and exists(report_path):
         print('wrong "report_path": the report must not exist or will be overwritten')
         sys.exit(2)
+    db_utils.configure(dburi)
     msgs, _, _ = upsert.upsert_stations(dburi, stations_path)
     if not report_path:
         for msg in msgs:
@@ -198,6 +201,7 @@ def upsert_stations(stations_path, dburi, report_path):
               help="""""")
 def check_chain(dburi, report_path, station_where, schema, omit_flagsync):
     logger = utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
+    db_utils.configure(dburi)
     stations_ids = querying.get_stations_by_where(dburi, station_where)
     process.process_checks_chain(dburi, stations_ids, schema, logger, omit_flagsync)
 
@@ -266,7 +270,8 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
     """
     logger = utils.setup_log(report_path)
     logger.info('starting process of inserting data')
-    engine = db_utils.ensure_engine(dburi)
+    db_utils.configure(dburi)
+    engine = db_utils.ensure_engine()
     conn = engine.connect()
     children = sorted(listdir(data_folder))
     for child in children:
@@ -303,7 +308,7 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
     logger = utils.setup_log(report_path)
     logger.info('starting process of loading unique data (from %s to %s)'
                 % (startschema, targetschema))
-
+    db_utils.configure(dburi)
     upsert.load_unique_data(dburi, startschema, targetschema, logger)
     logger.info('process concluded')
 
@@ -320,7 +325,8 @@ def compute_daily_indicators2(dburi, report_path, schema):
     """Utility for update secondary indicators"""
     logger = utils.setup_log(report_path)
     logger.info('starting process of loading secondary indicators in schema %s' % schema)
-    engine = db_utils.ensure_engine(dburi)
+    db_utils.configure(dburi)
+    engine = db_utils.ensure_engine()
     conn = engine.connect()
     process.compute_daily_indicators2(conn, schema, logger)
     logger.info('process concluded')
@@ -343,7 +349,8 @@ def process_dma(dburi, report_path, startschema, targetschema, policy):
     logger = utils.setup_log(report_path)
     logger.info('starting process of update DMA indicators from schema %s to schema %s'
                 % (startschema, targetschema))
-    engine = db_utils.ensure_engine(dburi)
+    db_utils.configure(dburi)
+    engine = db_utils.ensure_engine()
     conn = engine.connect()
     process.process_dma(conn, startschema, targetschema, policy, logger)
     logger.info('process concluded')

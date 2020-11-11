@@ -1150,8 +1150,6 @@ def test_compute_day_indicators():
 
 
 def test_compute_etp():
-    etp = compute.compute_etp(None, 11.7, 5.3, 40.785333, 14)
-    assert not etp
     etp = compute.compute_etp(8.3, 11.7, 5.3, 40.785333, 14)
     assert etp[0] == (None, 1)
     assert etp[1] == 0.9

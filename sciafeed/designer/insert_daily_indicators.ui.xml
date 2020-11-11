@@ -399,12 +399,12 @@ p, li { white-space: pre-wrap; }
      <widget class="QComboBox" name="input_policy">
       <item>
        <property name="text">
-        <string>SOLO INSERT</string>
+        <string>UPSERT</string>
        </property>
       </item>
       <item>
        <property name="text">
-        <string>UPSERT</string>
+        <string>SOLO INSERT</string>
        </property>
       </item>
      </widget>

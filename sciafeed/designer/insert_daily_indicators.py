@@ -213,6 +213,6 @@ class Ui_insert_daily_indicators_form(object):
         self.label_5.setText(_translate("insert_daily_indicators_form", "File di report", None))
         self.select_report_button.setText(_translate("insert_daily_indicators_form", "Cerca...", None))
         self.label_2.setText(_translate("insert_daily_indicators_form", "Tipo di inserimento", None))
-        self.input_policy.setItemText(0, _translate("insert_daily_indicators_form", "SOLO INSERT", None))
-        self.input_policy.setItemText(1, _translate("insert_daily_indicators_form", "UPSERT", None))
+        self.input_policy.setItemText(0, _translate("insert_daily_indicators_form", "UPSERT", None))
+        self.input_policy.setItemText(1, _translate("insert_daily_indicators_form", "SOLO INSERT", None))
 

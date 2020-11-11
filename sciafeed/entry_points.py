@@ -38,10 +38,11 @@ def make_report(in_filepath, report_path, outdata_filepath, parameters_filepath)
     If outdata_folder is specified, it also export parsed data.
     """
     logger = utils.setup_log(report_path, log_format='%(message)s')
+    logger.info('START PROCESS')
     process.make_report(in_filepath, outdata_filepath, parameters_filepath, logger)
     if outdata_filepath:
         logger.info('data saved on %s' % outdata_filepath)
-
+    logger.info('END PROCESS')
 
 @click.command()
 @click.argument('in_folder', type=click.Path(exists=True, file_okay=False))
@@ -55,6 +56,7 @@ def make_reports(in_folder, report_path, outdata_folder):
     If outdata_folder is specified, it also export parsed data.
     """
     logger = utils.setup_log(report_path, log_format='%(message)s')
+    logger.info('START PROCESS')
     if outdata_folder and not exists(outdata_folder):
         mkdir(outdata_folder)
     children = sorted(listdir(in_folder))
@@ -68,7 +70,7 @@ def make_reports(in_folder, report_path, outdata_folder):
         else:
             outdata_filepath = None
         process.make_report(in_filepath, outdata_filepath=outdata_filepath, logger=logger)
-
+    logger.info('START PROCESS')
 
 @click.command()
 @click.argument('out_csv_folder', type=click.Path(exists=False, file_okay=False))
@@ -94,7 +96,7 @@ def download_hiscentral(out_csv_folder, region_id, variables, locations, report_
         return
     if not locations:
         locations = None
-    print('out_csv_folder: %r' % out_csv_folder)
+    # print('out_csv_folder: %r' % out_csv_folder)
     if not exists(out_csv_folder):
         mkdir(out_csv_folder)
     ret_value = hiscentral.download_hiscentral(

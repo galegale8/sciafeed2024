@@ -214,6 +214,8 @@ def gettime(thefunction):
 
 def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message)s',
               log_datefmt='%d-%m-%Y %H:%M:%S'):
+    # sometimes it needs
+    [logging.root.removeHandler(handler) for handler in logging.root.handlers[:]]
     log_name = LOG_NAME + datetime.now().isoformat()
     level_for_standard_output = logging.INFO
     level_for_report_file = logging.INFO

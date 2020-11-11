@@ -142,9 +142,6 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     Examine stations on data included in folder `data_folder` and creates a CSV with the new
     stations not found in the database.
     """
-    if report_path and exists(report_path):
-        print('wrong "report_path": the report must not exist or will be overwritten')
-        sys.exit(2)
     if not stations_path:
         print('"stations_path" is required')
         sys.exit(2)

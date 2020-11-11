@@ -14,11 +14,87 @@ from sciafeed.designer.download_er_window import Ui_download_er_form
 from sciafeed.designer.make_report import Ui_make_report_form
 from sciafeed.designer.make_reports import Ui_make_reports_form
 from sciafeed.designer.find_new_stations import Ui_find_new_stations_form
+from sciafeed.designer.upsert_stations import Ui_upsert_stations_form
 
 import pdb
 def import_pdb():
   from PyQt4.QtCore import pyqtRemoveInputHook
   pyqtRemoveInputHook()
+
+
+class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
+    bin_name = 'upsert_stations'
+    close_signal = QtCore.pyqtSignal()
+    run_signal = QtCore.pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(UpsertStations, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.base_setup()
+
+    def terminal_redirect(self):
+        cursor = self.output_console.textCursor()
+        cursor.movePosition(cursor.End)
+        cursor.insertText(str(self.process.readAll(), 'utf-8'))
+        self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def closeEvent(self, event):
+        self.close_signal.emit()
+
+    def run_script(self):
+        self.run_signal.emit()
+
+    def base_setup(self):
+        # terminal stuff
+        self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
+        self.process = QtCore.QProcess(self)
+        self.process.readyRead.connect(self.terminal_redirect)
+        self.process.started.connect(lambda: self.script_run.setEnabled(False))
+        self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
+
+        # connect run/close buttons
+        self.script_close.clicked.connect(self.close)
+        self.script_run.clicked.connect(self.run_script)
+
+    def setupUi(self, Ui_upsert_stations_form):
+        super(UpsertStations, self).setupUi(Ui_upsert_stations_form)
+        # buttons for selecting inputs
+        self.select_input_file_button.clicked.connect(self.on_select_input_file_clicked)
+        self.select_report_button.clicked.connect(self.on_select_report_clicked)
+        # other ui setup
+        self.input_dburi.setText(DEFAULT_DB_URI)
+
+    def on_select_input_file_clicked(self):
+        caption = 'seleziona file di input'
+        filepath = str(QtGui.QFileDialog.getOpenFileName(self, caption))
+        self.input_file.setText(filepath)
+
+    def on_select_report_clicked(self):
+        caption = 'seleziona report destinazione'
+        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        self.input_report.setText(filepath)
+
+    def collect_inputs(self):
+        kwargs = dict()
+        kwargs['dburi'] = str(self.input_dburi.text().strip())
+        kwargs['stations_path'] = str(self.input_file.text().strip())
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        return kwargs
+
+    def generate_cmd(self, bin_path, kwargs):
+        cmd = join(bin_path, self.bin_name)
+        args = []
+        if kwargs['stations_path']:
+            args += [kwargs['stations_path']]
+        if kwargs['dburi']:
+            args += ['-d', kwargs['dburi']]
+        if kwargs['report_path']:
+            args += ['-r', kwargs['report_path']]
+        return cmd, args
 
 
 class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
@@ -512,6 +588,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
     open_makereport_signal = QtCore.pyqtSignal()
     open_makereports_signal = QtCore.pyqtSignal()
     open_find_new_stations_signal = QtCore.pyqtSignal()
+    open_upsert_stations_signal = QtCore.pyqtSignal()
 
     def __init__(self):
         super(SciaFeedMainWindow, self).__init__()
@@ -523,6 +600,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
             (self.OpenWindow_make_report, 'open_makereport_signal'),
             (self.OpenWindow_make_reports, 'open_makereports_signal'),
             (self.OpenWindow_find_new_stations, 'open_find_new_stations_signal'),
+            (self.OpenWindow_upsert_stations, 'open_upsert_stations_signal'),
         ]:
             signal_obj = getattr(self, signal_name)
             open_function = partial(self.show_window, button, signal_obj)
@@ -551,6 +629,8 @@ class Controller:
              self.main_window.OpenWindow_make_reports),
             (FindNewStations, 'findnewstations_window', 'open_find_new_stations_signal',
              self.main_window.OpenWindow_find_new_stations),
+            (UpsertStations, 'upsertstations_window', 'open_upsert_stations_signal',
+             self.main_window.OpenWindow_upsert_stations),
         ]:
             signal_obj = getattr(self.main_window, signal_name)
             show_funct = partial(self.show_window, klass, controller_attribute, main_window_button)

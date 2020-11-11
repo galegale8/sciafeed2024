@@ -20,11 +20,93 @@ from sciafeed.designer.insert_daily_indicators import Ui_insert_daily_indicators
 from sciafeed.designer.check_chain import Ui_check_chain_form
 from sciafeed.designer.compute_daily_indicators2 import Ui_compute_indicators2_form
 from sciafeed.designer.load_unique_data import Ui_load_unique_data_form
+from sciafeed.designer.process_dma import Ui_process_dma_form
 
-import pdb
-def import_pdb():
-  from PyQt4.QtCore import pyqtRemoveInputHook
-  pyqtRemoveInputHook()
+# import pdb
+# def import_pdb():
+#   from PyQt4.QtCore import pyqtRemoveInputHook
+#   pyqtRemoveInputHook()
+
+
+class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
+    bin_name = 'process_dma'
+    close_signal = QtCore.pyqtSignal()
+    run_signal = QtCore.pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(ProcessDMA, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.base_setup()
+
+    def terminal_redirect(self):
+        cursor = self.output_console.textCursor()
+        cursor.movePosition(cursor.End)
+        cursor.insertText(str(self.process.readAll(), 'utf-8'))
+        self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def closeEvent(self, event):
+        self.close_signal.emit()
+
+    def run_script(self):
+        self.run_signal.emit()
+
+    def base_setup(self):
+        # terminal stuff
+        self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
+        self.process = QtCore.QProcess(self)
+        self.process.readyRead.connect(self.terminal_redirect)
+        self.process.started.connect(lambda: self.script_run.setEnabled(False))
+        self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
+
+        # connect run/close buttons
+        self.script_close.clicked.connect(self.close)
+        self.script_run.clicked.connect(self.run_script)
+
+    def setupUi(self, Ui_process_dma_form):
+        super(ProcessDMA, self).setupUi(Ui_process_dma_form)
+        # buttons for selecting inputs
+        self.select_report_button.clicked.connect(self.on_select_report_clicked)
+        # other ui setup
+        self.input_dburi.setText(DEFAULT_DB_URI)
+        self.input_source_schema.setText('dailypdbanpaclima')
+        self.input_target_schema.setText('dmapdbanpaclima')
+
+    def on_select_report_clicked(self):
+        caption = 'seleziona report destinazione'
+        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        self.input_report.setText(filepath)
+
+    def collect_inputs(self):
+        kwargs = dict()
+        kwargs['dburi'] = str(self.input_dburi.text().strip())
+        kwargs['startschema'] = str(self.input_source_schema.text().strip())
+        kwargs['targetschema'] = str(self.input_target_schema.text().strip())
+        policy = self.input_policy.currentText()
+        if policy == 'SOLO INSERT':
+            kwargs['policy'] = 'onlyinsert'
+        else:
+            kwargs['policy'] = 'upsert'
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        return kwargs
+
+    def generate_cmd(self, bin_path, kwargs):
+        cmd = join(bin_path, self.bin_name)
+        args = []
+        if kwargs['startschema']:
+            args += ['-s', kwargs['startschema']]
+        if kwargs['targetschema']:
+            args += ['-t', kwargs['targetschema']]
+        if kwargs['dburi']:
+            args += ['-d', kwargs['dburi']]
+        if kwargs['policy']:
+            args += ['-p', kwargs['policy']]
+        if kwargs['report_path']:
+            args += ['-r', kwargs['report_path']]
+        return cmd, args
 
 
 class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
@@ -989,6 +1071,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
     open_check_chain_signal = QtCore.pyqtSignal()
     open_compute_daily_indicators2_signal = QtCore.pyqtSignal()
     open_load_unique_data_signal = QtCore.pyqtSignal()
+    open_process_dma_signal = QtCore.pyqtSignal()
 
     def __init__(self):
         super(SciaFeedMainWindow, self).__init__()
@@ -1006,7 +1089,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
             (self.OpenWindow_check_chain, 'open_check_chain_signal'),
             (self.OpenWindow_compute_daily_indicators2, 'open_compute_daily_indicators2_signal'),
             (self.OpenWindow_load_unique_data, 'open_load_unique_data_signal'),
-
+            (self.OpenWindow_process_dma, 'open_process_dma_signal'),
         ]:
             signal_obj = getattr(self, signal_name)
             open_function = partial(self.show_window, button, signal_obj)
@@ -1047,6 +1130,8 @@ class Controller:
              self.main_window.OpenWindow_compute_daily_indicators2),
             (LoadUniqueData, 'loaduniquedata_window', 'open_load_unique_data_signal',
              self.main_window.OpenWindow_load_unique_data),
+            (ProcessDMA, 'processdma_window', 'open_process_dma_signal',
+             self.main_window.OpenWindow_process_dma),
         ]:
             signal_obj = getattr(self.main_window, signal_name)
             show_funct = partial(self.show_window, klass, controller_attribute, main_window_button)

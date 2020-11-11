@@ -39,8 +39,8 @@ def make_report(in_filepath, report_path, outdata_filepath, parameters_filepath)
     """
     logger = utils.setup_log(report_path, log_format='%(message)s')
     logger.info('START PROCESS')
-    process.make_report(in_filepath, outdata_filepath, parameters_filepath, logger)
-    if outdata_filepath:
+    data = process.make_report(in_filepath, outdata_filepath, parameters_filepath, logger)
+    if outdata_filepath and data:
         logger.info('data saved on %s' % outdata_filepath)
     logger.info('END PROCESS')
 

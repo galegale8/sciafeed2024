@@ -15,11 +15,96 @@ from sciafeed.designer.make_report import Ui_make_report_form
 from sciafeed.designer.make_reports import Ui_make_reports_form
 from sciafeed.designer.find_new_stations import Ui_find_new_stations_form
 from sciafeed.designer.upsert_stations import Ui_upsert_stations_form
+from sciafeed.designer.compute_daily_indicators import Ui_compute_daily_indicators_form
 
 import pdb
 def import_pdb():
   from PyQt4.QtCore import pyqtRemoveInputHook
   pyqtRemoveInputHook()
+
+
+class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form):
+    bin_name = 'compute_daily_indicators'
+    close_signal = QtCore.pyqtSignal()
+    run_signal = QtCore.pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(ComputeDailyIndicators, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.base_setup()
+
+    def terminal_redirect(self):
+        cursor = self.output_console.textCursor()
+        cursor.movePosition(cursor.End)
+        cursor.insertText(str(self.process.readAll(), 'utf-8'))
+        self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def closeEvent(self, event):
+        self.close_signal.emit()
+
+    def run_script(self):
+        self.run_signal.emit()
+
+    def base_setup(self):
+        # terminal stuff
+        self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
+        self.process = QtCore.QProcess(self)
+        self.process.readyRead.connect(self.terminal_redirect)
+        self.process.started.connect(lambda: self.script_run.setEnabled(False))
+        self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
+
+        # connect run/close buttons
+        self.script_close.clicked.connect(self.close)
+        self.script_run.clicked.connect(self.run_script)
+
+    def setupUi(self, Ui_compute_daily_indicators_form):
+        super(ComputeDailyIndicators, self).setupUi(Ui_compute_daily_indicators_form)
+        # buttons for selecting inputs
+        self.select_input_folder_button.clicked.connect(self.on_select_input_folder_clicked)
+        self.select_output_folder_button.clicked.connect(self.on_select_output_folder_clicked)
+        self.select_report_button.clicked.connect(self.on_select_report_clicked)
+        # other ui setup
+        self.input_dburi.setText(DEFAULT_DB_URI)
+
+    def on_select_input_folder_clicked(self):
+        caption = 'seleziona cartella di input'
+        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        self.input_folder.setText(folderpath)
+
+    def on_select_output_folder_clicked(self):
+        caption = 'seleziona cartella di output'
+        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        self.output_folder.setText(folderpath)
+
+    def on_select_report_clicked(self):
+        caption = 'seleziona report destinazione'
+        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        self.input_report.setText(filepath)
+
+    def collect_inputs(self):
+        kwargs = dict()
+        kwargs['dburi'] = str(self.input_dburi.text().strip())
+        kwargs['data_folder'] = str(self.input_folder.text().strip())
+        kwargs['indicators_folder'] = str(self.output_folder.text().strip())
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        return kwargs
+
+    def generate_cmd(self, bin_path, kwargs):
+        cmd = join(bin_path, self.bin_name)
+        args = []
+        if kwargs['data_folder']:
+            args += [kwargs['data_folder']]
+        if kwargs['indicators_folder']:
+            args += [kwargs['indicators_folder']]
+        if kwargs['dburi']:
+            args += ['-d', kwargs['dburi']]
+        if kwargs['report_path']:
+            args += ['-r', kwargs['report_path']]
+        return cmd, args
 
 
 class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
@@ -589,6 +674,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
     open_makereports_signal = QtCore.pyqtSignal()
     open_find_new_stations_signal = QtCore.pyqtSignal()
     open_upsert_stations_signal = QtCore.pyqtSignal()
+    open_compute_daily_indicators_signal = QtCore.pyqtSignal()
 
     def __init__(self):
         super(SciaFeedMainWindow, self).__init__()
@@ -601,6 +687,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
             (self.OpenWindow_make_reports, 'open_makereports_signal'),
             (self.OpenWindow_find_new_stations, 'open_find_new_stations_signal'),
             (self.OpenWindow_upsert_stations, 'open_upsert_stations_signal'),
+            (self.OpenWindow_compute_daily_indicators, 'open_compute_daily_indicators_signal'),
         ]:
             signal_obj = getattr(self, signal_name)
             open_function = partial(self.show_window, button, signal_obj)
@@ -631,6 +718,8 @@ class Controller:
              self.main_window.OpenWindow_find_new_stations),
             (UpsertStations, 'upsertstations_window', 'open_upsert_stations_signal',
              self.main_window.OpenWindow_upsert_stations),
+            (ComputeDailyIndicators, 'computeind_window', 'open_compute_daily_indicators_signal',
+             self.main_window.OpenWindow_compute_daily_indicators),
         ]:
             signal_obj = getattr(self.main_window, signal_name)
             show_funct = partial(self.show_window, klass, controller_attribute, main_window_button)
@@ -652,10 +741,10 @@ class Controller:
     def show_window(self, theklass, controller_attribute, main_window_button):
         setattr(self, controller_attribute, theklass(self.main_window))
         window = getattr(self, controller_attribute)
-        close_download_hiscentral = partial(self.close_window, window, main_window_button)
-        window.close_signal.connect(close_download_hiscentral)
-        run_download_hiscentral = partial(self.run_script, window)
-        window.run_signal.connect(run_download_hiscentral)
+        close_window_funct = partial(self.close_window, window, main_window_button)
+        window.close_signal.connect(close_window_funct)
+        run_window_funct = partial(self.run_script, window)
+        window.run_signal.connect(run_window_funct)
         window.show()
 
 

@@ -2,8 +2,8 @@
 import functools
 import itertools
 import logging
-import sys
 import time
+import traceback
 
 from sqlalchemy import MetaData, Table, create_engine
 
@@ -228,8 +228,8 @@ def upsert_stations(dburi, stations_path):
         if new_stations:
             conn.execute(insert_obj.values(new_stations))
     except:
-        ex_type, ex, tb = sys.exc_info()
-        msgs.append(ex._message())
+        error = traceback.format_exc()
+        msgs.append(error)
         return msgs, 0, 0
     num_inserted_stations = len(new_stations)
     msgs.append('inserted %i new stations' % num_inserted_stations)
@@ -350,9 +350,7 @@ def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3,
         num_of_updates = result.rowcount
         logger.info('update completed: %s flags updated' % num_of_updates)
     except:
-        ex_type, ex, tb = sys.exc_info()
-        logger.error('update not completed: something went wrong')
-        logger.error(ex._message())
+        logger.exception('update not completed: something went wrong')
     finally:
         post_cmd = 'DROP TABLE %s' % tmp_table_name
         conn.execute(post_cmd)
@@ -412,9 +410,7 @@ def update_flags(conn, records, table, schema='dailypdbanpacarica', db_field='tm
         num_of_updates = result.rowcount
         logger.info('update completed: %s flags updated' % num_of_updates)
     except:
-        ex_type, ex, tb = sys.exc_info()
-        logger.error(ex._message())
-        logger.error('update not completed: something went wrong')
+        logger.exception('update not completed: something went wrong')
     finally:
         post_cmd = 'DROP TABLE %s' % tmp_table_name
         conn.execute(post_cmd)

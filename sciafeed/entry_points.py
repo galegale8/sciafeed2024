@@ -288,9 +288,8 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
             logger.info('- start insert of %s records from file %s' % (len(items), child))
             upsert.upsert_items(conn, items, policy, schema, table_name, logger)
         except:
-            ex_type, ex, tb = sys.exc_info()
-            logger.error(ex._message())
-
+            logger.exception('something went wrong')
+            raise
 
 @click.command()
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,

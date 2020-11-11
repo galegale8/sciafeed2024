@@ -16,11 +16,99 @@ from sciafeed.designer.make_reports import Ui_make_reports_form
 from sciafeed.designer.find_new_stations import Ui_find_new_stations_form
 from sciafeed.designer.upsert_stations import Ui_upsert_stations_form
 from sciafeed.designer.compute_daily_indicators import Ui_compute_daily_indicators_form
+from sciafeed.designer.insert_daily_indicators import Ui_insert_daily_indicators_form
+
 
 import pdb
 def import_pdb():
   from PyQt4.QtCore import pyqtRemoveInputHook
   pyqtRemoveInputHook()
+
+
+class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
+    bin_name = 'insert_daily_indicators'
+    close_signal = QtCore.pyqtSignal()
+    run_signal = QtCore.pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(InsertDailyIndicators, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.base_setup()
+
+    def terminal_redirect(self):
+        cursor = self.output_console.textCursor()
+        cursor.movePosition(cursor.End)
+        cursor.insertText(str(self.process.readAll(), 'utf-8'))
+        self.output_console.ensureCursorVisible()
+        scrollbar = self.output_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def closeEvent(self, event):
+        self.close_signal.emit()
+
+    def run_script(self):
+        self.run_signal.emit()
+
+    def base_setup(self):
+        # terminal stuff
+        self.output_console.setStyleSheet("background-color: rgb(0, 0, 0)")
+        self.process = QtCore.QProcess(self)
+        self.process.readyRead.connect(self.terminal_redirect)
+        self.process.started.connect(lambda: self.script_run.setEnabled(False))
+        self.process.finished.connect(lambda: self.script_run.setEnabled(True))
+        self.process.setProcessChannelMode(QtCore.QProcess.MergedChannels)
+
+        # connect run/close buttons
+        self.script_close.clicked.connect(self.close)
+        self.script_run.clicked.connect(self.run_script)
+
+    def setupUi(self, Ui_insert_daily_indicators_form):
+        super(InsertDailyIndicators, self).setupUi(Ui_insert_daily_indicators_form)
+        # buttons for selecting inputs
+        self.select_input_folder_button.clicked.connect(self.on_select_input_folder_clicked)
+        self.select_report_button.clicked.connect(self.on_select_report_clicked)
+        # other ui setup
+        self.input_dburi.setText(DEFAULT_DB_URI)
+        self.input_schema.setText('dailypdbanpacarica')
+
+    def on_select_input_folder_clicked(self):
+        caption = 'seleziona cartella di input'
+        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        self.input_folder.setText(folderpath)
+
+    def on_select_report_clicked(self):
+        caption = 'seleziona report destinazione'
+        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        self.input_report.setText(filepath)
+
+    def collect_inputs(self):
+        kwargs = dict()
+        kwargs['dburi'] = str(self.input_dburi.text().strip())
+        kwargs['data_folder'] = str(self.input_folder.text().strip())
+        kwargs['schema'] = str(self.input_schema.text().strip())
+        policy = self.input_policy.currentText()
+        if policy == 'SOLO INSERT':
+            kwargs['policy'] = 'onlyinsert'
+        else:
+            kwargs['policy'] = 'upsert'
+        report_path = str(self.input_report.text()).strip()
+        kwargs['report_path'] = report_path
+        return kwargs
+
+    def generate_cmd(self, bin_path, kwargs):
+        cmd = join(bin_path, self.bin_name)
+        args = []
+        if kwargs['data_folder']:
+            args += [kwargs['data_folder']]
+        if kwargs['schema']:
+            args += ['-s', kwargs['schema']]
+        if kwargs['dburi']:
+            args += ['-d', kwargs['dburi']]
+        if kwargs['report_path']:
+            args += ['-r', kwargs['report_path']]
+        if kwargs['policy']:
+            args += ['-p', kwargs['policy']]
+        return cmd, args
 
 
 class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form):
@@ -675,6 +763,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
     open_find_new_stations_signal = QtCore.pyqtSignal()
     open_upsert_stations_signal = QtCore.pyqtSignal()
     open_compute_daily_indicators_signal = QtCore.pyqtSignal()
+    open_insert_daily_indicators_signal = QtCore.pyqtSignal()
 
     def __init__(self):
         super(SciaFeedMainWindow, self).__init__()
@@ -688,6 +777,7 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
             (self.OpenWindow_find_new_stations, 'open_find_new_stations_signal'),
             (self.OpenWindow_upsert_stations, 'open_upsert_stations_signal'),
             (self.OpenWindow_compute_daily_indicators, 'open_compute_daily_indicators_signal'),
+            (self.OpenWindow_insert_indicators, 'open_insert_daily_indicators_signal'),
         ]:
             signal_obj = getattr(self, signal_name)
             open_function = partial(self.show_window, button, signal_obj)
@@ -720,6 +810,8 @@ class Controller:
              self.main_window.OpenWindow_upsert_stations),
             (ComputeDailyIndicators, 'computeind_window', 'open_compute_daily_indicators_signal',
              self.main_window.OpenWindow_compute_daily_indicators),
+            (InsertDailyIndicators, 'insertind_window', 'open_insert_daily_indicators_signal',
+             self.main_window.OpenWindow_insert_indicators),
         ]:
             signal_obj = getattr(self.main_window, signal_name)
             show_funct = partial(self.show_window, klass, controller_attribute, main_window_button)

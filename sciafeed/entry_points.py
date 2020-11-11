@@ -70,7 +70,7 @@ def make_reports(in_folder, report_path, outdata_folder):
         else:
             outdata_filepath = None
         process.make_report(in_filepath, outdata_filepath=outdata_filepath, logger=logger)
-    logger.info('START PROCESS')
+    logger.info('END PROCESS')
 
 @click.command()
 @click.argument('out_csv_folder', type=click.Path(exists=False, file_okay=False))

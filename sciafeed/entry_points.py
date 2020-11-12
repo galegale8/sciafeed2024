@@ -13,7 +13,6 @@ from sqlalchemy import exc
 from sciafeed import arpaer
 from sciafeed import db_utils
 from sciafeed import export
-from sciafeed import gui
 from sciafeed import hiscentral
 from sciafeed import process
 from sciafeed import querying
@@ -358,4 +357,5 @@ def process_dma(dburi, report_path, startschema, targetschema, policy):
 
 def sciafeed_gui(policy):
     """Graphical interface for SCIA-FEED"""
+    from sciafeed import gui
     return gui.run_sciafeed_gui()

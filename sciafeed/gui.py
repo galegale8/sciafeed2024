@@ -1,4 +1,6 @@
-
+"""
+This module contains functions and utilities to generate the SCIAFEED graphical interface
+"""
 from datetime import date
 from functools import partial
 from os.path import abspath, dirname, join
@@ -29,6 +31,9 @@ from sciafeed.designer.process_dma import Ui_process_dma_form
 
 
 class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
+    """
+    Class for the GUI windows for Process DMA data
+    """
     bin_name = 'process_dma'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -110,6 +115,9 @@ class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
 
 
 class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
+    """
+    Class for the GUI windows for Process Load unique data
+    """
     bin_name = 'load_unique_data'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -184,6 +192,9 @@ class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
 
 
 class ComputeDailyIndicators2(QtGui.QMainWindow, Ui_compute_indicators2_form):
+    """
+    Class for the GUI windows for compute secondary indicators
+    """
     bin_name = 'compute_daily_indicators2'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -254,6 +265,9 @@ class ComputeDailyIndicators2(QtGui.QMainWindow, Ui_compute_indicators2_form):
 
 
 class CheckChain(QtGui.QMainWindow, Ui_check_chain_form):
+    """
+    Class for the GUI windows for Process the check chain
+    """
     bin_name = 'check_chain'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -330,6 +344,9 @@ class CheckChain(QtGui.QMainWindow, Ui_check_chain_form):
 
 
 class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
+    """
+    Class for the GUI windows for Process inserting of daily indicators
+    """
     bin_name = 'insert_daily_indicators'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -416,6 +433,9 @@ class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
 
 
 class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form):
+    """
+    Class for the GUI windows for compute daily indicators
+    """
     bin_name = 'compute_daily_indicators'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -500,6 +520,9 @@ class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form
 
 
 class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
+    """
+    Class for the GUI windows for upserting stations
+    """
     bin_name = 'upsert_stations'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -575,6 +598,9 @@ class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
 
 
 class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
+    """
+    Class for the GUI windows for find new stations
+    """
     bin_name = 'find_new_stations'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -659,6 +685,9 @@ class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
 
 
 class MakeReports(QtGui.QMainWindow, Ui_make_reports_form):
+    """
+    Class for the GUI windows for make_reports script
+    """
     bin_name1 = 'make_report'
     bin_name2 = 'make_reports'
     close_signal = QtCore.pyqtSignal()
@@ -791,6 +820,9 @@ class MakeReports(QtGui.QMainWindow, Ui_make_reports_form):
 
 
 class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
+    """
+    Class for the GUI windows for make_report script
+    """
     bin_name1 = 'make_report'
     bin_name2 = 'make_reports'
     close_signal = QtCore.pyqtSignal()
@@ -895,6 +927,9 @@ class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
 
 
 class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
+    """
+    Class for the GUI windows for download_er script
+    """
     bin_name = 'download_er'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -976,6 +1011,9 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
 
 
 class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
+    """
+    Class for the GUI windows for download_hiscentral script
+    """
     bin_name = 'download_hiscentral'
     close_signal = QtCore.pyqtSignal()
     run_signal = QtCore.pyqtSignal()
@@ -1060,6 +1098,9 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
 
 
 class SciaFeedMainWindow(QtGui.QMainWindow):
+    """
+    Class for the GUI main window
+    """
     open_hiscentral_signal = QtCore.pyqtSignal()
     open_er_signal = QtCore.pyqtSignal()
     open_makereport_signal = QtCore.pyqtSignal()
@@ -1101,6 +1142,9 @@ class SciaFeedMainWindow(QtGui.QMainWindow):
 
 
 class Controller:
+    """
+    Class for the controller of the GUI windows
+    """
     def __init__(self, bin_path):
         self.bin_path = bin_path
 

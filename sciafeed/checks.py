@@ -818,14 +818,22 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
     """
     Check "controllo dtr (diurnal temperature range)".
     Operators is applied in the formula:
+    ::
+
         operator2(variables[0], operator1(variables[1]) + jump)
+
     example1:
+    ::
+
         operator1, operator2 = max, operator.ge
         variables = [Tmax, Tmin]
         jump = +35
         -->
         Tmax >= min(Tmin) + 35
+
     example2:
+    ::
+
         operator1, operator2 = min, operator.le
         variables = [Tmin, Tmax]
         jump = -35
@@ -897,8 +905,7 @@ def check13(records, operators, jump=35, flag=-31, val_indexes=(2, 4), logger=No
 def check_consistency(records, val_indexes, flag_index, flag=-10, logger=None):
     """
     Check consistency between values in indexes `val_indexes`.
-    val_indexes = i1, i2, i3: check that
-        record[i1] <= record[i2] <= record[i3]
+    val_indexes = i1, i2, i3: check that record[i1] <= record[i2] <= record[i3]
     Flags index is the index of the flag to be reset.
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]

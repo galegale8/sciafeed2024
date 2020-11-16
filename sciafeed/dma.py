@@ -1,4 +1,6 @@
-
+"""
+This module contains functions and utilities that get and update information for DMA data
+"""
 import calendar
 from datetime import datetime
 import functools
@@ -16,6 +18,15 @@ ROUND_PRECISION = 1
 
 
 def merge_data_items(records1, records2, pkeys=('data_i', 'cod_staz', 'cod_aggr')):
+    """
+    return a merged version of two input lists of dictionaries; each element of the list
+    is identified by the list of keys `pkeys`.
+
+    :param records1: first input list of dictionaries
+    :param records2: second input list of dictionaries
+    :param pkeys: list of keys to identify a single dictionary to be merged in the list
+    :return: the list of dictionaries merged
+    """
     dict1 = dict()
     for record1 in records1:
         key = tuple([record1[p] for p in pkeys])
@@ -980,7 +991,10 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
     It return records of kind [{'data_i': ..., 'cod_staz': ...,  'cod_aggr': ...}, ...]
     obtaining aggregating input records in decades, months and years.
     Each output record has also some keys computed running some functions:
+    ::
+
         record[field] = field_funct(aggregated_records, num_expected)
+
     where field and field_funct are items of `map_funct`, and num_expected=number of total records
     expected in the aggregation.
     If map_funct is not set, map_funct = {`field`: `field_funct`}, otherwise `field` and
@@ -1094,6 +1108,15 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
 
 
 def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of bagnatura fogliare
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA bagnatura fogliare')
     logger.info('select for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1112,6 +1135,15 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table containing bilancio idrico
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA bilancio idrico')
     logger.info('select for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1130,6 +1162,15 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
 
 
 def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of eliofania
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA eliofania')
     logger.info('select for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1148,6 +1189,15 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of radiazione globale
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA radiazione globale')
     logger.info('select for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1166,6 +1216,15 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logg
 
 
 def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of evapotraspirazione
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA evapotraspirazione')
     logger.info('select for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1184,6 +1243,15 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logg
 
 
 def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of gradi giorno
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA gradi giorno')
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1203,6 +1271,15 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_pressione(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of pressione
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA pressione atmosferica')
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1222,6 +1299,15 @@ def process_dma_pressione(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of umidità relativa
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA umidità relativa')
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1241,6 +1327,15 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger
 
 
 def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of bioclimatologia
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA bioclimatologia')
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1271,6 +1366,15 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
 
 
 def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of precipitazione
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA precipitazione')
     logger.info('selecting for input records...')
 
@@ -1343,6 +1447,15 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_vento(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of vento
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA vento')
     logger.info('selecting for input records...')
     data_items = dict()
@@ -1383,6 +1496,15 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
 
 
 def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
+    """
+    process the compute and update of DMA data for table of temperature
+
+    :param conn: db connection object
+    :param startschema: db start schema
+    :param targetschema: db target schema
+    :param policy: onlyinsert or upsert
+    :param logger: logging object for function reporting
+    """
     logger.info('starting process DMA temperatura')
     logger.info('selecting for input records...')
     data_items = dict()

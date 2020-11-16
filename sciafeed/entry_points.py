@@ -355,7 +355,7 @@ def process_dma(dburi, report_path, startschema, targetschema, policy):
     logger.info('process concluded')
 
 
-def sciafeed_gui(policy):
+def sciafeed_gui():
     """Graphical interface for SCIA-FEED"""
     from sciafeed import gui
     return gui.run_sciafeed_gui()

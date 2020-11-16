@@ -1,11 +1,13 @@
-
+"""
+This module contains functions and utilities that update the SCIA database
+"""
 import functools
 import itertools
 import logging
 import time
 import traceback
 
-from sqlalchemy import MetaData, Table, create_engine
+from sqlalchemy import MetaData, Table
 
 from sciafeed import LOG_NAME
 from sciafeed import db_utils
@@ -247,6 +249,7 @@ def update_prec_flags(conn, records, schema='dailypdbanpacarica', logger=None):
     :param records: iterable of input records, of kind [cod_staz, data_i, value, flag, ...]
     :param schema: database schema to use
     :param logger: logging object where to report actions
+
     :return number of updates
     """
     if logger is None:
@@ -309,6 +312,7 @@ def update_vntmd_flags(conn, records, schema='dailypdbanpacarica', flag_index=3,
     :param schema: database schema to use
     :param flag_index: index of the flag in the input records
     :param logger: logging object where to report actions
+
     :return number of updates
     """
     if logger is None:
@@ -527,6 +531,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
     :param table_name: name of the table
     :param logger: logging object where to report actions
     :param find_cod_staz: if True, assumes cod_staz in items is ('cod_utente--cod_gruppo')
+
     :return number of updates
     """
     if logger is None:

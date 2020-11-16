@@ -16,15 +16,18 @@ SCIA PostgreSQL database.
    checks
    compute
    db_utils
+   dma
    entry_points
    export
    gdrive_utils
+   gui
    hiscentral
    noaa
    parsing
    process
    querying
    rmn
+   spring
    trentino
    upsert
    utils

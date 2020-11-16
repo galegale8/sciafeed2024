@@ -42,7 +42,8 @@ develoment extension of the package:
 .. code:: bash
 
     python3 -m venv ve
-    ve/bin/pip install -e .[dev]
+    source ve/bin/activate
+    pip install -e .[dev]
 
 2.2 Testing
 ~~~~~~~~~~~

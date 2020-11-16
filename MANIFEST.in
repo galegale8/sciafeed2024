@@ -1,6 +1,8 @@
 include *.in
 include *.rst
 recursive-include sciafeed/templates *
+recursive-include sciafeed/credentials *
+recursive-include sciafeed/designer *
 recursive-include tests/TESTDATA *
 recursive-include docs *.gitkeep
 recursive-include docs *.py

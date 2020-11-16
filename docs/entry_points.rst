@@ -2,6 +2,9 @@
 entry_points
 ------------
 
+.. automodule:: sciafeed.entry_points
+   :members:
+
 .. click:: sciafeed.entry_points:make_report
    :prog: make_report
 
@@ -26,8 +29,8 @@ entry_points
 .. click:: sciafeed.entry_points:download_er
    :prog: download_er
 
-.. click:: sciafeed.entry_points:insert_indicators
-   :prog: insert_indicators
+.. click:: sciafeed.entry_points:insert_daily_indicators
+   :prog: insert_daily_indicators
 
 .. click:: sciafeed.entry_points:load_unique_data
    :prog: load_unique_data

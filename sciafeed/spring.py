@@ -1,4 +1,6 @@
-
+"""
+This module contains functions and utilities that compute when seasons starts/ends
+"""
 from datetime import date, datetime
 
 SOLSTICE_MONTH_DEFAULT = 6
@@ -115,6 +117,13 @@ equinox2_days = {
 
 
 def get_solstice(year, of_june=True):
+    """
+    Compute the date of the june solstice for the input `year`
+
+    :param year: year
+    :param of_june: if False, compute the winter solstice
+    :return: the datetime of the solstice
+    """
     if year > MAX_YEAR or year < MIN_YEAR:
         raise ValueError('cannot compute solstice for %r: year out of range')
     if of_june:
@@ -128,6 +137,13 @@ def get_solstice(year, of_june=True):
 
 
 def get_equinox(year, of_september=True):
+    """
+    Compute the date of the autumn equinox for the input `year`
+
+    :param year: year
+    :param of_september: if False, compute the spring solstice
+    :return: the datetime of the equinox
+    """
     if year > MAX_YEAR or year < MIN_YEAR:
         raise ValueError('cannot compute equinox for %r: year out of range')
     if of_september:
@@ -141,6 +157,12 @@ def get_equinox(year, of_september=True):
 
 
 def is_day_in_summer(day):
+    """
+    Return if the input datetime `day` is in summer season or not.
+
+    :param day: input datetime object
+    :return: True or False
+    """
     if isinstance(day, datetime):
         day = day.date()
     year = day.year
@@ -150,6 +172,12 @@ def is_day_in_summer(day):
 
 
 def is_day_in_winter(day):
+    """
+    Return if the input datetime `day` is in winter season or not.
+
+    :param day: input datetime object
+    :return: True or False
+    """
     if isinstance(day, datetime):
         day = day.date()
     year = day.year

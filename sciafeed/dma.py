@@ -312,8 +312,8 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     """
     valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3] is not None
                      and len(r[3]) == 2]
-    valid_ff = [r for r in valid_records if r[3][0] is not None]
-    valid_dd = [r for r in valid_records if r[3][1] is not None]
+    valid_ff = [r[3][0] for r in valid_records if r[3][0] is not None]
+    valid_dd = [r[3][1] for r in valid_records if r[3][1] is not None]
     if not valid_records:
         return (None, None), None, None
     ff = None

@@ -88,12 +88,12 @@ for example the file 'ispra-2019-scia-del-006-v.1.0.zip':
 .. code:: bash
 
     sed -i 's+'"$PWD"'+INSTALL_DIR+g' docs/html/*.html
-    ln -s ./index.html docs/html/ispra-2019-scia-del-006-v.1.0.html
+    ln -s ./index.html docs/html/ispra-2019-scia-del-006-v.2.0.html
     cd docs
-    zip -r ispra-2019-scia-del-006-v.1.0.zip html/
+    zip -r ispra-2019-scia-del-006-v.2.0.zip html/
     cd ..
-    rm docs/html/ispra-2019-scia-del-006-v.1.0.html
-    mv docs/ispra-2019-scia-del-006-v.1.0.zip .
+    rm docs/html/ispra-2019-scia-del-006-v.2.0.html
+    mv docs/ispra-2019-scia-del-006-v.2.0.zip .
 
 3. Installation
 ---------------

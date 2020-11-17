@@ -68,7 +68,9 @@ def find_new_stations(data_folder, dburi):
         total_to_see_number = len(total_to_see)
         for i, file_name in enumerate(total_to_see):
             csv_path = join(data_folder, file_name)
-            print('examine file %s/%s...' % (i+1, total_to_see_number))
+            msg = 'examine file %s/%s...' % (i+1, total_to_see_number)
+            print(msg)
+            msgs.append(msg)
             if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
                 continue
             records = export.csv2data(csv_path)
@@ -100,13 +102,16 @@ def find_new_stations(data_folder, dburi):
                     new_stations[station_key] = new_station
                     msg = " - new station: cod_utente=%r, cod_rete=%r, lat=%s, lon=%s" \
                           % station_key
+                    print(msg)
                     msgs.append(msg)
     num_all_stations = len(all_stations)
     num_new_stations = len(new_stations)
     msg0 = "Examined %i records" % num_records
     msg1 = "Found %i distinct stations" % num_all_stations
     msg2 = "Number of NEW stations: %i" % num_new_stations
-    msgs = msgs.extend([msg0, msg1, msg2])
+    for msg in [msg0, msg1, msg2]:
+        print(msg)
+    msgs.extend([msg0, msg1, msg2])
     conn.close()
     return msgs, new_stations
 

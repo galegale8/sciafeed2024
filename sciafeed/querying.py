@@ -106,7 +106,7 @@ def find_new_stations(data_folder, dburi):
     msg0 = "Examined %i records" % num_records
     msg1 = "Found %i distinct stations" % num_all_stations
     msg2 = "Number of NEW stations: %i" % num_new_stations
-    msgs = [msg0, msg1, msg2] + msgs
+    msgs = msgs.extend([msg0, msg1, msg2])
     conn.close()
     return msgs, new_stations
 

@@ -179,9 +179,9 @@ def upsert_stations(stations_path, dburi, report_path):
     print(msg0[0])
     db_utils.configure(dburi)
     msgs1, _, _ = upsert.upsert_stations(dburi, stations_path)
-    msgs = msg0 + msgs1
-    for msg in msgs:
+    for msg in msgs1:
         print(msg)
+    msgs = msg0 + msgs1
     msgs2 = ['PROCESS ENDED']
     msgs.append(msgs2[0])
     if report_path:

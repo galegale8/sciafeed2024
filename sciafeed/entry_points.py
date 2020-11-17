@@ -292,11 +292,13 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
         logger.info('- reading data from file %s' % child)
         try:
             items = export.csv2items(csv_table_path)
-            logger.info('- start insert of %s records from file %s' % (len(items), child))
+            logger.info('- start insert/upsert of %s records from file %s' % (len(items), child))
             upsert.upsert_items(conn, items, policy, schema, table_name, logger)
         except:
             logger.exception('something went wrong')
             raise
+    logger.info('end process of inserting data')
+
 
 @click.command()
 @click.option('--dburi', '-d', default=db_utils.DEFAULT_DB_URI,

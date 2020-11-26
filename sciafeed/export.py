@@ -117,7 +117,7 @@ def stations2csv(stations, stations_path, extra_fields=()):
         writer.writeheader()
         if not stations:
             return
-        station_rows = sorted(stations.values(), key=lambda r: r['nome'])
+        station_rows = sorted(stations.values(), key=lambda r: r.get('nome', ''))
         for station_row in station_rows:
             row = {k: station_row.get(k, '') for k in fieldnames}
             writer.writerow(row)

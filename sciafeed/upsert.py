@@ -13,6 +13,7 @@ from sciafeed import LOG_NAME
 from sciafeed import db_utils
 from sciafeed import export
 from sciafeed import querying
+from sciafeed import utils
 
 
 field2class_map = {
@@ -570,7 +571,7 @@ def upsert_items(conn, items, policy, schema, table_name, logger=None, find_cod_
             # this one so that empty values are empty strings in the sql
             record = {
                 k: v for k, v in record.items()
-                if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+                if v not in (None, 'NULL') and list(filter(lambda r: utils.is_float(r), str(v)))
             }
             data.append(record)
             upserted += 1

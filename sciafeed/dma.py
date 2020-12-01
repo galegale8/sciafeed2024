@@ -13,6 +13,7 @@ import statistics
 from sciafeed import querying
 from sciafeed import spring
 from sciafeed import upsert
+from sciafeed import utils
 
 ROUND_PRECISION = 1
 
@@ -1062,7 +1063,7 @@ def compute_dma_records(table_records, field=None, field_funct=None, map_funct=N
         record = upsert.expand_record(record)
         record = {
             k: v for k, v in record.items()
-            if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+            if v not in (None, 'NULL') and list(filter(lambda r: utils.is_float(r), str(v)))
         }
         ret_value.append(record)
     return ret_value
@@ -1101,7 +1102,7 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
         record = upsert.expand_record(record)
         record = {
             k: v for k, v in record.items()
-            if v not in (None, 'NULL') and list(filter(lambda r: r.isdigit(), str(v)))
+            if v not in (None, 'NULL') and list(filter(lambda r: utils.is_float(r), str(v)))
         }
         ret_value.append(record)
     return ret_value

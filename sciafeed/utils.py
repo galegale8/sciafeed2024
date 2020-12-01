@@ -15,6 +15,14 @@ import xlrd
 from sciafeed import LOG_NAME
 
 
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except:
+        return False
+
+
 def cell_str(cell, datemode, datepattern='%d.%m.%Y'):
     """
     Try to get the raw value of an Excel cell as string/unicode

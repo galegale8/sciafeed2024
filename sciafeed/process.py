@@ -550,7 +550,7 @@ def compute_daily_indicators2(conn, schema, logger):
                 'grgg.flag.wht': grgg_flag[1], 'grgg.tot00': grgg1, 'grgg.tot05': grgg2,
                 'grgg.tot10': grgg3, 'grgg.tot15': grgg4, 'grgg.tot21': grgg5})
             grgg_items.append(grgg_item)
-        allow_compute_deltagg = tmax is not None and tmax_flag is not None and tmax_flag > 0 or \
+        allow_compute_deltagg = tmax is not None and tmax_flag is not None and tmax_flag > 0 and \
             tmin is not None and tmin_flag is not None and tmin_flag > 0
         if allow_compute_deltagg:
             deltagg = tmax - tmin

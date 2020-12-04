@@ -190,7 +190,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
             include_sql_str = '(%s)' % include_flag_values[0]
         where_clauses.append('((prec24).flag).wht in %s' % include_sql_str)
     if exclude_flag_interval is not None:
-        where_clauses.append('(((prec24).flag).wht < %s) OR (((prec24).flag).wht > %s)'
+        where_clauses.append('((((prec24).flag).wht < %s) OR (((prec24).flag).wht > %s))'
                              % (exclude_flag_interval[0], exclude_flag_interval[1]))
     if exclude_values:
         where_clauses.append('(prec24).val_tot NOT IN (%s)' % repr(list(exclude_values))[1:-1])
@@ -240,7 +240,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
             where_clauses.append('((%s).flag).wht in %s' % (field, include_sql_str))
     if exclude_flag_interval is not None:
         for field in fields:
-            clause = '(((%s).flag).wht < %s) OR (((%s).flag).wht > %s)' \
+            clause = '((((%s).flag).wht < %s) OR (((%s).flag).wht > %s))' \
                      % (field, exclude_flag_interval[0], field, exclude_flag_interval[1])
             where_clauses.append(clause)
     if exclude_values:
@@ -295,7 +295,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
             where_clauses.append('((%s).flag).wht in %s' % (field, include_sql_str))
     if exclude_flag_interval is not None:
         for field in fields:
-            clause = '(((%s).flag).wht < %s) OR (((%s).flag).wht > %s)' \
+            clause = '((((%s).flag).wht < %s) OR (((%s).flag).wht > %s))' \
                      % (field, exclude_flag_interval[0], field, exclude_flag_interval[1])
             where_clauses.append(clause)
     if where_sql:

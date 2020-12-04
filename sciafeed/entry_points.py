@@ -203,7 +203,7 @@ def upsert_stations(stations_path, dburi, report_path):
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
 @click.option('--omit_flagsync', default=False, is_flag=True,
-              help="""""")
+              help="""if specified, omit to do the initial flag -9/+5 syncronization""")
 def check_chain(dburi, report_path, station_where, schema, omit_flagsync):
     logger = utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
     db_utils.configure(dburi)

@@ -347,8 +347,8 @@ def compute_daily_indicators2(dburi, report_path, schema):
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--startschema', '-s', default='dailypdbanpaclima',
               help="""database schema to use for data input. Default is 'dailypdbanpaclima'""")
-@click.option('--targetschema', '-t', default='dailypdbanpaclima',
-              help="""database schema to use. Default is 'dailypdbanpaclima'""")
+@click.option('--targetschema', '-t', default='dmapdbanpaclima',
+              help="""database schema to use. Default is 'dmapdbanpaclima'""")
 @click.option('--policy', '-p', type=click.Choice(['onlyinsert', 'upsert']), default='upsert',
               help="policy to apply in the insert")
 def process_dma(dburi, report_path, startschema, targetschema, policy):

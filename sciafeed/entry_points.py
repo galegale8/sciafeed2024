@@ -120,8 +120,7 @@ def compute_daily_indicators(data_folder, indicators_folder, dburi, report_path)
     if not exists(indicators_folder):
         mkdir(indicators_folder)
     db_utils.configure(dburi)
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+    conn = db_utils.ensure_connection()
     logger = utils.setup_log(report_path)
     logger.info('starting process of compute daily indicators')
     process.compute_daily_indicators(conn, data_folder, indicators_folder, logger)
@@ -276,8 +275,7 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
     logger = utils.setup_log(report_path)
     logger.info('starting process of inserting data')
     db_utils.configure(dburi)
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+    conn = db_utils.ensure_connection()
     children = sorted(listdir(data_folder))
     for child in children:
         csv_table_path = join(data_folder, child)
@@ -333,8 +331,7 @@ def compute_daily_indicators2(dburi, report_path, schema):
     logger = utils.setup_log(report_path)
     logger.info('starting process of loading secondary indicators in schema %s' % schema)
     db_utils.configure(dburi)
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+    conn = db_utils.ensure_connection()
     process.compute_daily_indicators2(conn, schema, logger)
     logger.info('process concluded')
 
@@ -357,8 +354,7 @@ def process_dma(dburi, report_path, startschema, targetschema, policy):
     logger.info('starting process of update DMA indicators from schema %s to schema %s'
                 % (startschema, targetschema))
     db_utils.configure(dburi)
-    engine = db_utils.ensure_engine()
-    conn = engine.connect()
+    conn = db_utils.ensure_connection()
     process.process_dma(conn, startschema, targetschema, policy, logger)
     logger.info('process concluded')
 

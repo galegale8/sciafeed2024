@@ -55,11 +55,10 @@ def find_new_stations(data_folder, dburi):
     :return: ([list of report messages], {dict of not found stations})
     """
     msgs = []
-    engine = db_utils.ensure_engine(dburi)
+    conn = db_utils.ensure_connection(dburi)
     meta = MetaData()
-    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=engine,
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
                        schema='dailypdbadmclima')
-    conn = engine.connect()
     all_stations = dict()
     new_stations = dict()
     num_records = 0
@@ -132,8 +131,7 @@ def get_stations_by_where(dburi, station_where=None):
     assert 'insert' not in where_sql.lower()
     assert 'update' not in where_sql.lower()
     assert '"' not in where_sql
-    engine = db_utils.ensure_engine(dburi)
-    conn = engine.connect()
+    conn = db_utils.ensure_connection(dburi)
     sql = "SELECT id_staz FROM dailypdbadmclima.anag__stazioni %s" % where_sql
     results = [r[0] for r in conn.execute(sql).fetchall()]
     conn.close()
@@ -201,7 +199,8 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
     # each record must be a list to make flag changeable:
-    results = map(list, conn.execute(sql))
+    results = conn.execute(sql)
+    results = db_utils.results_list(results)
     return results
 
 
@@ -256,8 +255,9 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
+    results = conn.execute(sql)
     # each record must be a list to make flag changeable:
-    results = map(list, conn.execute(sql))
+    results = db_utils.results_list(results)
     return results
 
 
@@ -304,6 +304,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
+    results = conn.execute(sql)
     # each record must be a list to make flag changeable:
-    results = map(list, conn.execute(sql))
+    results = db_utils.results_list(results)
     return results

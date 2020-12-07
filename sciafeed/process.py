@@ -488,8 +488,7 @@ def process_checks_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', 
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info('== Start process ==')
-    engine = db_utils.ensure_engine(dburi)
-    conn = engine.connect()
+    conn = db_utils.ensure_connection(dburi)
 
     if not omit_flagsync:
         logger.info(
@@ -529,7 +528,7 @@ def compute_daily_indicators2(conn, schema, logger):
     (tmdgg).val_md, ((tmdgg).flag).wht
     FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz""" % schema
 
-    temp_records = map(list, conn.execute(sql))
+    temp_records = db_utils.results_list(conn.execute(sql))
 
     logger.info('* computing temperature indicators...')
     temp_items = []
@@ -592,7 +591,8 @@ def compute_daily_indicators2(conn, schema, logger):
     WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0 
     AND (prec24).val_tot IS NOT NULL AND (etp).val_md IS NOT NULL
     """ % (schema, schema)
-    idro_records = map(list, conn.execute(sql))
+    idro_records = db_utils.results_list(conn.execute(sql))
+
     idro_items = []
     for idro_record in idro_records:
         cod_staz, data_i, lat = idro_record[0:3]

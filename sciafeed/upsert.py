@@ -199,13 +199,12 @@ def upsert_stations(dburi, stations_path):
     """
     msgs = []
     upserted_ids = []
-    engine = db_utils.ensure_engine(dburi)
+    conn = db_utils.ensure_connection(dburi)
     meta = MetaData()
-    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=engine,
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
                        schema='dailypdbadmclima')
     update_obj = anag_table.update()
     insert_obj = anag_table.insert()
-    conn = engine.connect()
     try:
         stations = export.csv2items(
             stations_path,
@@ -612,8 +611,7 @@ def load_unique_data_table(dburi, table_name, master_field, startschema, targets
     # (if present), otherwise the first record that has a not not value for master_field
 
     # engine_multiprocessing = create_engine(db_utils.DEFAULT_DB_URI, pool=db_utils.mypool)
-    engine = db_utils.ensure_engine(dburi)
-    conn = engine.connect()
+    conn = db_utils.ensure_connection(dburi)
     logger = logging.getLogger(logger_name)
     group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
 
@@ -667,8 +665,7 @@ def load_unique_data(dburi, startschema, targetschema, logger=None, only_tables=
     logger.info("loading tabgruppistazioni")
     gruppi_tname = 'tabgruppistazioni'
     gruppi_tschema = 'dailypdbanpacarica'
-    engine = db_utils.ensure_engine(dburi)
-    conn = engine.connect()
+    conn = db_utils.ensure_connection(dburi)
     group2mainstation = querying.load_main_station_groups(
         conn, gruppi_tname, gruppi_tschema)
     conn.close()

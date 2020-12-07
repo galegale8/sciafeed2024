@@ -59,6 +59,19 @@ def ensure_engine(db_uri='sqlite:///:memory:'):
     return ENGINE
 
 
+def ensure_connection(db_uri='sqlite:///:memory:'):
+    """
+    Return a sqlalchemy connection object. If not configured,
+    the connection is bound to the memory.
+
+    :return: the connection object
+    """
+    engine = ensure_engine(db_uri)
+    conn = engine.connect()
+    conn = conn.execution_options(stream_results=True)
+    return conn
+
+
 def get_table_columns(table_name, schema='public'):
     """
     Return the list of column names of a table named `table_name`.
@@ -109,3 +122,17 @@ def force_flags(records, flag_map, flag_index=3):
         if key in flag_map:
             record[flag_index] = flag_map[key]
     return records
+
+
+def results_list(results):
+    """
+    Make a list over each item of an input iterable.
+    This is usually useful for a sqlalchemy query result object,
+    to make each result record a list instead of a tuple.
+
+    :param results: an iterable object
+    :return: an iterable of lists
+    """
+    for result in results:
+        result = list(result)
+        yield result

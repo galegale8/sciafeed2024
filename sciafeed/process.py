@@ -518,6 +518,7 @@ def compute_daily_indicators2(conn, schema, logger):
     :param logger: logger object for reporting
     :return:
     """
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
     logger.info('* querying ds__t200 for compute temperature indicators...')
@@ -528,7 +529,7 @@ def compute_daily_indicators2(conn, schema, logger):
     (tmdgg).val_md, ((tmdgg).flag).wht
     FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz""" % schema
 
-    temp_records = db_utils.results_list(conn.execute(sql))
+    temp_records = db_utils.results_list(conn_r.execute(sql))
 
     logger.info('* computing temperature indicators...')
     temp_items = []
@@ -591,7 +592,7 @@ def compute_daily_indicators2(conn, schema, logger):
     WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0 
     AND (prec24).val_tot IS NOT NULL AND (etp).val_md IS NOT NULL
     """ % (schema, schema)
-    idro_records = db_utils.results_list(conn.execute(sql))
+    idro_records = db_utils.results_list(conn_r.execute(sql))
 
     idro_items = []
     for idro_record in idro_records:

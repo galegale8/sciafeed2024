@@ -10,6 +10,7 @@ import operator
 import numpy as np
 import statistics
 
+from sciafeed import db_utils
 from sciafeed import querying
 from sciafeed import spring
 from sciafeed import upsert
@@ -216,7 +217,7 @@ def compute_grgg(records, num_expected, at_least_perc=0.75):
     valid_values_05 = [r[3][1] for r in valid_records if r[3][1] is not None]
     valid_values_10 = [r[3][2] for r in valid_records if r[3][2] is not None]
     valid_values_15 = [r[3][3] for r in valid_records if r[3][3] is not None]
-    valid_values_21 = [r[3][4]  for r in valid_records if r[3][4] is not None]
+    valid_values_21 = [r[3][4] for r in valid_records if r[3][4] is not None]
 
     if not valid_records:
         return (None, None), None, None, None, None, None
@@ -1337,6 +1338,7 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     :param policy: onlyinsert or upsert
     :param logger: logging object for function reporting
     """
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     logger.info('starting process DMA bioclimatologia')
     logger.info('selecting for input records...')
     # records are: (metadata, datetime object, par_code, par_value, flag)
@@ -1346,7 +1348,7 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     FROM %s.ds__t200 JOIN %s.ds__urel USING (cod_staz, data_i)
     WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
     ORDER BY cod_staz, data_i""" % (startschema, startschema)
-    table_records = conn.execute(sql)
+    table_records = conn_r.execute(sql)
     map_funct = {
         'ifs': compute_ifs,
         'ifu': compute_ifu,

@@ -178,6 +178,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     :param no_order: if False, sort results by station, date
     :return: the iterable of the results
     """
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     sql = "SELECT %s FROM %s.ds__preci" % (sql_fields, schema)
     where_clauses = []
     if stations_ids:
@@ -199,7 +200,7 @@ def select_prec_records(conn, sql_fields='*', stations_ids=None, schema='dailypd
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
     # each record must be a list to make flag changeable:
-    results = conn.execute(sql)
+    results = conn_r.execute(sql)
     results = db_utils.results_list(results)
     return results
 
@@ -227,6 +228,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
     :param no_order: if True, sort results by station, date
     :return: the iterable of the results
     """
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     sql = "SELECT %s FROM %s.ds__t200" % (sql_fields, schema)
     where_clauses = []
     if stations_ids:
@@ -255,7 +257,7 @@ def select_temp_records(conn, fields, sql_fields='*', stations_ids=None,
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
-    results = conn.execute(sql)
+    results = conn_r.execute(sql)
     # each record must be a list to make flag changeable:
     results = db_utils.results_list(results)
     return results
@@ -283,6 +285,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
     :param no_order: if True, sort results by station, date
     :return: the iterable of the results
     """
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     sql = "SELECT %s FROM %s.%s" % (sql_fields, schema, table)
     where_clauses = []
     if stations_ids:
@@ -304,7 +307,7 @@ def select_records(conn, table, fields, sql_fields='*', stations_ids=None,
         sql += ' WHERE %s' % (' AND '.join(where_clauses))
     if not no_order:
         sql += ' ORDER BY cod_staz, data_i'
-    results = conn.execute(sql)
+    results = conn_r.execute(sql)
     # each record must be a list to make flag changeable:
     results = db_utils.results_list(results)
     return results

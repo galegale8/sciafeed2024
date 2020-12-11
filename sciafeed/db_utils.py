@@ -61,15 +61,29 @@ def ensure_engine(db_uri='sqlite:///:memory:'):
 
 def ensure_connection(db_uri='sqlite:///:memory:'):
     """
-    Return a sqlalchemy connection object. If not configured,
-    the connection is bound to the memory.
+    Return a sqlalchemy connection object for read and write database.
+    If not configured, the connection is bound to the memory.
 
     :return: the connection object
     """
     engine = ensure_engine(db_uri)
     conn = engine.connect()
-    conn = conn.execution_options(stream_results=True)
     return conn
+
+
+def get_safe_memory_read_connection(conn):
+    """
+    Return a sqlalchemy connection object memory-optimized for select query only.
+    It return the input connection `conn` if it is already optimized.
+
+    :param conn: the input connection object
+    :return: the connection object memory-optimized for select query only
+    """
+    if conn._execution_options.get('stream_results'):
+        return conn
+    new_conn = conn.engine.connect()
+    new_conn = new_conn.execution_options(stream_results=True)
+    return new_conn
 
 
 def get_table_columns(table_name, schema='public'):

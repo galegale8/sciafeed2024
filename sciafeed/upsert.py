@@ -612,6 +612,7 @@ def load_unique_data_table(dburi, table_name, master_field, startschema, targets
 
     # engine_multiprocessing = create_engine(db_utils.DEFAULT_DB_URI, pool=db_utils.mypool)
     conn = db_utils.ensure_connection(dburi)
+    conn_r = db_utils.get_safe_memory_read_connection(conn)
     logger = logging.getLogger(logger_name)
     group_funct = lambda r: (r[0], r[1])  # idgruppo, data_i
 
@@ -621,7 +622,7 @@ def load_unique_data_table(dburi, table_name, master_field, startschema, targets
              FROM %s.%s JOIN %s.%s ON (id_staz=cod_staz)
              ORDER BY (idgruppo, data_i, progstazione)""" \
           % (startschema, table_name, gruppi_tschema, gruppi_tname, startschema, table_name)
-    results = conn.execute(sql)
+    results = conn_r.execute(sql)
     inserted = 0
     logger.info(' start merge&insert on table %s' % table_name)
     cols = db_utils.get_table_columns(table_name, targetschema)

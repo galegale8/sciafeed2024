@@ -1558,15 +1558,30 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
                  "(tmxgg).val_md, ((tmxgg).flag).wht, " \
                  "(tmngg).val_md, ((tmngg).flag).wht, " \
                  "(tmdgg).val_md, ((tmdgg).flag).wht"
-    table_records = querying.select_records(
-        conn, 'ds__t200', fields=[], sql_fields=sql_fields, schema=startschema)
-    table_records = list(table_records)
+
+    def get_table_records():
+        table_records = querying.select_records(
+            conn, 'ds__t200', fields=[], sql_fields=sql_fields, schema=startschema)
+        return table_records
 
     logger.info('computing aggregations (persistenza temperatura tmax)...')
-    tmax_records = [[r[0], r[1], 'tmax', r[2], r[3]] for r in table_records]
+
+    def get_tmax_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'tmax', r[2], r[3]]
+
+    tmax_records = get_tmax_records()
     prs_t200mx = compute_year_records(tmax_records, 'prs_t200mx', compute_prs_t200mx)
-    # logger.info('computing aggregations (persistenza temperatura tmin)...')
-    tmin_records = [[r[0], r[1], 'tmin', r[4], r[5]] for r in table_records]
+
+    logger.info('computing aggregations (persistenza temperatura tmin)...')
+
+    def get_tmin_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'tmin', r[4], r[5]]
+
+    tmin_records = get_tmin_records()
     prs_t200mn = compute_year_records(tmin_records, 'prs_t200mn', compute_prs_t200mn)
 
     logger.info('merging records before update of table ds__prs_t200...')
@@ -1581,7 +1596,13 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
         conn.execute(sql)
 
     logger.info('computing aggregations (tmdgg)...')
-    tmd_records = [[r[0], r[1], 'tmdgg', r[6], r[7]] for r in table_records]
+
+    def get_tmd_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'tmdgg', r[6], r[7]]
+
+    tmd_records = get_tmd_records()
     data_items['tmdgg'] = compute_dma_records(tmd_records, 'tmdgg', compute_tmdgg)
     logger.info('computing aggregations (tmxgg)...')
     data_items['tmxgg'] = compute_dma_records(tmax_records, 'tmxgg', compute_tmxgg)
@@ -1592,7 +1613,13 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
     logger.info('computing aggregations (cl_tmngg)...')
     data_items['c_tmngg'] = compute_dma_records(tmin_records, 'cl_tmngg', compute_cl_tmngg)
     logger.info('computing aggregations (tmdgg1)...')
-    tmdgg1_records = [[r[0], r[1], 'tmdgg1', [r[2], r[4]], r[3] and r[5]] for r in table_records]
+
+    def get_tmdgg1_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'tmdgg1', [r[2], r[4]], r[3] and r[5]]
+
+    tmdgg1_records = get_tmdgg1_records()
     data_items['tmdgg1'] = compute_dma_records(tmdgg1_records, 'tmdgg1', compute_tmdgg1)
     logger.info('computing aggregations (deltagg)...')
     data_items['deltagg'] = compute_dma_records(tmdgg1_records, 'deltagg', compute_deltagg)

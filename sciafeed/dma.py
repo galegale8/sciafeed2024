@@ -1392,15 +1392,28 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
                  "(cl_prec12).dry, (cl_prec12).wet_01, " \
                  "(cl_prec12).wet_02, (cl_prec12).wet_03, " \
                  "(cl_prec12).wet_04, (cl_prec12).wet_05"
-    table_records = querying.select_records(
-        conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
-    table_records = list(table_records)
+
     logger.info('computing aggregations for prec01...')
-    prec01_records = [[r[0], r[1], 'prec01', (r[2],), r[3]] for r in table_records]
+
+    def get_table_records():
+        table_records = querying.select_records(
+            conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+        return table_records
+
+    def get_prec01_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'prec01', (r[2],), r[3]]
+    prec01_records = get_prec01_records()
     data_prec01 = compute_dma_records(prec01_records, 'prec01', compute_prec01_06_12)
 
     logger.info('selecting for input records (prec24) ...')
-    prec24_records = [[r[0], r[1], 'prec24', r[4], r[5]] for r in table_records]
+
+    def get_prec24_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'prec24', r[4], r[5]]
+    prec24_records = get_prec24_records()
     map_funct = {
         'prec24': compute_prec24,
         'cl_prec24': compute_cl_prec24,
@@ -1412,7 +1425,12 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     data_prs_prec = compute_year_records(prec24_records, 'prs_prec', compute_prs_prec)
 
     logger.info('selecting for input records (prec12) ...')
-    prec12_records = [[r[0], r[1], 'prec12', ([r[6]]+r[16:]), r[7]] for r in table_records]
+
+    def get_prec12_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'prec12', ([r[6]]+r[16:]), r[7]]
+    prec12_records = get_prec12_records()
     map_funct = {
         'prec12': compute_prec01_06_12,
         'cl_prec12': compute_cl_prec_06_12,
@@ -1421,7 +1439,13 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     data_prec12 = compute_dma_records(prec12_records, map_funct=map_funct)
 
     logger.info('selecting for input records (prec06) ...')
-    data_prec06 = [[r[0], r[1], 'prec06', ([r[8]]+r[10:16]), r[9]] for r in table_records]
+
+    def get_data_prec06():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'prec06', ([r[8]]+r[10:16]), r[9]]
+    data_prec06 = get_data_prec06()
+
     map_funct = {
         'prec06': compute_prec01_06_12,
         'cl_prec06': compute_cl_prec_06_12,
@@ -1468,22 +1492,41 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
     sql_fields = "cod_staz, data_i, (vntmd).ff, ((vntmd).flag).wht, " \
                  "ARRAY[(vntmxgg).ff,(vntmxgg).dd], ((vntmxgg).flag).wht, " \
                  "%s, ((vnt).flag).wht" % vnt_array_field
-    table_records = querying.select_records(
-        conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
-    table_records = list(table_records)
+
+    def get_table_records():
+        table_records = querying.select_records(
+            conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
+        return table_records
+
+    def get_vntmx_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'vntmxgg', r[4], r[5]]
 
     logger.info('selecting for input records (vntmxgg)...')
-    vntmx_records = [[r[0], r[1], 'vntmxgg', r[4], r[5]] for r in table_records]
+    vntmx_records = get_vntmx_records()
     logger.info('computing aggregations (vntmd)...')
     data_items['vntmxgg'] = compute_dma_records(vntmx_records, 'vntmxgg', compute_vntmxgg)
 
     logger.info('selecting for input records (vnt)...')
-    vnt_records = [[r[0], r[1], 'vnt', r[6], r[7]] for r in table_records]
+
+    def get_vnt_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'vnt', r[6], r[7]]
+
+    vnt_records = get_vnt_records()
     logger.info('computing aggregations (vnt)...')
     data_items['vnt'] = compute_dma_records(vnt_records, 'vnt', compute_vnt)
 
     logger.info('computing aggregations (vntmd)...')
-    vntmd_records = [[r[0], r[1], 'vntmd', r[2], r[3]] for r in table_records]
+
+    def get_vntmd_records():
+        table_records = get_table_records()
+        for r in table_records:
+            yield [r[0], r[1], 'vntmd', r[2], r[3]]
+
+    vntmd_records = get_vntmd_records()
     data_items['vntmd'] = compute_dma_records(vntmd_records, 'vntmd', compute_vntmd)
 
     logger.info('merging records before update of table ds__prec...')

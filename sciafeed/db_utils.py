@@ -118,7 +118,7 @@ def create_flag_map(records, flag_index=3):
     return flag_map
 
 
-def force_flags(records, flag_map, flag_index=3):
+def force_flags(records, flag_map, flag_index=3, flags=(-9, 5)):
     """
     Update the flags of input `records` according to a dictionary that maps (station, date)
     with the flag to apply. The flag is at the index `flag_index` for each record.
@@ -126,16 +126,18 @@ def force_flags(records, flag_map, flag_index=3):
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param flag_map: dictionary of changes to apply: {(cod_staz,data_i): flag}
     :param flag_index: index of the flag to change in the record
-    :return: records with updated flags
+    :param flags: iterable of flag values that returned records must have
+    :return: (only) records that were updated
     """
     if not flag_map:
-        return records
-    records = list(records)
+        return []
+    ret_value = []
     for record in records:
         key = (record[0], record[1])
         if key in flag_map:
             record[flag_index] = flag_map[key]
-    return records
+            ret_value.append(record)
+    return ret_value
 
 
 def results_list(results):

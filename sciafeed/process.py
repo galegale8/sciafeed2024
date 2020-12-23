@@ -616,19 +616,32 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
         conn.execute(sql)
 
 
-def process_dma(conn, startschema, targetschema, policy, logger):
+def process_dma(conn, startschema, targetschema, policy, stations_ids, logger):
+    """
+    Compute DMA aggregations reading records from db schema `startschema` and writing results
+    on db schema `targetschema`.
+
+    :param conn: db connection object
+    :param startschema: db schema to consider for input records
+    :param targetschema: db schema to consider for output records
+    :param policy: 'onlyinsert' or 'upsert'
+    :param stations_ids: list of station ids to consider
+    :param logger: logger object for reporting
+    """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
 
-    dma.process_dma_bagnatura(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_eliofania(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_radiazione_globale(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_pressione(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_precipitazione(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_vento(conn, startschema, targetschema, policy, logger)
-    dma.process_dma_temperatura(conn, startschema, targetschema, policy, logger)
+    dma.process_dma_bagnatura(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_bilancio_idrico(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_eliofania(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_radiazione_globale(
+        conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_evapotraspirazione(
+        conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_gradi_giorno(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_pressione(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_umidita_relativa(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_bioclimatologia(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_precipitazione(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_vento(conn, startschema, targetschema, policy, stations_ids, logger)
+    dma.process_dma_temperatura(conn, startschema, targetschema, policy, stations_ids, logger)

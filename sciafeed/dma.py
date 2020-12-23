@@ -1109,7 +1109,7 @@ def compute_year_records(table_records, field=None, field_funct=None, map_funct=
     return ret_value
 
 
-def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
+def process_dma_bagnatura(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of bagnatura fogliare
 
@@ -1117,6 +1117,7 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA bagnatura fogliare')
@@ -1125,7 +1126,8 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
     sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                  % ('bagna', 'bagna', 'val_md', 'bagna')
     table_records = querying.select_records(
-        conn, 'ds__bagna', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__bagna', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'bagna', compute_bagna)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna'])
@@ -1136,7 +1138,7 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA bagnatura fogliare')
 
 
-def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger):
+def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table containing bilancio idrico
 
@@ -1144,6 +1146,7 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA bilancio idrico')
@@ -1152,7 +1155,8 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
     sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                  % ('deltaidro', 'deltaidro', 'val_md', 'deltaidro')
     table_records = querying.select_records(
-        conn, 'ds__delta_idro', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__delta_idro', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro'])
@@ -1163,7 +1167,7 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, logger)
     logger.info('end process DMA bilancio idrico')
 
 
-def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
+def process_dma_eliofania(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of eliofania
 
@@ -1171,6 +1175,7 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA eliofania')
@@ -1179,7 +1184,8 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
     sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                  % ('elio', 'elio', 'val_md', 'elio')
     table_records = querying.select_records(
-        conn, 'ds__elio', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__elio', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'elio', compute_elio)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio'])
@@ -1190,7 +1196,7 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA eliofania')
 
 
-def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logger):
+def process_dma_radiazione_globale(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of radiazione globale
 
@@ -1198,6 +1204,7 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logg
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA radiazione globale')
@@ -1206,7 +1213,8 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logg
     sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                  % ('radglob', 'radglob', 'val_md', 'radglob')
     table_records = querying.select_records(
-        conn, 'ds__radglob', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__radglob', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'radglob', compute_radglob)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob'])
@@ -1217,7 +1225,7 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, logg
     logger.info('end process DMA radiazione globale')
 
 
-def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logger):
+def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of evapotraspirazione
 
@@ -1225,6 +1233,7 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logg
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA evapotraspirazione')
@@ -1233,7 +1242,8 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logg
     sql_fields = "cod_staz, data_i, '%s', (%s).%s, ((%s).flag).wht" \
                  % ('etp', 'etp', 'val_md', 'etp')
     table_records = querying.select_records(
-        conn, 'ds__etp', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__etp', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'etp', compute_etp)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp'])
@@ -1244,7 +1254,7 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, logg
     logger.info('end process DMA evapotraspirazione')
 
 
-def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
+def process_dma_gradi_giorno(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of gradi giorno
 
@@ -1252,6 +1262,7 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA gradi giorno')
@@ -1261,7 +1272,8 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
     array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('grgg', s) for s in subfields]) + ']'
     sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('grgg', array_field, 'grgg')
     table_records = querying.select_records(
-        conn, 'ds__grgg', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__grgg', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'grgg', compute_grgg)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg'])
@@ -1272,7 +1284,7 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA gradi giorno')
 
 
-def process_dma_pressione(conn, startschema, targetschema, policy, logger):
+def process_dma_pressione(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of pressione
 
@@ -1280,6 +1292,7 @@ def process_dma_pressione(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA pressione atmosferica')
@@ -1289,7 +1302,8 @@ def process_dma_pressione(conn, startschema, targetschema, policy, logger):
     array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('press', s) for s in subfields]) + ']'
     sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('press', array_field, 'press')
     table_records = querying.select_records(
-        conn, 'ds__press', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__press', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'press', compute_press)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press'])
@@ -1300,7 +1314,7 @@ def process_dma_pressione(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA pressione atmosferica')
 
 
-def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger):
+def process_dma_umidita_relativa(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of umidità relativa
 
@@ -1308,6 +1322,7 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA umidità relativa')
@@ -1317,7 +1332,8 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger
     array_field = 'ARRAY[' + ','.join(['(%s).%s' % ('ur', s) for s in subfields]) + ']'
     sql_fields = "cod_staz, data_i, '%s', %s, ((%s).flag).wht" % ('ur', array_field, 'ur')
     table_records = querying.select_records(
-        conn, 'ds__urel', fields=[], sql_fields=sql_fields, schema=startschema)
+        conn, 'ds__urel', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+        schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'ur', compute_ur)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur'])
@@ -1328,7 +1344,7 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, logger
     logger.info('end process DMA umidità relativa')
 
 
-def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger):
+def process_dma_bioclimatologia(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of bioclimatologia
 
@@ -1336,18 +1352,21 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     conn_r = db_utils.get_safe_memory_read_connection(conn)
     logger.info('starting process DMA bioclimatologia')
     logger.info('selecting for input records...')
+    station_ids_tuple = '(%s)' % repr(stations_ids)[1:-1]
     # records are: (metadata, datetime object, par_code, par_value, flag)
     sql = """
     SELECT cod_staz, data_i, '', ARRAY[(tmdgg1).val_md, (ur).val_md], 
             ((tmdgg1).flag).wht>0 AND ((ur).flag).wht>0 
     FROM %s.ds__t200 JOIN %s.ds__urel USING (cod_staz, data_i)
     WHERE (tmdgg1).val_md IS NOT NULL AND (ur).val_md IS NOT NULL
-    ORDER BY cod_staz, data_i""" % (startschema, startschema)
+    AND cod_staz in %s
+    ORDER BY cod_staz, data_i""" % (startschema, startschema, station_ids_tuple)
     table_records = conn_r.execute(sql)
     map_funct = {
         'ifs': compute_ifs,
@@ -1368,7 +1387,7 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, logger)
     logger.info('end process DMA bioclimatologia')
 
 
-def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
+def process_dma_precipitazione(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of precipitazione
 
@@ -1376,6 +1395,7 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA precipitazione')
@@ -1397,7 +1417,8 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
 
     def get_table_records():
         table_records = querying.select_records(
-            conn, 'ds__preci', fields=[], sql_fields=sql_fields, schema=startschema)
+            conn, 'ds__preci', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+            schema=startschema)
         return table_records
 
     def get_prec01_records():
@@ -1473,7 +1494,7 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA precipitazione')
 
 
-def process_dma_vento(conn, startschema, targetschema, policy, logger):
+def process_dma_vento(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of vento
 
@@ -1481,6 +1502,7 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA vento')
@@ -1495,7 +1517,8 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
 
     def get_table_records():
         table_records = querying.select_records(
-            conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, schema=startschema)
+            conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+            schema=startschema)
         return table_records
 
     def get_vntmx_records():
@@ -1541,7 +1564,7 @@ def process_dma_vento(conn, startschema, targetschema, policy, logger):
     logger.info('end process DMA vento')
 
 
-def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
+def process_dma_temperatura(conn, startschema, targetschema, policy, stations_ids, logger):
     """
     process the compute and update of DMA data for table of temperature
 
@@ -1549,6 +1572,7 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
     :param startschema: db start schema
     :param targetschema: db target schema
     :param policy: onlyinsert or upsert
+    :param stations_ids: list of station ids to consider
     :param logger: logging object for function reporting
     """
     logger.info('starting process DMA temperatura')
@@ -1561,7 +1585,8 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, logger):
 
     def get_table_records():
         table_records = querying.select_records(
-            conn, 'ds__t200', fields=[], sql_fields=sql_fields, schema=startschema)
+            conn, 'ds__t200', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
+            schema=startschema)
         return table_records
 
     logger.info('computing aggregations (persistenza temperatura tmax)...')

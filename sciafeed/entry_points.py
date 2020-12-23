@@ -362,14 +362,21 @@ def compute_daily_indicators2(dburi, report_path, schema, station_where):
               help="""database schema to use. Default is 'dmapdbanpaclima'""")
 @click.option('--policy', '-p', type=click.Choice(['onlyinsert', 'upsert']), default='upsert',
               help="policy to apply in the insert")
-def process_dma(dburi, report_path, startschema, targetschema, policy):
+@click.option('--station_where', '-w',
+              help="""SQL where condition on stations (for example: "cod_rete='15'"). 
+                      If omitted, works on all stations""")
+def process_dma(dburi, report_path, startschema, targetschema, policy, station_where):
     """Utility for update DMA indicators"""
     logger = utils.setup_log(report_path)
     logger.info('starting process of update DMA indicators from schema %s to schema %s'
                 % (startschema, targetschema))
     db_utils.configure(dburi)
     conn = db_utils.ensure_connection()
-    process.process_dma(conn, startschema, targetschema, policy, logger)
+    stations_ids = querying.get_stations_by_where(dburi, station_where)
+    if not stations_ids:
+        logger.error("SQL condition '-w' doesn't select any station! No process is done")
+        return
+    process.process_dma(conn, startschema, targetschema, policy, stations_ids, logger)
     logger.info('process concluded')
 
 

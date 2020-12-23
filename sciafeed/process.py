@@ -509,26 +509,28 @@ def process_checks_chain(dburi, stations_ids=None, schema='dailypdbanpacarica', 
     logger.info('== End process ==')
 
 
-def compute_daily_indicators2(conn, schema, logger):
+def compute_daily_indicators2(conn, schema, stations_ids, logger):
     """
     Compute secondary indicators.
 
     :param conn: db connection object
     :param schema: db schema to consider
+    :param stations_ids: list of station ids to consider
     :param logger: logger object for reporting
     :return:
     """
     conn_r = db_utils.get_safe_memory_read_connection(conn)
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
+    station_ids_tuple = '(%s)' % repr(stations_ids)[1:-1]
     logger.info('* querying ds__t200 for compute temperature indicators...')
     sql = """
     SELECT cod_staz, data_i, lat,
     (tmxgg).val_md, ((tmxgg).flag).wht,
     (tmngg).val_md, ((tmngg).flag).wht,
     (tmdgg).val_md, ((tmdgg).flag).wht
-    FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz""" % schema
-
+    FROM %s.ds__t200 LEFT JOIN dailypdbadmclima.anag__stazioni ON cod_staz=id_staz
+    WHERE cod_staz in %s""" % (schema, station_ids_tuple)
     temp_records = db_utils.results_list(conn_r.execute(sql))
 
     logger.info('* computing temperature indicators...')
@@ -591,7 +593,8 @@ def compute_daily_indicators2(conn, schema, logger):
     FROM %s.ds__etp a JOIN %s.ds__preci b USING (cod_staz,data_i) 
     WHERE ((prec24).flag).wht > 0 AND ((etp).flag).wht > 0 
     AND (prec24).val_tot IS NOT NULL AND (etp).val_md IS NOT NULL
-    """ % (schema, schema)
+    AND cod_staz in %s
+    """ % (schema, schema, station_ids_tuple)
     idro_records = db_utils.results_list(conn_r.execute(sql))
 
     idro_items = []

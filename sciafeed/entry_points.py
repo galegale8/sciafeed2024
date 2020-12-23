@@ -280,6 +280,9 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema, sta
     db_utils.configure(dburi)
     conn = db_utils.ensure_connection()
     stations_ids = querying.get_stations_by_where(dburi, station_where)
+    if not stations_ids:
+        logger.error("SQL condition '-w' doesn't select any station! No process is done")
+        return
     children = sorted(listdir(data_folder))
     for child in children:
         csv_table_path = join(data_folder, child)
@@ -330,13 +333,20 @@ def load_unique_data(dburi, report_path, startschema, targetschema):
               help="file path of the output report. If not provided, prints on screen")
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use for data input. Default is 'dailypdbanpacarica'""")
-def compute_daily_indicators2(dburi, report_path, schema):
+@click.option('--station_where', '-w',
+              help="""SQL where condition on stations (for example: "cod_rete='15'"). 
+                      If omitted, works on all stations""")
+def compute_daily_indicators2(dburi, report_path, schema, station_where):
     """Utility for update secondary indicators"""
     logger = utils.setup_log(report_path)
     logger.info('starting process of loading secondary indicators in schema %s' % schema)
     db_utils.configure(dburi)
     conn = db_utils.ensure_connection()
-    process.compute_daily_indicators2(conn, schema, logger)
+    stations_ids = querying.get_stations_by_where(dburi, station_where)
+    if not stations_ids:
+        logger.error("SQL condition '-w' doesn't select any station! No process is done")
+        return
+    process.compute_daily_indicators2(conn, schema, stations_ids, logger)
     logger.info('process concluded')
 
 

@@ -123,21 +123,28 @@ def stations2csv(stations, stations_path, extra_fields=()):
             writer.writerow(row)
 
 
-def csv2items(csv_path, required_fields=(), ignore_fields=(), ignore_empty_fields=False):
+def csv2items(csv_path, required_fields=(), ignore_fields=(), ignore_empty_fields=False,
+              stations_ids=None):
     """
     Get a CSV located at `csv_path` and return a list of dictionaries according to the CSV rows.
     If some required fields are missing, raise an error.
+    If only_stats is not None but a list, get only rows with `cod_staz` in the list.
 
     :param csv_path: CSV path
     :param required_fields: list of required fields (if black, raise ValueError)
     :param ignore_fields: list of fields to ignore
     :param ignore_empty_fields: if True, ignore the empty fields
+    :param stations_ids: if not None, the list of cod_staz' to select rows in the CSV
     :return: a list of of dictionaries according to the CSV rows
     """
     items = []
+    if stations_ids is not None:
+        stations_ids = list(map(str, stations_ids))
     with open(csv_path) as csv_in_file:
         reader = csv.DictReader(csv_in_file, delimiter=';')
         for i, row in enumerate(reader):
+            if stations_ids is not None and row['cod_staz'] not in stations_ids:
+                continue
             item = dict()
             for field_name, field_value in row.items():
                 if field_name in ignore_fields:

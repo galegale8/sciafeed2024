@@ -268,7 +268,10 @@ def download_er(start, end, download_folder, report_path, parameters_filepath, c
               help="policy to apply in the insert")
 @click.option('--schema', '-s', default='dailypdbanpacarica',
               help="""database schema to use. Default is 'dailypdbanpacarica'""")
-def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
+@click.option('--station_where', '-w',
+              help="""SQL where condition on stations (for example: "cod_rete='15'"). 
+                      If omitted, works on all stations""")
+def insert_daily_indicators(data_folder, dburi, report_path, policy, schema, station_where):
     """
     Insert indicators from a folder `data_folder` inside the database in the selected schema.
     """
@@ -276,6 +279,7 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
     logger.info('starting process of inserting data')
     db_utils.configure(dburi)
     conn = db_utils.ensure_connection()
+    stations_ids = querying.get_stations_by_where(dburi, station_where)
     children = sorted(listdir(data_folder))
     for child in children:
         csv_table_path = join(data_folder, child)
@@ -289,7 +293,7 @@ def insert_daily_indicators(data_folder, dburi, report_path, policy, schema):
             continue
         logger.info('- reading data from file %s' % child)
         try:
-            items = export.csv2items(csv_table_path)
+            items = export.csv2items(csv_table_path, stations_ids=stations_ids)
             logger.info('- start insert/upsert of %s records from file %s' % (len(items), child))
             upsert.upsert_items(conn, items, policy, schema, table_name, logger)
         except:

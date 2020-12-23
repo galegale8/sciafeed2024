@@ -207,6 +207,9 @@ def check_chain(dburi, report_path, station_where, schema, omit_flagsync):
     logger = utils.setup_log(report_path, log_format='%(asctime)s: %(message)s')
     db_utils.configure(dburi)
     stations_ids = querying.get_stations_by_where(dburi, station_where)
+    if not stations_ids:
+        logger.error("SQL condition '-w' doesn't select any station! No process is done")
+        return
     process.process_checks_chain(dburi, stations_ids, schema, logger, omit_flagsync)
 
 

@@ -734,7 +734,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
     prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=None, schema=targetschema, exclude_null=True,
         no_order=True)
-    flag_records = db_utils.force_flags(prec_records, prec_flag_map, flags)
+    flag_records = db_utils.force_flags(prec_records, prec_flag_map, flags=flags)
     logger.info('update flags of destination table %s.ds__preci' % targetschema)
     update_prec_flags(conn, flag_records, schema=targetschema, logger=logger)
 
@@ -770,7 +770,7 @@ def sync_flags(conn, flags=(-9, 5), sourceschema='dailypdbanpaclima',
         table_records = querying.select_records(
             conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=None,
             schema=targetschema, where_sql=where_sql, no_order=True)
-        flag_records = db_utils.force_flags(table_records, table_flag_map, flags)
+        flag_records = db_utils.force_flags(table_records, table_flag_map, flags=flags)
         logger.info('update flags of table %s.%s (field %s.%s)'
                     % (targetschema, table, main_field, sub_field))
         update_flags(conn, flag_records, table, schema=targetschema, db_field=main_field,

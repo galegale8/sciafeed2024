@@ -442,7 +442,7 @@ def process_checks_wind(conn, stations_ids, schema, logger):
 
     # some additional checks for series wind: valori ripetuti + consistence
     logger.info("* check 'valori ripetuti' for vntmd.ff...")
-    filter_funct = lambda r: r[2] > 2
+    filter_funct = lambda r: r[2] is not None and r[2] > 2
     table_records = checks.check2(
         table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
         logger=logger)
@@ -450,13 +450,13 @@ def process_checks_wind(conn, stations_ids, schema, logger):
     # upsert.update_vntmd_flags(conn, vntmd_series, schema=schema)
 
     logger.info("* check 'valori ripetuti' for vntmxgg.ff...")
-    filter_funct = lambda r: r[2] > 2
+    filter_funct = lambda r: r[2] is not None and r[2] > 2
     table_records = checks.check2(
         table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
         logger=logger, val_index=6)
 
     logger.info("* check 'valori ripetuti' for vntmxgg.dd...")
-    filter_funct = lambda r: r[2] > 0.5
+    filter_funct = lambda r: r[2] is not None and r[2] > 0.5
     table_records = checks.check2(
         table_records, len_threshold=10, exclude_values=(None, ), filter_funct=filter_funct,
         logger=logger, val_index=4)

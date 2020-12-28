@@ -583,9 +583,10 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
         ('ds__grgg', grgg_fields, grgg_items),
     ]:
         logger.info('updating temperature indicators on table %s.%s' % (schema, table_name))
-        sql = upsert.create_upsert(table_name, schema, fields, data, 'upsert')
-        if sql:
-            conn.execute(sql)
+        for sub_data in utils.chunked_iterable(data, 10000):
+            sql = upsert.create_upsert(table_name, schema, fields, sub_data, 'upsert')
+            if sql:
+                conn.execute(sql)
 
     logger.info('* computing bilancio idrico...')
     sql = """
@@ -611,9 +612,10 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
     idro_fields = []
     if idro_items:
         idro_fields = list(idro_items[0].keys())
-    sql = upsert.create_upsert('ds__delta_idro', schema, idro_fields, idro_items, 'upsert')
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(idro_items, 10000):
+        sql = upsert.create_upsert('ds__delta_idro', schema, idro_fields, sub_data, 'upsert')
+        if sql:
+            conn.execute(sql)
 
 
 def process_dma(conn, startschema, targetschema, policy, stations_ids, logger):

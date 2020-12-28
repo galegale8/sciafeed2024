@@ -4,6 +4,7 @@ This modules provides generic utility functions of the SCIA FEED package
 import csv
 from datetime import datetime, timedelta
 import gzip
+import itertools
 import logging
 import os
 import os.path
@@ -256,3 +257,19 @@ def setup_log(report_path=None, log_format='%(asctime)s %(levelname)s: %(message
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     return logger
+
+
+def chunked_iterable(iterable, size):
+    """
+    Divide `iterable` in chunks of size `size`. Return iterable of chunks
+
+    :param iterable: input iterable
+    :param size: size of each chunk
+    :return: iterable of chunks
+    """
+    it = iter(iterable)
+    while True:
+        chunk = tuple(itertools.islice(it, size))
+        if not chunk:
+            break
+        yield chunk

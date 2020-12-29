@@ -1132,9 +1132,10 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, stations_ids,
     data = compute_dma_records(table_records, 'bagna', compute_bagna)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__bagna', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__bagna', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA bagnatura fogliare')
 
 
@@ -1161,9 +1162,10 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, station
     data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__delta_idro', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__delta_idro', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA bilancio idrico')
 
 
@@ -1190,9 +1192,10 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, stations_ids,
     data = compute_dma_records(table_records, 'elio', compute_elio)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__elio', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__elio', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA eliofania')
 
 
@@ -1219,9 +1222,10 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, stat
     data = compute_dma_records(table_records, 'radglob', compute_radglob)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__radglob', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__radglob', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA radiazione globale')
 
 
@@ -1248,9 +1252,10 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, stat
     data = compute_dma_records(table_records, 'etp', compute_etp)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__etp', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__etp', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA evapotraspirazione')
 
 
@@ -1278,9 +1283,10 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, stations_i
     data = compute_dma_records(table_records, 'grgg', compute_grgg)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__grgg', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__grgg', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA gradi giorno')
 
 
@@ -1308,9 +1314,10 @@ def process_dma_pressione(conn, startschema, targetschema, policy, stations_ids,
     data = compute_dma_records(table_records, 'press', compute_press)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__press', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__press', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA pressione atmosferica')
 
 
@@ -1338,9 +1345,10 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, statio
     data = compute_dma_records(table_records, 'ur', compute_ur)
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur'])
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__urel', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__urel', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA umidità relativa')
 
 
@@ -1381,9 +1389,10 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, station
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza'] + list(map_funct.keys()))
     logger.info('update records....')
-    sql = upsert.create_upsert('ds__bioclima', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__bioclima', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA bioclimatologia')
 
 
@@ -1476,10 +1485,11 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
 
     logger.info('update records for persistenza precipitazione...')
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'prs_prec', 'provenienza'])
-    sql = upsert.create_upsert('ds__prs_prec', targetschema, fields, data_prs_prec, policy)
-    if sql:
-        logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
-        conn.execute(sql)
+    for sub_data_prs_prec in utils.chunked_iterable(data_prs_prec, 10000):
+        sql = upsert.create_upsert('ds__prs_prec', targetschema, fields, sub_data_prs_prec, policy)
+        if sql:
+            logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
+            conn.execute(sql)
 
     logger.info('merging records before update of table ds__prec...')
     data = functools.reduce(merge_data_items, [data_prec01, data_prec24, data_prec12, data_prec06])
@@ -1487,9 +1497,10 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prec01', 'prec24', 'cl_prec24',
          'prec12', 'cl_prec12', 'prec06', 'cl_prec06'])
-    sql = upsert.create_upsert('ds__preci', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__preci', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
 
     logger.info('end process DMA precipitazione')
 
@@ -1558,9 +1569,10 @@ def process_dma_vento(conn, startschema, targetschema, policy, stations_ids, log
     logger.info('update records...')
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt'])
-    sql = upsert.create_upsert('ds__vnt10', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__vnt10', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA vento')
 
 
@@ -1615,10 +1627,11 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
     logger.info('update records of table ds__prs_t200...')
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx',
                                    'prs_t200mn'])
-    sql = upsert.create_upsert('ds__prs_t200', targetschema, fields, data_prs, policy)
-    if sql:
-        logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
-        conn.execute(sql)
+    for sub_data_prs in utils.chunked_iterable(data_prs, 10000):
+        sql = upsert.create_upsert('ds__prs_t200', targetschema, fields, sub_data_prs, policy)
+        if sql:
+            logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
+            conn.execute(sql)
 
     logger.info('computing aggregations (tmdgg)...')
 
@@ -1658,7 +1671,8 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'tmdgg',
                                    'tmxgg', 'tmngg', 'cl_tmxgg', 'cl_tmngg', 'tmdgg1', 'deltagg',
                                    'day_gelo'])
-    sql = upsert.create_upsert('ds__t200', targetschema, fields, data, policy)
-    if sql:
-        conn.execute(sql)
+    for sub_data in utils.chunked_iterable(data, 10000):
+        sql = upsert.create_upsert('ds__t200', targetschema, fields, sub_data, policy)
+        if sql:
+            conn.execute(sql)
     logger.info('end process DMA temperatura')

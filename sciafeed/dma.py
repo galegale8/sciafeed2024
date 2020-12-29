@@ -1483,12 +1483,11 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
     logger.info('computing aggregations for prec06...')
     data_prec06 = compute_dma_records(data_prec06, map_funct=map_funct)
 
-    logger.info('update records for persistenza precipitazione...')
+    logger.info('updating table ds__prs_prec')
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'prs_prec', 'provenienza'])
     for sub_data_prs_prec in utils.chunked_iterable(data_prs_prec, 10000):
         sql = upsert.create_upsert('ds__prs_prec', targetschema, fields, sub_data_prs_prec, policy)
         if sql:
-            logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_prec'))
             conn.execute(sql)
 
     logger.info('merging records before update of table ds__prec...')

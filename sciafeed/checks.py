@@ -348,7 +348,7 @@ def check5(records, len_threshold=10, flag=-19, logger=None):
     val_getter = lambda x: x[2] == x[4]
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[3] > 0 and r[5] > 0 and
-                      r[2] is not None and r[4 is not None]]
+                      r[2] is not None and r[4] is not None]
     num_invalid_records = 0
 
     for station, station_records in itertools.groupby(records_to_use, group_by_station):

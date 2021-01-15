@@ -114,9 +114,21 @@ def compute_daily_indicators(conn, data_folder, indicators_folder=None, logger=N
 def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
     logger.info('== initial process chain for PRECI ==')
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.ds__preci SET prec24.flag.wht = 1 WHERE %s AND (" \
+                "((prec24).flag).wht <= -10 OR ((prec24).flag).wht IS NULL )" \
+                % (schema, stations_where)
+    conn.execute(sql_reset)
+
     logger.info('* query to get records...')
-    sql_fields = "cod_staz, data_i, (prec24).val_tot, " \
-                 "case when ((prec24).flag).wht=5 then 5 else 1 end"
+    sql_fields = "cod_staz, data_i, (prec24).val_tot, ((prec24).flag).wht"
     prec_records = querying.select_prec_records(
         conn, sql_fields=sql_fields, stations_ids=stations_ids, schema=schema,
         exclude_flag_interval=(-9, 0), exclude_null=True)
@@ -124,21 +136,13 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
     if temp_records is None:
         logger.info('* get records of temperature...')
         sql_fields = "cod_staz, data_i, " \
-                     "(tmxgg).val_md, case when ((tmxgg).flag).wht=5 then 5 else 1 end, " \
-                     "(tmngg).val_md, case when ((tmngg).flag).wht=5 then 5 else 1 end, " \
-                     "(tmdgg).val_md, case when ((tmdgg).flag).wht=5 then 5 else 1 end"
+                     "(tmxgg).val_md, ((tmxgg).flag).wht, " \
+                     "(tmngg).val_md, ((tmngg).flag).wht, " \
+                     "(tmdgg).val_md, ((tmdgg).flag).wht"
         temp_records = querying.select_temp_records(
             conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields,
             stations_ids=stations_ids, schema=schema, exclude_null=False)
         temp_records = list(temp_records)
-        for val_index in [2, 4, 6]:
-            for temp_record in temp_records:
-                if temp_record[val_index + 1] is None or temp_record[val_index+1] < -9:
-                    temp_record[val_index+1] = 1
-                elif -9 <= temp_record[val_index+1] <= 0:
-                    # set None to values flagged as invalid (flag in [-9, 0])
-                    temp_record[val_index] = None
-                # else temp_record[3] > 0: flag 1 or 5 remains unset
 
     logger.info("* 'controllo valori ripetuti = 0'")
     prec_records = checks.check1(prec_records, logger=logger)
@@ -169,6 +173,20 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
 def process_checks_t200(conn, stations_ids, schema, logger):
     logger.info('== initial process chain for T200 ==')
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    for field in ['tmxgg', 'tmngg', 'tmdgg']:
+        sql_reset = "UPDATE %s.ds__t200 SET %s.flag.wht = 1 WHERE %s AND (" \
+                    "((%s).flag).wht <= -10 OR ((%s).flag).wht IS NULL )" \
+                    % (schema, field, stations_where, field, field)
+        conn.execute(sql_reset)
+
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, " \
                  "(tmxgg).val_md, ((tmxgg).flag).wht, " \
@@ -178,15 +196,6 @@ def process_checks_t200(conn, stations_ids, schema, logger):
         conn, fields=['tmxgg', 'tmngg', 'tmdgg'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema, exclude_null=False)
     temp_records = list(temp_records)
-
-    for val_index in [2, 4, 6]:
-        for temp_record in temp_records:
-            if temp_record[val_index + 1] is None or temp_record[val_index+1] < -9:
-                temp_record[val_index+1] = 1
-            elif -9 <= temp_record[val_index+1] <= 0:
-                # set None to values flagged as invalid (flag in [-9, 0])
-                temp_record[val_index] = None
-            # else temp_record[3] > 0: flag 1 or 5 remains unset
 
     logger.info("* 'controllo valori ripetuti' (Tmax)")
     temp_records = checks.check2(temp_records, exclude_values=(None,), logger=logger)
@@ -253,9 +262,21 @@ def process_checks_bagna(conn, stations_ids, schema, logger):
     table, main_field, sub_field, min_threshold, max_threshold = \
         ('ds__bagna', 'bagna', 'val_md', -1, 25)
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.%s SET %s.flag.wht = 1 WHERE %s AND (" \
+                "((%s).flag).wht <= -10 OR ((%s).flag).wht IS NULL )" \
+                % (schema, table, main_field, stations_where, main_field, main_field)
+    conn.execute(sql_reset)
+
     logger.info('* query to get records...')
-    sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
-                 % (main_field, sub_field, main_field)
+    sql_fields = "cod_staz, data_i, (%s).%s, ((%s).flag).wht" % (main_field, sub_field, main_field)
     where_sql = '(%s).%s IS NOT NULL' % (main_field, sub_field)
     table_records = querying.select_records(
         conn, table, fields=[main_field], sql_fields=sql_fields, stations_ids=stations_ids,
@@ -277,6 +298,19 @@ def process_checks_elio(conn, stations_ids, schema, logger):
     logger.info('== initial process chain for ELIOFANIA ==')
     table, main_field, sub_field, min_threshold, max_threshold = \
         ('ds__elio', 'elio', 'val_md', -1, 19)
+
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.%s SET %s.flag.wht = 1 WHERE %s AND (" \
+                "((%s).flag).wht <= -10 OR ((%s).flag).wht IS NULL )" \
+                % (schema, table, main_field, stations_where, main_field, main_field)
+    conn.execute(sql_reset)
 
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
@@ -303,6 +337,19 @@ def process_checks_radglob(conn, stations_ids, schema, logger):
     table, main_field, sub_field, min_threshold, max_threshold = \
         ('ds__radglob', 'radglob', 'val_md', -1, 601)
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.%s SET %s.flag.wht = 1 WHERE %s AND (" \
+                "((%s).flag).wht <= -10 OR ((%s).flag).wht IS NULL )" \
+                % (schema, table, main_field, stations_where, main_field, main_field)
+    conn.execute(sql_reset)
+
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, (%s).%s, case when ((%s).flag).wht=5 then 5 else 1 end" \
                  % (main_field, sub_field, main_field)
@@ -326,6 +373,19 @@ def process_checks_radglob(conn, stations_ids, schema, logger):
 def process_checks_press(conn, stations_ids, schema, logger):
     logger.info('== initial process chain for PRESS ==')
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.ds__press SET press.flag.wht = 1 WHERE %s AND (" \
+                "((press).flag).wht <= -10 OR ((press).flag).wht IS NULL )" \
+                % (schema, stations_where)
+    conn.execute(sql_reset)
+
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, " \
                  "(press).val_md, ((press).flag).wht, " \
@@ -335,16 +395,6 @@ def process_checks_press(conn, stations_ids, schema, logger):
         conn, 'ds__press', fields=['press'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
     table_records = list(table_records)
-
-    # note: only flag index = 3 is set
-    for val_index in [2, ]:
-        for table_record in table_records:
-            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
-                table_record[val_index+1] = 1
-            elif -9 <= table_record[val_index+1] <= 0:
-                # set None to values flagged as invalid (flag in [-9, 0])
-                table_record[val_index] = None
-            # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
             ('press', 'val_md', 959, 1061, 2),
@@ -371,6 +421,19 @@ def process_checks_press(conn, stations_ids, schema, logger):
 
 def process_checks_urel(conn, stations_ids, schema, logger):
     logger.info('== initial process chain for UREL ==')
+
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    sql_reset = "UPDATE %s.ds__urel SET ur.flag.wht = 1 WHERE %s AND (" \
+                "((ur).flag).wht <= -10 OR ((ur).flag).wht IS NULL )" % (schema, stations_where)
+    conn.execute(sql_reset)
+
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, " \
                  "(ur).val_md, ((ur).flag).wht, " \
@@ -380,16 +443,6 @@ def process_checks_urel(conn, stations_ids, schema, logger):
         conn, 'ds__urel', fields=['ur'], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
     table_records = list(table_records)
-
-    # note: only flag index = 3 is set
-    for val_index in [2, ]:
-        for table_record in table_records:
-            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
-                table_record[val_index+1] = 1
-            elif -9 <= table_record[val_index+1] <= 0:
-                # set None to values flagged as invalid (flag in [-9, 0])
-                table_record[val_index] = None
-            # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
         ('ur', 'val_md', -1, 101, 2),
@@ -413,6 +466,20 @@ def process_checks_urel(conn, stations_ids, schema, logger):
 def process_checks_wind(conn, stations_ids, schema, logger):
     logger.info('== initial process chain for vnt10 ==')
 
+    # initial reset of flags to 1 of records invalidated by previous check chains (flags <= -10)
+    logger.info('* initial reset to 1 of flags <= -10 or null')
+    if stations_ids is None:
+        stations_where = '1=1'
+    elif len(stations_ids) == 0:
+        stations_where = 'cod_staz IN (NULL)'
+    else:
+        stations_where = 'cod_staz IN (%s)' % repr(list(stations_ids))[1:-1]
+    for field in ['vntmd', 'vntmxgg']:
+        sql_reset = "UPDATE %s.ds__vnt10 SET %s.flag.wht = 1 WHERE %s AND (" \
+                    "((%s).flag).wht <= -10 OR ((%s).flag).wht IS NULL )" \
+                    % (schema, field, stations_where, field, field)
+        conn.execute(sql_reset)
+
     logger.info('* query to get records...')
     sql_fields = "cod_staz, data_i, " \
                  "(vntmd).ff, ((vntmd).flag).wht, " \
@@ -422,14 +489,6 @@ def process_checks_wind(conn, stations_ids, schema, logger):
         conn, 'ds__vnt10', fields=[], sql_fields=sql_fields, stations_ids=stations_ids,
         schema=schema)
     table_records = list(table_records)
-    for val_index in [2, 4, 6]:
-        for table_record in table_records:
-            if table_record[val_index + 1] is None or table_record[val_index+1] < -9:
-                table_record[val_index+1] = 1
-            elif -9 <= table_record[val_index+1] <= 0:
-                # set None to values flagged as invalid (flag in [-9, 0])
-                table_record[val_index] = None
-            # else record[3] > 0: flag 1 or 5 remains unset
 
     for main_field, sub_field, min_threshold, max_threshold, val_index in [
         ('vntmd', 'ff', -1, 103, 2),

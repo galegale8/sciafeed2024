@@ -207,7 +207,7 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
     return new_records
 
 
-def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
+def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
     Assumes all records are sorted by station, date.
@@ -215,7 +215,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param min_not_null: lenght of the consecutive zeros to find
+    :param min_not_zero: minimum number of the valid values != 0 required to consider a month
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param logger: logging object where to report actions
@@ -223,7 +223,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
+    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_zero, flag, val_index))
 
     new_records = [r[:] for r in records]
     records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
@@ -249,8 +249,11 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
                 year_values_dict[month] = month_values
             all_month_values = list(year_values_dict.values())
             for month, month_values in year_values_dict.items():
-                if all_month_values.count(month_values) > 1 and \
-                         (min_not_null is None or len(month_values) >= min_not_null):
+                if min_not_zero is not None:
+                    num_not_zero = len([v for v in month_values.values() if v != 0])
+                    if num_not_zero < min_not_zero:
+                        continue
+                if all_month_values.count(month_values) > 1:
                     invalid_records += year_records_dict[month]
 
     for invalid_record in invalid_records:
@@ -264,7 +267,7 @@ def check3(records, min_not_null=None, flag=-15, val_index=2, logger=None):
     return new_records
 
 
-def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
+def check4(records, min_not_zero=None, flag=-17, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
     Assumes all records are sorted by station, date.
@@ -272,7 +275,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
     the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param min_not_null: lenght of the consecutive zeros to find
+    :param min_not_zero: minimum number of the valid values != 0 required to consider a month
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param logger: logging object where to report actions
@@ -280,7 +283,7 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
     """
     if logger is None:
         logger = logging.getLogger(LOG_NAME)
-    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_null, flag, val_index))
+    logger.info("starting check (parameters: %s, %s, %s)" % (min_not_zero, flag, val_index))
 
     group_by_station = operator.itemgetter(0)
     val_getter = operator.itemgetter(val_index)
@@ -312,8 +315,11 @@ def check4(records, min_not_null=None, flag=-17, val_index=2, logger=None):
             months_values_for_years = list(months_values_dict[month].values())
             for year in months_values_dict[month]:
                 months_values = months_values_dict[month][year]
-                if months_values_for_years.count(months_values) > 1 and \
-                        (min_not_null is None or len(months_values) >= min_not_null):
+                if min_not_zero is not None:
+                    num_not_zero = len([v for v in month_values.values() if v != 0])
+                    if num_not_zero < min_not_zero:
+                        continue
+                if months_values_for_years.count(months_values) > 1:
                     invalid_records += months_records_dict[month][year]
 
     for invalid_record in invalid_records:
@@ -490,8 +496,8 @@ def gap_bottom_checks(terms, threshold):
     return -math.inf
 
 
-def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val_index=2,
-           logger=None):
+def check8(records, threshold, split=False, flag_sup=-23, flag_inf=-24, val_index=2,
+           exclude_zero=False, logger=None):
     """
     Check "controllo gap checks" for the input records.
     If split = False: case of "controllo gap checks  precipitazione" (see documentation)
@@ -508,6 +514,7 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     :param flag_inf: value of the flag to be set for found records with split=True for the
                      bottom part of the split
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
+    :param exclude_zero: if True, consider only values != 0 in the computation
     :param logger: logging object where to report actions
     :return: new_records
     """
@@ -519,7 +526,13 @@ def check8(records, threshold=None, split=False, flag_sup=-23, flag_inf=-24, val
     num_invalid_records_sup = 0
     num_invalid_records_inf = 0
     new_records = [r[:] for r in records]
-    records_to_use = [r for r in new_records if r[val_index+1] > 0 and r[val_index] is not None]
+    if exclude_zero:
+        records_to_use = [
+            r for r in new_records if r[val_index + 1] > 0 and r[val_index] not in (None, 0)]
+    else:
+        records_to_use = [
+            r for r in new_records if r[val_index + 1] > 0 and r[val_index] is not None]
+
     val_getter = operator.itemgetter(val_index)
     group_by_station = operator.itemgetter(0)
 

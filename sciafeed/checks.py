@@ -11,6 +11,7 @@ This module contains the functions and utilities to check climatologic data.
 - par_value: the parameter value
 - flag: a boolean flag to consider valid or not the value
 """
+import calendar
 from datetime import datetime, timedelta
 import itertools
 import logging
@@ -207,6 +208,34 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
     return new_records
 
 
+def months_comparison(month_values1, month_values2, month1, month2, year1, year2,
+                      min_not_zero=None):
+    """
+    Do a comparison of the values of 2 dictionaries of measures in a month.
+    The comparison considers the max days applicable for both the months.
+    The comparison return 1 if the months values are the same, 0 if not, and -1 if not applicable.
+
+    :param month_values1: {day: value} for the first month
+    :param month_values2: {day: value} for the second month
+    :param month1: index (1 to 12) of the first month
+    :param month2: index (1 to 12) of the second month
+    :param year1: year of the first month
+    :param year2: year of the second month
+    :param min_not_zero: if not None, minimum number of values != 0 to make comparison applicable
+    :return: 1, 0 or -1
+    """
+    if min_not_zero is not None:
+        len1 = len([v for v in month_values1.values() if v != 0])
+        len2 = len([v for v in month_values2.values() if v != 0])
+        if len1 < min_not_zero or len2 < min_not_zero:
+            return -1
+    max_day = min(calendar.monthrange(year1, month1)[1], calendar.monthrange(year2, month2)[1])
+    for k in range(1, max_day+1):
+        if month_values1.get(k, None) != month_values2.get(k, None):
+            return 0
+    return 1
+
+
 def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
@@ -247,15 +276,17 @@ def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
                 year_records_dict[month] = month_records
                 month_values = {g[1].day: val_getter(g) for g in month_records}
                 year_values_dict[month] = month_values
-            all_month_values = list(year_values_dict.values())
-            for month, month_values in year_values_dict.items():
-                if min_not_zero is not None:
-                    num_not_zero = len([v for v in month_values.values() if v != 0])
-                    if num_not_zero < min_not_zero:
-                        continue
-                if all_month_values.count(month_values) > 1:
-                    invalid_records += year_records_dict[month]
 
+            invalid_months = []
+            for month1, month2 in itertools.combinations(year_values_dict.keys(), 2):
+                month_values1 = year_values_dict[month1]
+                month_values2 = year_values_dict[month2]
+                if months_comparison(month_values1, month_values2, month1, month2, year, year,
+                                     min_not_zero=min_not_zero) > 0:
+                    invalid_months.append(month1)
+                    invalid_months.append(month2)
+            for invalid_month in set(invalid_months):
+                invalid_records += year_records_dict[invalid_month]
     for invalid_record in invalid_records:
         if invalid_record[val_index+1] != 5:
             invalid_record[val_index+1] = flag
@@ -316,7 +347,7 @@ def check4(records, min_not_zero=None, flag=-17, val_index=2, logger=None):
             for year in months_values_dict[month]:
                 months_values = months_values_dict[month][year]
                 if min_not_zero is not None:
-                    num_not_zero = len([v for v in month_values.values() if v != 0])
+                    num_not_zero = len([v for v in months_values.values() if v != 0])
                     if num_not_zero < min_not_zero:
                         continue
                 if months_values_for_years.count(months_values) > 1:

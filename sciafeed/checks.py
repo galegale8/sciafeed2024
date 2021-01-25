@@ -682,25 +682,25 @@ def check9(records, num_dev_std=6, window_days=15, min_num=100, flag=-25, val_in
     return new_records
 
 
-def split_days_by_average_temp(temp_records):
-    """to be used to filter temperature records before check10"""
+def get_days_with_negative_average_temp(temp_records):
+    """to be used to filter temperature records in check10"""
     group_by_station = operator.itemgetter(0)
-    ret_value_pos = dict()
     ret_value_neg = dict()
     for station, station_records in itertools.groupby(temp_records, group_by_station):
-        ret_value_pos[station] = []
         ret_value_neg[station] = []
         for record in station_records:
-            value, flag = record[6], record[7]
-            if value is not None and value < 0 < flag:
-                ret_value_neg[station].append(record[1])
-            else:
-                ret_value_pos[station].append(record[1])
-    return ret_value_pos, ret_value_neg
+            day = record[1]
+            tmax, tmax_flag, tmin, tmin_flag = record[2:6]
+            if [tmax, tmax_flag, tmin, tmin_flag].count(None) == 0:
+                if tmax_flag > 0 and tmin_flag > 0:
+                    taverage = (tmax + tmin) / 2
+                    if taverage < 0:
+                        ret_value_neg[station].append(day)
+    return ret_value_neg
 
 
-def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, min_num=20,
-            flag=-25, val_index=2, logger=None):
+def check10(records, temp_records, ice=False, times_perc=9, percentile=95, window_days=29,
+            min_num=20, flag=-25, val_index=2, logger=None):
     """
     Check "controllo z-score checks precipitazione [ghiaccio]".
     Assumes all records are sorted by station, date.
@@ -708,7 +708,8 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
     the list of records (with flag updated).
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
-    :param filter_days: dictionary of kind {station: [days to consider]}
+    :param temp_records: list of records of temperatures
+    :param ice: if True, consider only records where average temperature defined and < 0
     :param times_perc: number of times of the percentile to create the limit
     :param percentile: percentile value of the distribution to use
     :param window_days: the time window to consider (in days)
@@ -724,13 +725,17 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
         logger = logging.getLogger(LOG_NAME)
     logger.info("starting check (parameters: %s, %s, %s, %s, %s, %s)"
                 % (times_perc, percentile, window_days, min_num, flag, val_index))
+    neg_temp_days = get_days_with_negative_average_temp(temp_records)
 
     group_by_station = operator.itemgetter(0)
 
     new_records = [r[:] for r in records]
-    records_to_use = [r for r in new_records if r[val_index+1] > 0
-                      and r[val_index] not in (None, 0)
-                      and r[1] in filter_days.get(r[0], [])]
+    if ice:
+        records_to_use = [r for r in new_records if r[val_index+1] > 0
+                          and r[val_index] is not None and r[1] in neg_temp_days.get(r[0], [])]
+    else:
+        records_to_use = [r for r in new_records if r[val_index + 1] > 0
+                          and r[val_index] is not None and r[1] not in neg_temp_days.get(r[0], [])]
     num_invalid_records = 0
     half_window = (window_days - 1) // 2
 
@@ -751,8 +756,9 @@ def check10(records, filter_days, times_perc=9, percentile=95, window_days=29, m
             sample_records = []
             for dayname in day_month_tuples:
                 sample_records.extend(dayname_groups.get(dayname, []))
-            if len(sample_records) >= min_num:
-                sample_values = np.array([float(r[val_index]) for r in sample_records])
+            sample_values = np.array(
+                [float(r[val_index]) for r in sample_records if float(r[val_index]) != 0])
+            if len(sample_values) >= min_num:
                 percentile_limit = np.percentile(sample_values, percentile) * times_perc
                 check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:

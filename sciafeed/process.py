@@ -157,10 +157,9 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
     logger.info('* controllo gap checks')
     prec_records = checks.check8(prec_records, threshold=300, exclude_zero=True, logger=logger)
     logger.info("* 'controllo z-score checks'")
-    pos_temp_days, neg_temp_days = checks.split_days_by_average_temp(temp_records)
-    prec_records = checks.check10(prec_records, pos_temp_days, logger=logger)
+    prec_records = checks.check10(prec_records, temp_records, logger=logger)
     logger.info("* 'controllo z-score checks ghiaccio'")
-    prec_records = checks.check10(prec_records, neg_temp_days, times_perc=5, flag=-26,
+    prec_records = checks.check10(prec_records, temp_records, ice=True, times_perc=5, flag=-26,
                                   logger=logger)
 
     logger.info('* final set of flags on database...')

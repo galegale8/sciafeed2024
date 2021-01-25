@@ -153,7 +153,7 @@ def process_checks_preci(conn, stations_ids, schema, logger, temp_records=None):
     logger.info("* 'controllo mesi duplicati (anni differenti)'")
     prec_records = checks.check4(prec_records, min_not_zero=5, logger=logger)
     logger.info("* 'controllo world excedence'")
-    prec_records = checks.check7(prec_records, max_threshold=800, logger=logger)
+    prec_records = checks.check7(prec_records, min_threshold=-1, max_threshold=800, logger=logger)
     logger.info('* controllo gap checks')
     prec_records = checks.check8(prec_records, threshold=300, exclude_zero=True, logger=logger)
     logger.info("* 'controllo z-score checks'")

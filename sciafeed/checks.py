@@ -209,9 +209,10 @@ def check2(records, len_threshold=20, flag=-13, val_index=2, exclude_values=(), 
 
 
 def months_comparison(month_values1, month_values2, month1, month2, year1, year2,
-                      min_not_zero=None):
+                      min_not_zero=None, min_same=None):
     """
     Do a comparison of the values of 2 dictionaries of measures in a month.
+    It assumes no of values is None.
     The comparison considers the max days applicable for both the months.
     The comparison return 1 if the months values are the same, 0 if not, and -1 if not applicable.
 
@@ -222,12 +223,16 @@ def months_comparison(month_values1, month_values2, month1, month2, year1, year2
     :param year1: year of the first month
     :param year2: year of the second month
     :param min_not_zero: if not None, minimum number of values != 0 to make comparison applicable
+    :param min_same: if not None, minimum number of values to make comparison applicable
     :return: 1, 0 or -1
     """
     if min_not_zero is not None:
         len1 = len([v for v in month_values1.values() if v != 0])
         len2 = len([v for v in month_values2.values() if v != 0])
         if len1 < min_not_zero or len2 < min_not_zero:
+            return -1
+    if min_same is not None:
+        if len(month_values1.values()) < min_same or len(month_values2.values()) < min_same:
             return -1
     max_day = min(calendar.monthrange(year1, month1)[1], calendar.monthrange(year2, month2)[1])
     for k in range(1, max_day+1):
@@ -236,7 +241,7 @@ def months_comparison(month_values1, month_values2, month1, month2, year1, year2
     return 1
 
 
-def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
+def check3(records, min_not_zero=None, min_same=None, flag=-15, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi differenti appartenenti allo stesso anno)".
     Assumes all records are sorted by station, date.
@@ -245,6 +250,7 @@ def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_zero: minimum number of the valid values != 0 required to consider a month
+    :param min_same: minimum number of the valid values required to consider a month
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param logger: logging object where to report actions
@@ -282,7 +288,7 @@ def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
                 month_values1 = year_values_dict[month1]
                 month_values2 = year_values_dict[month2]
                 if months_comparison(month_values1, month_values2, month1, month2, year, year,
-                                     min_not_zero=min_not_zero) > 0:
+                                     min_not_zero=min_not_zero, min_same=min_same) > 0:
                     invalid_months.append(month1)
                     invalid_months.append(month2)
             for invalid_month in set(invalid_months):
@@ -298,7 +304,7 @@ def check3(records, min_not_zero=None, flag=-15, val_index=2, logger=None):
     return new_records
 
 
-def check4(records, min_not_zero=None, flag=-17, val_index=2, logger=None):
+def check4(records, min_not_zero=None, min_same=None, flag=-17, val_index=2, logger=None):
     """
     Check "controllo mesi duplicati (mesi uguali appartenenti ad anni differenti)".
     Assumes all records are sorted by station, date.
@@ -307,6 +313,7 @@ def check4(records, min_not_zero=None, flag=-17, val_index=2, logger=None):
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param min_not_zero: minimum number of the valid values != 0 required to consider a month
+    :param min_same: minimum number of the valid values required to consider a month
     :param flag: the value of the flag to set for found records
     :param val_index: record[val_index] is the value to check, and record[val_index+1] is the flag
     :param logger: logging object where to report actions
@@ -350,6 +357,8 @@ def check4(records, min_not_zero=None, flag=-17, val_index=2, logger=None):
                     num_not_zero = len([v for v in months_values.values() if v != 0])
                     if num_not_zero < min_not_zero:
                         continue
+                if min_same is not None and len(months_values.values()) < min_same:
+                    continue
                 if months_values_for_years.count(months_values) > 1:
                     invalid_records += months_records_dict[month][year]
 
@@ -709,7 +718,7 @@ def check10(records, temp_records, ice=False, times_perc=9, percentile=95, windo
 
     :param records: iterable of input records, of kind [cod_staz, data_i, ...]
     :param temp_records: list of records of temperatures
-    :param ice: if True, consider only records where average temperature defined and < 0
+    :param ice: if True, consider algorithm for "controllo z-score checks precipitazione ghiaccio"
     :param times_perc: number of times of the percentile to create the limit
     :param percentile: percentile value of the distribution to use
     :param window_days: the time window to consider (in days)
@@ -732,14 +741,16 @@ def check10(records, temp_records, ice=False, times_perc=9, percentile=95, windo
     new_records = [r[:] for r in records]
     if ice:
         records_to_use = [r for r in new_records if r[val_index+1] > 0
-                          and r[val_index] is not None and r[1] in neg_temp_days.get(r[0], [])]
+                          and r[val_index] is not None]
     else:
         records_to_use = [r for r in new_records if r[val_index + 1] > 0
                           and r[val_index] is not None and r[1] not in neg_temp_days.get(r[0], [])]
     num_invalid_records = 0
     half_window = (window_days - 1) // 2
+    ice_filter = True
 
     for station, station_records in itertools.groupby(records_to_use, group_by_station):
+        station_neg_days = neg_temp_days.get(station, [])
         check_date = datetime(2000, 1, 1)  # first of a leap year
         station_records = list(station_records)
         # first loop to load dayname_groups
@@ -762,8 +773,10 @@ def check10(records, temp_records, ice=False, times_perc=9, percentile=95, windo
                 percentile_limit = np.percentile(sample_values, percentile) * times_perc
                 check_records = dayname_groups.get((check_date.day, check_date.month), [])
                 for check_record in check_records:
+                    if ice:
+                        ice_filter = check_record[1] in station_neg_days
                     if check_record[val_index] > percentile_limit \
-                            and check_record[val_index+1] != 5:
+                            and ice_filter and check_record[val_index+1] != 5:
                         check_record[val_index+1] = flag
                         num_invalid_records += 1
             check_date += timedelta(1)

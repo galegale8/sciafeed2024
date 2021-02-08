@@ -136,7 +136,9 @@ def compute_daily_indicators(data_folder, indicators_folder, dburi, report_path)
               help="file path of the CSV with the new stations found")
 @click.option('--report_path', '-r', type=click.Path(exists=False, dir_okay=False),
               help="file path of the output report. If not provided, prints on screen")
-def find_new_stations(data_folder, dburi, stations_path, report_path):
+@click.option('--er', default=False, is_flag=True,
+              help="""if specified, consider ER stations (debug mode)""")
+def find_new_stations(data_folder, dburi, stations_path, report_path, er):
     """
     Examine stations on data included in folder `data_folder` and creates a CSV with the new
     stations not found in the database.
@@ -147,7 +149,10 @@ def find_new_stations(data_folder, dburi, stations_path, report_path):
     msg0 = ['PROCESS START']
     print(msg0[0])
     db_utils.configure(dburi)
-    msgs1, not_found_stations = querying.find_new_stations(data_folder, dburi)
+    if er:
+        msgs1, not_found_stations = querying.find_new_er_stations(data_folder, dburi)
+    else:
+        msgs1, not_found_stations = querying.find_new_stations(data_folder, dburi)
     for msg in msgs1:
         print(msg)
     export.stations2csv(not_found_stations, stations_path, extra_fields=['source'])

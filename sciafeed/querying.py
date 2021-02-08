@@ -44,6 +44,129 @@ def get_db_station(conn, anag_table, **kwargs):
     return None
 
 
+def get_er_station(conn, anag_table, **station_props):
+    """
+    debugger log on ER stations
+    """
+    new_messages = []
+    thestations1 = []
+    thestations2 = []
+    thestations3 = []
+    if station_props['lat'] and station_props['lon']:
+        # list the nearest stations inside a circle of radius meters
+        radius = '1000'
+        sql = """
+        SELECT * FROM ( SELECT id_staz, nome, lon, lat, cod_rete,
+        ST_DistanceSphere(ST_MakePoint(lon, lat), ST_MakePoint(%s, %s))  as distance 
+        FROM dailypdbadmclima.anag__stazioni ORDER BY distance) as t WHERE t.distance < %s
+        and cod_rete = %s
+        """ % (station_props['lon'], station_props['lat'], radius, station_props['cod_rete'])
+        results1 = conn.execute(sql).fetchall()
+        if not results1:
+            msg = "not found any station near this (radius %s)" % radius
+        else:
+            thestations1 = [r[0] for r in results1]
+            msg = "found %s stations near this (radius %s): %r" \
+                  % (len(thestations1), radius, thestations1)
+        new_messages.append(msg)
+    base_clause = getattr(anag_table.c, 'cod_rete') == station_props['cod_rete']
+    # list stations with the same name (case insensitive)
+    clause1 = and_(
+        func.lower(getattr(anag_table.c, 'nome')) == station_props['cod_utente'].lower(),
+        base_clause)
+    query = select([anag_table]).where(clause1)
+    results2 = conn.execute(query).fetchall()
+    if not results2:
+        msg = 'no found any station with the same name (case insensitive)'
+        new_messages.append(msg)
+    else:
+        thestations2 = [r[0] for r in results2]
+        msg = "found %s stations with the same name (case insensitive): %r" \
+              % (len(thestations2), thestations2)
+        new_messages.append(msg)
+    # list stations with the same name (case sensitive)
+    clause2 = and_(
+        getattr(anag_table.c, 'nome') == station_props['cod_utente'],
+        base_clause)
+    query = select([anag_table]).where(clause2)
+    results3 = conn.execute(query).fetchall()
+    if not results3:
+        msg = 'no found any station with the same exact name (case sensitive)'
+        new_messages.append(msg)
+    else:
+        thestations3 = [r[0] for r in results3]
+        msg = "found %s stations with the same exact name (case sensitive): %r" \
+              % (len(thestations3), thestations3)
+        new_messages.append(msg)
+    ok_stations = set(thestations1).intersection(set(thestations2)).intersection(set(thestations3))
+    if len(ok_stations) == 1:
+        msg = '(the station should be identified as id_staz %s)' % list(ok_stations)[0]
+        new_messages.append(msg)
+    return new_messages
+
+
+def find_new_er_stations(data_folder, dburi):
+    """debug mode for ER stations"""
+    msgs = []
+    conn = db_utils.ensure_connection(dburi)
+    meta = MetaData()
+    anag_table = Table('anag__stazioni', meta, autoload=True, autoload_with=conn.engine,
+                       schema='dailypdbadmclima')
+    all_stations = dict()
+    new_stations = dict()
+    num_records = 0
+    with conn.begin():
+        total_to_see = listdir(data_folder)
+        total_to_see_number = len(total_to_see)
+        for i, file_name in enumerate(total_to_see):
+            csv_path = join(data_folder, file_name)
+            msg = 'examine file %s/%s...' % (i+1, total_to_see_number)
+            print(msg)
+            msgs.append(msg)
+            if not isfile(csv_path) or splitext(file_name.lower())[1] != '.csv':
+                continue
+            records = export.csv2data(csv_path)
+            for record in records:
+                num_records += 1
+                record_md = record[0]
+                station_key = (record_md['cod_utente'], record_md['cod_rete'],
+                               record_md['lat'], record_md['lon'])
+                if station_key in all_stations:
+                    continue
+                station_props = {
+                    'cod_rete': record_md['cod_rete'],
+                    'cod_utente': record_md['cod_utente'],
+                    'lat': record_md['lat'],
+                    'lon': record_md['lon'],
+                    'source': record_md['source'],
+                }
+                if record_md['format'] != 'ARPA-ER':
+                    raise ValueError('do not use the option --er for records not belonging to ER')
+                msg = """
+                examining the station: 
+                    cod_utente: %s 
+                    lat: %s
+                    lon: %s
+                    """ % (record_md['cod_utente'], record_md['lat'], record_md['lon'])
+                print(msg)
+                msgs.append(msg)
+                new_messages = get_er_station(conn, anag_table, **station_props)
+                for new_message in new_messages:
+                    print(new_message)
+                    msgs.append(new_message)
+                all_stations[station_key] = new_messages
+    num_all_stations = len(all_stations)
+    num_new_stations = len(new_stations)
+    msg0 = "Examined %i records" % num_records
+    msg1 = "Found %i distinct stations" % num_all_stations
+    msg2 = "Number of NEW stations: %i" % num_new_stations
+    for msg in [msg0, msg1, msg2]:
+        print(msg)
+    msgs.extend([msg0, msg1, msg2])
+    conn.close()
+    return msgs, new_stations
+
+
 def find_new_stations(data_folder, dburi):
     """
     Find stations from a set of CSV files inside a folder `data_folder`, that are not

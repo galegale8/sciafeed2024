@@ -1480,6 +1480,7 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
     data_prec24 = compute_dma_records(prec24_records, map_funct=map_funct)
 
     logger.info('computing aggregations for persistenza precipitazione')
+    prec24_records = get_prec24_records()
     data_prs_prec = compute_year_records(prec24_records, 'prs_prec', compute_prs_prec)
     logger.info('setting provenienza="DAILY" for the resulting records...')
     for record in data_prs_prec:

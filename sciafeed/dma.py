@@ -1629,7 +1629,7 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
     for sub_data_prs in utils.chunked_iterable(data_prs, 10000):
         sql = upsert.create_upsert('ds__prs_t200', targetschema, fields, sub_data_prs, policy)
         if sql:
-            logger.info('updating DMA table %s.%s (' % (targetschema, 'ds__prs_t200'))
+            logger.info('updating DMA table %s.%s' % (targetschema, 'ds__prs_t200'))
             conn.execute(sql)
 
     logger.info('computing aggregations (tmdgg)...')
@@ -1642,12 +1642,16 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
     tmd_records = get_tmd_records()
     data_items['tmdgg'] = compute_dma_records(tmd_records, 'tmdgg', compute_tmdgg)
     logger.info('computing aggregations (tmxgg)...')
+    tmax_records = get_tmax_records()
     data_items['tmxgg'] = compute_dma_records(tmax_records, 'tmxgg', compute_tmxgg)
     logger.info('computing aggregations (tmngg)...')
+    tmin_records = get_tmin_records()
     data_items['tmngg'] = compute_dma_records(tmin_records, 'tmngg', compute_tmngg)
     logger.info('computing aggregations (cl_tmxgg)...')
+    tmax_records = get_tmax_records()
     data_items['c_tmxgg'] = compute_dma_records(tmax_records, 'cl_tmxgg', compute_cl_tmxgg)
     logger.info('computing aggregations (cl_tmngg)...')
+    tmin_records = get_tmin_records()
     data_items['c_tmngg'] = compute_dma_records(tmin_records, 'cl_tmngg', compute_cl_tmngg)
     logger.info('computing aggregations (tmdgg1)...')
 
@@ -1659,8 +1663,10 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
     tmdgg1_records = get_tmdgg1_records()
     data_items['tmdgg1'] = compute_dma_records(tmdgg1_records, 'tmdgg1', compute_tmdgg1)
     logger.info('computing aggregations (deltagg)...')
+    tmdgg1_records = get_tmdgg1_records()
     data_items['deltagg'] = compute_dma_records(tmdgg1_records, 'deltagg', compute_deltagg)
     logger.info('computing aggregations (day_gelo)...')
+    tmax_records = get_tmax_records()
     data_items['day_gelo'] = compute_dma_records(tmax_records, 'day_gelo', compute_day_gelo)
 
     logger.info('merging records before update of table ds__t200...')

@@ -1481,6 +1481,9 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
 
     logger.info('computing aggregations for persistenza precipitazione')
     data_prs_prec = compute_year_records(prec24_records, 'prs_prec', compute_prs_prec)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data_prs_prec:
+        record['provenienza'] = 'DAILY'
 
     logger.info('selecting for input records (prec12) ...')
 
@@ -1596,7 +1599,9 @@ def process_dma_vento(conn, startschema, targetschema, policy, stations_ids, log
 
     logger.info('merging records before update of table ds__prec...')
     data = functools.reduce(merge_data_items, data_items.values())
-
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     logger.info('update records...')
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'vntmxgg', 'vntmd', 'vnt'])
@@ -1654,7 +1659,9 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
 
     logger.info('merging records before update of table ds__prs_t200...')
     data_prs = functools.reduce(merge_data_items, [prs_t200mx, prs_t200mn])
-
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data_prs:
+        record['provenienza'] = 'DAILY'
     logger.info('update records of table ds__prs_t200...')
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prs_t200mx',
                                    'prs_t200mn'])

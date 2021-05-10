@@ -1130,6 +1130,9 @@ def process_dma_bagnatura(conn, startschema, targetschema, policy, stations_ids,
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'bagna', compute_bagna)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'bagna'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1160,6 +1163,9 @@ def process_dma_bilancio_idrico(conn, startschema, targetschema, policy, station
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'deltaidro', compute_deltaidro)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'deltaidro'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1190,6 +1196,9 @@ def process_dma_eliofania(conn, startschema, targetschema, policy, stations_ids,
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'elio', compute_elio)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'elio'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1220,6 +1229,9 @@ def process_dma_radiazione_globale(conn, startschema, targetschema, policy, stat
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'radglob', compute_radglob)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'radglob'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1250,6 +1262,9 @@ def process_dma_evapotraspirazione(conn, startschema, targetschema, policy, stat
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'etp', compute_etp)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'etp'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1281,6 +1296,9 @@ def process_dma_gradi_giorno(conn, startschema, targetschema, policy, stations_i
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'grgg', compute_grgg)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'grgg'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1312,6 +1330,9 @@ def process_dma_pressione(conn, startschema, targetschema, policy, stations_ids,
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'press', compute_press)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'press'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1343,6 +1364,10 @@ def process_dma_umidita_relativa(conn, startschema, targetschema, policy, statio
         schema=startschema)
     logger.info('computing aggregations...')
     data = compute_dma_records(table_records, 'ur', compute_ur)
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
+
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'ur'])
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
@@ -1388,6 +1413,9 @@ def process_dma_bioclimatologia(conn, startschema, targetschema, policy, station
     data = compute_dma_records(table_records, map_funct=map_funct)
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza'] + list(map_funct.keys()))
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
     logger.info('update records....')
     for sub_data in utils.chunked_iterable(data, 10000):
         sql = upsert.create_upsert('ds__bioclima', targetschema, fields, sub_data, policy)
@@ -1492,6 +1520,10 @@ def process_dma_precipitazione(conn, startschema, targetschema, policy, stations
 
     logger.info('merging records before update of table ds__prec...')
     data = functools.reduce(merge_data_items, [data_prec01, data_prec24, data_prec12, data_prec06])
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
+
     logger.info('update records for table ds__prec...')
     fields = upsert.expand_fields(
         ['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'prec01', 'prec24', 'cl_prec24',
@@ -1671,6 +1703,9 @@ def process_dma_temperatura(conn, startschema, targetschema, policy, stations_id
 
     logger.info('merging records before update of table ds__t200...')
     data = functools.reduce(merge_data_items, data_items.values())
+    logger.info('setting provenienza="DAILY" for the resulting records...')
+    for record in data:
+        record['provenienza'] = 'DAILY'
 
     logger.info('update records of table ds__t200...')
     fields = upsert.expand_fields(['data_i', 'cod_staz', 'cod_aggr', 'provenienza', 'tmdgg',

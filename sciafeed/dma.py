@@ -841,13 +841,13 @@ def compute_tmxgg(records, num_expected, at_least_perc=0.75):
     if not valid_records:
         return (None, None), None, None, None, None
     values = [r[3] for r in valid_records]
-    val_x = float(round(statistics.mean(values), ROUND_PRECISION))
+    val_md = float(round(statistics.mean(values), ROUND_PRECISION))
     if len(values) >= 2:
         val_vr = float(round(statistics.stdev(values), ROUND_PRECISION))
 
     max_record = max(valid_records, key=operator.itemgetter(3))
     data_x = max_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_md = float(round(max_record[3], ROUND_PRECISION))
+    val_x = float(round(max_record[3], ROUND_PRECISION))
 
     return flag, val_md, val_vr, val_x, data_x
 
@@ -867,13 +867,13 @@ def compute_tmngg(records, num_expected, at_least_perc=0.75):
     if not valid_records or not flag[1]:
         return flag, None, None, None, None
     values = [r[3] for r in valid_records]
-    val_x = float(round(statistics.mean(values), ROUND_PRECISION))
+    val_md = float(round(statistics.mean(values), ROUND_PRECISION))
     if len(values) >= 2:
         val_vr = float(round(statistics.stdev(values), ROUND_PRECISION))
 
     min_record = min(valid_records, key=operator.itemgetter(3))
     data_x = min_record[1].strftime('%Y-%m-%d 00:00:00')
-    val_md = float(round(min_record[3], ROUND_PRECISION))
+    val_x = float(round(min_record[3], ROUND_PRECISION))
 
     return flag, val_md, val_vr, val_x, data_x
 

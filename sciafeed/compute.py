@@ -160,9 +160,6 @@ def compute_prec24(day_records, at_least_perc=0.9, force_flag=None):
     data_mx = None
     if valid_values:
         val_tot = round(sum(valid_values), ROUND_PRECISION)
-        val_mx = max(valid_values)
-        data_mx = [r[1] for r in day_records if r[3] == val_mx][0].isoformat()
-        val_mx = round(val_mx, ROUND_PRECISION)
     return flag, val_tot, val_mx, data_mx
 
 
@@ -209,8 +206,8 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_mx, data_mx)
     """
-    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
-    if not valid_values:
+    valid_records = [r for r in day_records if r[4] and r[3] is not None]
+    if not valid_records or not isinstance(valid_records[0][1], datetime):
         return None
     flag = force_flag
     if not flag:
@@ -218,7 +215,7 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
     val_mx = None
     data_mx = None
     if valid_values:
-        val_mx = max(valid_values)
+        val_mx = max([r[3] for r in valid_records])
         data_mx = [r[1] for r in day_records if r[3] == val_mx][0].isoformat()
     return flag, val_mx, data_mx
 

@@ -615,7 +615,7 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
             tmin is not None and tmin_flag is not None and tmin_flag > 0
         if allow_compute_deltagg:
             deltagg = tmax - tmin
-            tmdgg1 = deltagg / 2
+            tmdgg1 = (tmax + tmin) / 2
             temp_item = base_item.copy()
             temp_item.update({'tmdgg1.val_md': tmdgg1, 'tmdgg1.flag.wht': 1,
                               'deltagg.val_md': deltagg, 'deltagg.flag.wht': 1})

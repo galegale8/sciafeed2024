@@ -603,29 +603,30 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
         tmax, tmax_flag = record[3:5]
         tmin, tmin_flag = record[5:7]
         tmedia, tmedia_flag = record[7:9]
-        allow_compute_grgg = tmedia is not None and tmedia_flag is not None and tmedia_flag > 0
-        if allow_compute_grgg:
-            grgg_flag, grgg1, grgg2, grgg3, grgg4, grgg5 = compute.compute_grgg(tmedia)
-            grgg_item = base_item.copy()
-            grgg_item.update({
-                'grgg.flag.wht': grgg_flag[1], 'grgg.tot00': grgg1, 'grgg.tot05': grgg2,
-                'grgg.tot10': grgg3, 'grgg.tot15': grgg4, 'grgg.tot21': grgg5})
-            grgg_items.append(grgg_item)
-        allow_compute_deltagg = tmax is not None and tmax_flag is not None and tmax_flag > 0 and \
+        allow_compute = tmax is not None and tmax_flag is not None and tmax_flag > 0 and \
             tmin is not None and tmin_flag is not None and tmin_flag > 0
-        if allow_compute_deltagg:
+        if allow_compute:
+            # escursione termica e t.media
             deltagg = tmax - tmin
             tmdgg1 = (tmax + tmin) / 2
             temp_item = base_item.copy()
             temp_item.update({'tmdgg1.val_md': tmdgg1, 'tmdgg1.flag.wht': 1,
                               'deltagg.val_md': deltagg, 'deltagg.flag.wht': 1})
             temp_items.append(temp_item)
-        if allow_compute_grgg and allow_compute_deltagg and lat is not None:
-            jd = int(data_i.strftime('%j'))
-            etp = compute.compute_etp(tmedia, tmax, tmin, lat, jd)
-            etp_item = base_item.copy()
-            etp_item.update({'etp.val_md': etp[1], 'etp.flag.wht': etp[0][1]})
-            etp_items.append(etp_item)
+            # gradi giorno
+            grgg_flag, grgg1, grgg2, grgg3, grgg4, grgg5 = compute.compute_grgg(tmdgg1)
+            grgg_item = base_item.copy()
+            grgg_item.update({
+                'grgg.flag.wht': grgg_flag[1], 'grgg.tot00': grgg1, 'grgg.tot05': grgg2,
+                'grgg.tot10': grgg3, 'grgg.tot15': grgg4, 'grgg.tot21': grgg5})
+            grgg_items.append(grgg_item)
+            # evapotraspirazione potenziale
+            if lat is not None:
+                jd = int(data_i.strftime('%j'))
+                etp = compute.compute_etp(tmdgg1, tmax, tmin, lat, jd)
+                etp_item = base_item.copy()
+                etp_item.update({'etp.val_md': etp[1], 'etp.flag.wht': etp[0][1]})
+                etp_items.append(etp_item)
 
     temp_fields = []
     if temp_items:

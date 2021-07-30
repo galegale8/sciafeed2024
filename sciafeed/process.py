@@ -621,7 +621,7 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
                 'grgg.tot10': grgg3, 'grgg.tot15': grgg4, 'grgg.tot21': grgg5})
             grgg_items.append(grgg_item)
             # evapotraspirazione potenziale
-            if lat is not None:
+            if lat is not None and deltagg >= 0:
                 jd = int(data_i.strftime('%j'))
                 etp = compute.compute_etp(tmax, tmin, lat, jd)
                 etp_item = base_item.copy()

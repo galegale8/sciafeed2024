@@ -1034,12 +1034,11 @@ def compute_grgg(tmedia, thresholds=(0, 5, 10, 15, 21)):
     return flag, tot00, tot05, tot10, tot15, tot21
 
 
-def compute_etp(tmedia, tmax, tmin, lat, jd):
+def compute_etp(tmax, tmin, lat, jd):
     """
     Compute "Evapotraspirazione potenziale giornaliera"
     It assume all input values are not None.
 
-    :param tmedia: average daily temperature
     :param tmax: max daily temperature
     :param tmin: min daily temperature
     :param lat: latitude
@@ -1048,7 +1047,8 @@ def compute_etp(tmedia, tmax, tmin, lat, jd):
     """
     flag = (None, 1)
     # needed to manage possible input of 'decimal' objects
-    tmedia, tmax, tmin, lat = map(float, [tmedia, tmax, tmin, lat])
+    tmax, tmin, lat = map(float, [tmax, tmin, lat])
+    tmedia = (tmax + tmin) / 2
     delta_t = tmax - tmin
     g_sc = 0.082
     lat_rad = lat * pi / 180

@@ -623,7 +623,7 @@ def compute_daily_indicators2(conn, schema, stations_ids, logger):
             # evapotraspirazione potenziale
             if lat is not None:
                 jd = int(data_i.strftime('%j'))
-                etp = compute.compute_etp(tmdgg1, tmax, tmin, lat, jd)
+                etp = compute.compute_etp(tmax, tmin, lat, jd)
                 etp_item = base_item.copy()
                 etp_item.update({'etp.val_md': etp[1], 'etp.flag.wht': etp[0][1]})
                 etp_items.append(etp_item)

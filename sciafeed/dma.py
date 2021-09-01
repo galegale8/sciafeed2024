@@ -152,7 +152,7 @@ def compute_elio(records, num_expected, at_least_perc=0.75):
     if not valid_values:
         return (None, None), None, None, None
     flag = compute_flag(records, at_least_perc, num_expected)
-    val_md = float(round(sum(valid_values), ROUND_PRECISION))
+    val_md = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     if len(valid_values) >= 2:
         val_vr = float(round(statistics.stdev(valid_values), ROUND_PRECISION))
     return flag, val_md, val_vr, val_mx

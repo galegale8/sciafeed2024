@@ -214,7 +214,7 @@ def compute_prec01(day_records, at_least_perc=0.9, force_flag=None):
         flag = compute_flag(day_records, at_least_perc)
     val_mx = None
     data_mx = None
-    if valid_values:
+    if valid_records:
         val_mx = max([r[3] for r in valid_records])
         data_mx = [r[1] for r in day_records if r[3] == val_mx][0].isoformat()
     return flag, val_mx, data_mx

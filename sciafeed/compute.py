@@ -645,15 +645,15 @@ def compute_radglob(day_records, at_least_perc=0.75, force_flag=None):
     :param force_flag: if not None, is the flag to be returned
     :return: (flag, val_md, val_vr, val_mx, val_mn)
     """
-    # 'values *0.4843' because outputs are in W/m2 and input in cal/cm2
-    valid_values = [r[3]*0.4843 for r in day_records if r[4] and r[3] is not None]
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
     val_vr = None
     if not valid_values:
         return None
     flag = force_flag
     if not flag:
         flag = compute_flag(day_records, at_least_perc)
-    val_md = round(statistics.mean(valid_values), ROUND_PRECISION)
+    # 'values *0.4843' because outputs are in W/m2 and input in cal/cm2
+    val_md = round(sum(valid_values)*0.4843, ROUND_PRECISION)
     val_mx = round(max(valid_values), ROUND_PRECISION)
     val_mn = round(min(valid_values), ROUND_PRECISION)
     if len(valid_values) >= 2:

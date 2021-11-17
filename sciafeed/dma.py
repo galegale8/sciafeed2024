@@ -66,6 +66,26 @@ def compute_flag(records, at_least_perc, num_expected=10):
     return ndati, wht
 
 
+def compute_wind_flag(records, at_least_perc, num_expected):
+    """
+    It works like `compute_flag` but it assumes to consider:
+        - the hour events instead of daily events
+        - each record [cod_staz, data_i, 'vntmxgg', (ff, dd), (ndati, wht)]
+    """
+    if not records:
+        return 0, 0
+    valid_records = [
+        r for r in records if r[4][1] is not None and r[4][1] > 0 and r[3] is not None]
+    if not valid_records:
+        return 0, 0
+    wht = 0
+    # use int(...) because r[4] is a tuple of type 'Decimal' and I want integers for upsert logic
+    ndati = int(sum([r[4][0] for r in valid_records]))
+    if ndati / (num_expected * 24)  >= at_least_perc:
+        wht = 1
+    return ndati, wht
+
+
 def compute_temp_flag(records, at_least_perc, num_expected=10):
     """
     Return (ndati, wht) where:
@@ -306,13 +326,14 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
     """
     Compute "intensità e direzione massima del vento" for different DMA aggregations.
     It assumes record[3] = (ff, dd) for each record.
+    Note: here each record is [cod_staz, data_i, 'vntmxgg', (ff, dd), (ndati, wht)]
 
     :param records: list of `data` objects
     :param num_expected: number of records expected
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff, dd)
     """
-    valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3] is not None
+    valid_records = [r for r in records if r[4][1] is not None and r[4][1] > 0 and r[3] is not None
                      and len(r[3]) == 2]
     valid_ff = [r[3][0] for r in valid_records if r[3][0] is not None]
     valid_dd = [r[3][1] for r in valid_records if r[3][1] is not None]
@@ -320,7 +341,7 @@ def compute_vntmxgg(records, num_expected, at_least_perc=0.75):
         return (None, None), None, None
     ff = None
     dd = None
-    flag = compute_flag(records, at_least_perc, num_expected)
+    flag = compute_wind_flag(records, at_least_perc, num_expected)
     if valid_ff:
         ff = float(round(max(valid_ff), ROUND_PRECISION))
     if valid_dd:
@@ -337,10 +358,10 @@ def compute_vntmd(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, ff)
     """
-    valid_values = [r[3] for r in records if r[4] is not None and r[4] > 0 and r[3] is not None]
+    valid_values = [r[3] for r in records if r[4][1] is not None and r[4][1] > 0 and r[3] is not None]
     if not valid_values:
         return (None, None), None
-    flag = compute_flag(records, at_least_perc, num_expected)
+    flag = compute_wind_flag(records, at_least_perc, num_expected)
     ff = float(round(statistics.mean(valid_values), ROUND_PRECISION))
     return flag, ff
 
@@ -355,10 +376,10 @@ def compute_vnt(records, num_expected, at_least_perc=0.75):
     :param at_least_perc: minimum percentage of valid data for the validation flag
     :return: (flag, frq_calme, frq_s(i)c(j))
     """
-    flag = compute_flag(records, at_least_perc, num_expected)
+    flag = compute_wind_flag(records, at_least_perc, num_expected)
     if not flag[1]:
         return [flag] + [None] * 65
-    valid_records = [r for r in records if r[4] is not None and r[4] > 0 and r[3]]
+    valid_records = [r for r in records if r[4][1] is not None and r[4][1] > 0 and r[3]]
     subfields_days = []  # list of vectors
     for valid_record in valid_records:
         subfields_day = [v is not None and float(v) or 0 for v in valid_record[3]]
@@ -1557,9 +1578,11 @@ def process_dma_vento(conn, startschema, targetschema, policy, stations_ids, log
     wind_subfields = ['frq_s%02.dc%d' % (i, j) for i in range(1, 17) for j in range(1, 5)]
     vnt_array_field = 'ARRAY[(vnt).frq_calme,' + \
                       ','.join(['(vnt).%s' % s for s in wind_subfields]) + ']'
-    sql_fields = "cod_staz, data_i, (vntmd).ff, ((vntmd).flag).wht, " \
-                 "ARRAY[(vntmxgg).ff,(vntmxgg).dd], ((vntmxgg).flag).wht, " \
-                 "%s, ((vnt).flag).wht" % vnt_array_field
+    sql_fields = "cod_staz, data_i, (vntmd).ff, " \
+                 "ARRAY[((vntmd).flag).ndati,((vntmd).flag).wht]," \
+                 "ARRAY[(vntmxgg).ff,(vntmxgg).dd], " \
+                 "ARRAY[((vntmxgg).flag).ndati,((vntmxgg).flag).wht]," \
+                 "%s, ARRAY[((vnt).flag).ndati, ((vnt).flag).wht]" % vnt_array_field
 
     def get_table_records():
         table_records = querying.select_records(

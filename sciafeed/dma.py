@@ -80,7 +80,7 @@ def compute_wind_flag(records, at_least_perc, num_expected):
         return 0, 0
     wht = 0
     # use int(...) because r[4] is a tuple of type 'Decimal' and I want integers for upsert logic
-    ndati = int(sum([r[4][0] for r in valid_records]))
+    ndati = int(sum([r[4][0] for r in valid_records if r[4][0] is not None]))
     if ndati / (num_expected * 24)  >= at_least_perc:
         wht = 1
     return ndati, wht

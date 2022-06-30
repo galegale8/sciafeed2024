@@ -6,7 +6,7 @@ from functools import partial
 from os.path import abspath, dirname, join
 import sys
 
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic
 
 from sciafeed import DESIGNER_PATH
 from sciafeed.hiscentral import REGION_IDS_MAP
@@ -26,11 +26,11 @@ from sciafeed.designer.process_dma import Ui_process_dma_form
 
 # import pdb
 # def import_pdb():
-#   from PyQt4.QtCore import pyqtRemoveInputHook
+#   from PyQt5.QtCore import pyqtRemoveInputHook
 #   pyqtRemoveInputHook()
 
 
-class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
+class ProcessDMA(QtWidgets.QMainWindow, Ui_process_dma_form):
     """
     Class for the GUI windows for Process DMA data
     """
@@ -81,7 +81,7 @@ class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -114,7 +114,7 @@ class ProcessDMA(QtGui.QMainWindow, Ui_process_dma_form):
         return cmd, args
 
 
-class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
+class LoadUniqueData(QtWidgets.QMainWindow, Ui_load_unique_data_form):
     """
     Class for the GUI windows for Process Load unique data
     """
@@ -165,7 +165,7 @@ class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -191,7 +191,7 @@ class LoadUniqueData(QtGui.QMainWindow, Ui_load_unique_data_form):
         return cmd, args
 
 
-class ComputeDailyIndicators2(QtGui.QMainWindow, Ui_compute_indicators2_form):
+class ComputeDailyIndicators2(QtWidgets.QMainWindow, Ui_compute_indicators2_form):
     """
     Class for the GUI windows for compute secondary indicators
     """
@@ -241,7 +241,7 @@ class ComputeDailyIndicators2(QtGui.QMainWindow, Ui_compute_indicators2_form):
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -264,7 +264,7 @@ class ComputeDailyIndicators2(QtGui.QMainWindow, Ui_compute_indicators2_form):
         return cmd, args
 
 
-class CheckChain(QtGui.QMainWindow, Ui_check_chain_form):
+class CheckChain(QtWidgets.QMainWindow, Ui_check_chain_form):
     """
     Class for the GUI windows for Process the check chain
     """
@@ -314,7 +314,7 @@ class CheckChain(QtGui.QMainWindow, Ui_check_chain_form):
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -343,7 +343,7 @@ class CheckChain(QtGui.QMainWindow, Ui_check_chain_form):
         return cmd, args
 
 
-class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
+class InsertDailyIndicators(QtWidgets.QMainWindow, Ui_insert_daily_indicators_form):
     """
     Class for the GUI windows for Process inserting of daily indicators
     """
@@ -394,12 +394,12 @@ class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
 
     def on_select_input_folder_clicked(self):
         caption = 'seleziona cartella di input'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_folder.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -432,7 +432,7 @@ class InsertDailyIndicators(QtGui.QMainWindow, Ui_insert_daily_indicators_form):
         return cmd, args
 
 
-class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form):
+class ComputeDailyIndicators(QtWidgets.QMainWindow, Ui_compute_daily_indicators_form):
     """
     Class for the GUI windows for compute daily indicators
     """
@@ -483,17 +483,17 @@ class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form
 
     def on_select_input_folder_clicked(self):
         caption = 'seleziona cartella di input'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_folder.setText(folderpath)
 
     def on_select_output_folder_clicked(self):
         caption = 'seleziona cartella di output'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.output_folder.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -519,7 +519,7 @@ class ComputeDailyIndicators(QtGui.QMainWindow, Ui_compute_daily_indicators_form
         return cmd, args
 
 
-class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
+class UpsertStations(QtWidgets.QMainWindow, Ui_upsert_stations_form):
     """
     Class for the GUI windows for upserting stations
     """
@@ -569,12 +569,12 @@ class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
 
     def on_select_input_file_clicked(self):
         caption = 'seleziona file di input'
-        filepath = str(QtGui.QFileDialog.getOpenFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getOpenFileName(self, caption))
         self.input_file.setText(filepath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -597,7 +597,7 @@ class UpsertStations(QtGui.QMainWindow, Ui_upsert_stations_form):
         return cmd, args
 
 
-class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
+class FindNewStations(QtWidgets.QMainWindow, Ui_find_new_stations_form):
     """
     Class for the GUI windows for find new stations
     """
@@ -648,17 +648,17 @@ class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
 
     def on_select_input_folder_clicked(self):
         caption = 'seleziona cartella di input'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_folder.setText(folderpath)
 
     def on_select_output_file_clicked(self):
         caption = 'seleziona file di output'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.output_file.setText(filepath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -684,7 +684,7 @@ class FindNewStations(QtGui.QMainWindow, Ui_find_new_stations_form):
         return cmd, args
 
 
-class MakeReports(QtGui.QMainWindow, Ui_make_reports_form):
+class MakeReports(QtWidgets.QMainWindow, Ui_make_reports_form):
     """
     Class for the GUI windows for make_reports script
     """
@@ -765,27 +765,27 @@ class MakeReports(QtGui.QMainWindow, Ui_make_reports_form):
 
     def on_select_input_file_clicked(self):
         caption = 'seleziona file di input'
-        filepath = str(QtGui.QFileDialog.getOpenFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getOpenFileName(self, caption))
         self.input_file.setText(filepath)
 
     def on_select_output_file_clicked(self):
         caption = 'seleziona file di output'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.output_file.setText(filepath)
 
     def on_select_input_folder_clicked(self):
         caption = 'seleziona cartella di input'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_folder.setText(folderpath)
 
     def on_select_output_folder_clicked(self):
         caption = 'seleziona cartella di output'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.output_folder.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -819,7 +819,7 @@ class MakeReports(QtGui.QMainWindow, Ui_make_reports_form):
         return cmd, args
 
 
-class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
+class MakeReport(QtWidgets.QMainWindow, Ui_make_report_form):
     """
     Class for the GUI windows for make_report script
     """
@@ -888,17 +888,17 @@ class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
 
     def on_select_input_file_clicked(self):
         caption = 'seleziona file di input'
-        filepath = str(QtGui.QFileDialog.getOpenFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getOpenFileName(self, caption))
         self.input_file.setText(filepath)
 
     def on_select_input_folder_clicked(self):
         caption = 'seleziona cartella di input'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_folder.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -926,7 +926,7 @@ class MakeReport(QtGui.QMainWindow, Ui_make_report_form):
         return cmd, args
 
 
-class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
+class DownloadEr(QtWidgets.QMainWindow, Ui_download_er_form):
     """
     Class for the GUI windows for download_er script
     """
@@ -980,12 +980,12 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
 
     def on_select_dest_clicked(self):
         caption = 'seleziona cartella destinazione'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_destination.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -1010,7 +1010,7 @@ class DownloadEr(QtGui.QMainWindow, Ui_download_er_form):
         return cmd, args
 
 
-class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
+class DownloadHiscentral(QtWidgets.QMainWindow, Ui_download_hiscentral_form):
     """
     Class for the GUI windows for download_hiscentral script
     """
@@ -1061,12 +1061,12 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
 
     def on_select_dest_clicked(self):
         caption = 'seleziona cartella destinazione'
-        folderpath = str(QtGui.QFileDialog.getExistingDirectory(self, caption))
+        folderpath = str(QtWidgets.QFileDialog.getExistingDirectory(self, caption))
         self.input_destination.setText(folderpath)
 
     def on_select_report_clicked(self):
         caption = 'seleziona report destinazione'
-        filepath = str(QtGui.QFileDialog.getSaveFileName(self, caption))
+        filepath = str(QtWidgets.QFileDialog.getSaveFileName(self, caption))
         self.input_report.setText(filepath)
 
     def collect_inputs(self):
@@ -1097,7 +1097,7 @@ class DownloadHiscentral(QtGui.QMainWindow, Ui_download_hiscentral_form):
         return cmd, args
 
 
-class SciaFeedMainWindow(QtGui.QMainWindow):
+class SciaFeedMainWindow(QtWidgets.QMainWindow):
     """
     Class for the GUI main window
     """
@@ -1205,7 +1205,7 @@ class Controller:
 
 
 def run_sciafeed_gui():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     bin_path = dirname(abspath(sys.argv[0]))
     controller = Controller(bin_path)
     controller.show_main()

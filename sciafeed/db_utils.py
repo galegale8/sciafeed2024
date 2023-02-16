@@ -5,10 +5,10 @@ This module contains functions and utilities to interface with a database
 from sqlalchemy import engine_from_config, MetaData, Table
 
 
-USER = 'scia'
-PASSWORD = 'scia'
-ADDRESS = ''
-PORT = '5432'
+USER = 'postgres'
+PASSWORD = 'piero859'
+ADDRESS = '10.158.252.181'
+PORT = '5434'
 DB_NAME = 'sciapg'
 
 DEFAULT_DB_URI = "postgresql://%s:%s@%s:%s/%s" % (USER, PASSWORD, ADDRESS, PORT, DB_NAME)

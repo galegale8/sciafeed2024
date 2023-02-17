@@ -749,7 +749,6 @@ def compute_vntmd(day_records, at_least_perc=0.75, force_flag=None):
     ff = round(statistics.mean(valid_values), ROUND_PRECISION)
     return flag, ff
 
-
 def compute_wind_flag(day_ff_records, day_dd_records, at_least_perc=0.75):
     """
     Compute the flag considering a good measure if there are both FF and DD records for each time.
@@ -771,6 +770,33 @@ def compute_wind_flag(day_ff_records, day_dd_records, at_least_perc=0.75):
     flag = compute_flag(flag_records, at_least_perc)
     return flag
 
+def compute_vntmxgg_fromdaily(day_records, at_least_perc=0.75, force_flag=None):
+    """
+    Compute "velocità massima giornaliera del vento".
+    It will fill the field 'vntmxgg' of table 'ds__vnt10'.
+    It assumes day_records is of par_code='MXWSDP'.
+    It returns the tuple (flag, ff, dd where:
+    ::
+
+    * flag: (ndati, wht)
+    * ff: massima giornaliera della velocità
+    * dd: direzione della massima giornaliera della velocità (NULL)
+    
+    If `force_flag` is not None, returned flag is `force_flag`.
+
+    :param day_records: list of `data` objects for a day and a station.
+    :param at_least_perc: minimum percentage of valid data for the validation flag
+    :param force_flag: if not None, is the flag to be returned
+    :return: (flag, ff)
+    """
+    valid_values = [r[3] for r in day_records if r[4] and r[3] is not None]
+    if not valid_values:
+        return None
+    flag = force_flag
+    if not flag:
+        flag = compute_flag(day_records, at_least_perc)
+    ff = round(statistics.mean(valid_values), ROUND_PRECISION)
+    return flag, ff, 0
 
 def compute_vntmxgg(day_ff_records, day_dd_records, at_least_perc=0.75, force_flag=None):
     """
@@ -1007,13 +1033,17 @@ def compute_day_indicators(measures):
     # VENTO
     ff_day_records = [m for m in measures if m[2] == 'FF']
     dd_day_records = [m for m in measures if m[2] == 'DD']
+    mx_day_records = [m for m in measures if m[2] == 'MXSPD']
     if ff_day_records:
         ret_value['ds__vnt10'] = dict()
         ret_value['ds__vnt10']['vntmd'] = compute_vntmd(ff_day_records)
+        if mx_day_records:
+            ret_value['ds__vnt10']['vntmxgg'] = compute_vntmxgg_fromdaily(mx_day_records)
         if dd_day_records:
             ret_value['ds__vnt10']['vntmxgg'] = compute_vntmxgg(
                 ff_day_records, dd_day_records)
             ret_value['ds__vnt10']['vnt'] = compute_vnt(ff_day_records, dd_day_records)
+
     return ret_value
 
 

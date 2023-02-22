@@ -74,8 +74,8 @@ def get_station_props(filepath):
     :return: the list [station properties, column_index]
     """
     name, ext = splitext(filepath)
-    if ext.lower() != '.xls':
-        err_msg = 'Extension expected must be .xls, found %s' % ext
+    if ext.lower() != '.xlsx':
+        err_msg = 'Extension expected must be .xlsx, found %s' % ext
         raise ValueError(err_msg)
     rows = utils.load_excel(filepath)
     stat_props = dict()
@@ -111,13 +111,14 @@ def parse_row(row, parameters_map, metadata=None):
         metadata = dict()
     else:
         metadata = metadata.copy()
-    # NOTE: assuming the column with the date is the second one
-    date_obj = datetime.strptime(row[1].strip(), "%d.%m.%Y").date()
+    # NOTE: assuming the column with the date is the third one
+    date_obj = datetime.strptime(row[2].strip(), "%d.%m.%Y").date()
     data = []
     for col_indx, par_props in parameters_map.items():
         par_code = par_props['par_code']
         par_value = str(row[int(col_indx)-1]).strip().replace(',', '.')
-        if par_value == '':
+        #NOTE: search better solution
+        if par_value == '' or 'quota' in par_value:
             par_value = None
         else:
             par_value = par_props['convertion'](float(par_value))
@@ -137,12 +138,12 @@ def validate_row_format(row):
     """
     err_msg = ''
     try:
-        # NOTE: assuming the date is always on the second column
-        datetime.strptime(row[1], "%d.%m.%Y")
+        # NOTE: assuming the date is always on the third column
+        datetime.strptime(row[2], "%d.%m.%Y")
     except ValueError:
         err_msg = 'the date format is wrong'
         return err_msg
-    for cell in row[2:]:
+    for cell in row[3:]:
         cell = str(cell).strip().replace(',', '.')
         if cell != '':
             try:
@@ -163,8 +164,8 @@ def rows_generator(filepath, parameters_map, metadata):
     :param metadata: default metadata if not provided in the row
     :return: iterable of (index of the row, row)
     """
-    # NOTE: assuming the column with the date is the second one
-    date_column_indx = 1
+    # NOTE: assuming the column with the date is the third one
+    date_column_indx = 2
     for i, row in enumerate(utils.load_excel(filepath), 1):
         try:
             datetime.strptime(row[date_column_indx], "%d.%m.%Y")
